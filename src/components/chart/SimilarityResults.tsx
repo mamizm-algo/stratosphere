@@ -12,15 +12,6 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import {
   LayoutGrid,
   ChevronLeft,
   ChevronRight,
@@ -30,7 +21,7 @@ import {
   TrendingUp,
   TrendingDown,
   Settings,
-  FolderPlus,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { MockChartDisplay, generateMockCandles, CandleData } from "./MockChartDisplay";
@@ -39,6 +30,8 @@ import { TradeStatistics, TradeStats, IndividualTradeStats } from "./TradeStatis
 import { OverlayChartCanvas } from "./OverlayChartCanvas";
 import { DetailChartCanvas } from "./DetailChartCanvas";
 import { BaseChartCanvas } from "./BaseChartCanvas";
+import { SaveToLibraryDialog } from "@/components/library/SaveToLibraryDialog";
+import { useCollections } from "@/hooks/useCollections";
 
 export interface SimilarPattern {
   id: string;
@@ -71,6 +64,7 @@ export const SimilarityResults = ({
   setupCandles,
   onSaveAsCollection,
 }: SimilarityResultsProps) => {
+  const { addCollection } = useCollections();
   const [viewMode, setViewMode] = useState<"base" | "grid" | "detail" | "overlay">("grid");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sortBy, setSortBy] = useState<"similarity" | "date">("similarity");
@@ -78,8 +72,7 @@ export const SimilarityResults = ({
   const [virtualTransactionOpen, setVirtualTransactionOpen] = useState(false);
   const [virtualParams, setVirtualParams] = useState<VirtualTransactionParams | null>(null);
   const [outcomeChartType, setOutcomeChartType] = useState<"candle" | "line">("candle");
-  const [saveCollectionOpen, setSaveCollectionOpen] = useState(false);
-  const [collectionName, setCollectionName] = useState("");
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [baseChartType, setBaseChartType] = useState<"candle" | "line">("candle");
   const [transactionParams, setTransactionParams] = useState<{
     entry: number;
@@ -256,6 +249,11 @@ export const SimilarityResults = ({
     };
   };
 
+  const handleSaveToLibrary = (name: string) => {
+    addCollection(name, setupCandles || generateMockCandles(20, 100, "sideways"), patterns);
+    toast.success(`Collection "${name}" saved to library`);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm">
       <div className="container mx-auto h-full flex flex-col py-6">
@@ -307,16 +305,14 @@ export const SimilarityResults = ({
               Virtual Transaction
             </Button>
 
-            {onSaveAsCollection && (
-              <Button
-                variant="default"
-                className="gap-2"
-                onClick={() => setSaveCollectionOpen(true)}
-              >
-                <FolderPlus className="w-4 h-4" />
-                Save as Collection
-              </Button>
-            )}
+            <Button
+              variant="default"
+              className="gap-2"
+              onClick={() => setSaveDialogOpen(true)}
+            >
+              <Save className="w-4 h-4" />
+              Save Results
+            </Button>
           </div>
 
           <div className="flex items-center gap-3">
@@ -447,56 +443,11 @@ export const SimilarityResults = ({
         initialParams={virtualParams || undefined}
       />
 
-      {/* Save as Collection Dialog */}
-      <Dialog open={saveCollectionOpen} onOpenChange={setSaveCollectionOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Save as Collection</DialogTitle>
-            <DialogDescription>
-              Give your collection a name. All {patterns.length} similar patterns will be saved.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Input
-              placeholder="Collection name..."
-              value={collectionName}
-              onChange={(e) => setCollectionName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && collectionName.trim()) {
-                  onSaveAsCollection?.(collectionName.trim());
-                  setSaveCollectionOpen(false);
-                  setCollectionName("");
-                  toast.success(`Collection "${collectionName.trim()}" saved!`);
-                }
-              }}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSaveCollectionOpen(false);
-                setCollectionName("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (collectionName.trim()) {
-                  onSaveAsCollection?.(collectionName.trim());
-                  setSaveCollectionOpen(false);
-                  setCollectionName("");
-                  toast.success(`Collection "${collectionName.trim()}" saved!`);
-                }
-              }}
-              disabled={!collectionName.trim()}
-            >
-              Save Collection
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SaveToLibraryDialog
+        open={saveDialogOpen}
+        onOpenChange={setSaveDialogOpen}
+        onSave={handleSaveToLibrary}
+      />
     </div>
   );
 };
