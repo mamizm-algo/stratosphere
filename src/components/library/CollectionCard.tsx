@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FolderOpen, Trash2, Calendar } from "lucide-react";
+import { MockChartDisplay } from "@/components/chart/MockChartDisplay";
 
 interface CollectionCardProps {
   collection: Collection;
@@ -40,14 +41,19 @@ export const CollectionCard = ({
         </Badge>
       </div>
 
-      {/* Representative chart placeholder */}
+      {/* Representative chart */}
       <div
-        className="h-32 rounded-md bg-chart-bg border border-chart-grid mb-4 flex items-center justify-center"
+        className="h-32 rounded-md bg-chart-bg border border-chart-grid mb-4 overflow-hidden"
         onClick={() => onOpen(collection)}
       >
-        <span className="text-muted-foreground text-sm">
-          Representative Chart
-        </span>
+        <MockChartDisplay
+          candles={collection.representativeChart}
+          width={300}
+          height={128}
+          showControls={false}
+          chartType="candle"
+          opacity={1}
+        />
       </div>
 
       <div className="flex items-center justify-between mb-4">
