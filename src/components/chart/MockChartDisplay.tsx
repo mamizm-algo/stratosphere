@@ -7,6 +7,7 @@ export interface CandleData {
   close: number;
   high: number;
   low: number;
+  timestamp?: Date;
 }
 
 interface MockChartDisplayProps {
@@ -128,6 +129,7 @@ export const MockChartDisplay = ({
 export const generateMockCandles = (count: number, basePrice: number = 100, trend: "up" | "down" | "sideways" = "sideways"): CandleData[] => {
   const candles: CandleData[] = [];
   let currentPrice = basePrice;
+  const now = Date.now();
 
   for (let i = 0; i < count; i++) {
     const volatility = 0.02;
@@ -147,6 +149,7 @@ export const generateMockCandles = (count: number, basePrice: number = 100, tren
       close,
       high,
       low,
+      timestamp: new Date(now - (count - i) * 3600000), // 1 hour per candle
     });
 
     currentPrice = close;

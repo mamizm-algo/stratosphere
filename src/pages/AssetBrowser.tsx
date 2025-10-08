@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Canvas as FabricCanvas, Line, Rect } from "fabric";
+import { Canvas as FabricCanvas, Line, Rect, Text } from "fabric";
+import { format } from "date-fns";
 import { ArrowLeft, Search as SearchIcon, FolderPlus } from "lucide-react";
 import { ChartHeader } from "@/components/chart/ChartHeader";
 import { SimilaritySearchDialog, SearchConfig } from "@/components/chart/SimilaritySearchDialog";
@@ -88,8 +89,8 @@ const AssetBrowser = () => {
       return PADDING + index * candleWidth + candleWidth / 2;
     };
 
-    // Draw grid
-    const gridLines: Line[] = [];
+    // Draw grid with Y-axis price labels
+    const gridLines: (Line | Text)[] = [];
     for (let i = 0; i <= 10; i++) {
       const y = PADDING + (i * (CHART_HEIGHT - PADDING * 2)) / 10;
       const line = new Line([PADDING, y, CHART_WIDTH - PADDING, y], {
@@ -99,7 +100,48 @@ const AssetBrowser = () => {
         evented: false,
       });
       gridLines.push(line);
+
+      // Y-axis price labels
+      const price = maxPrice - (i * priceRange) / 10;
+      const priceLabel = new Text(price.toFixed(2), {
+        left: CHART_WIDTH - PADDING + 5,
+        top: y - 8,
+        fontSize: 12,
+        fill: "hsl(215, 20%, 65%)",
+        selectable: false,
+        evented: false,
+      });
+      gridLines.push(priceLabel);
     }
+
+    // Vertical time lines with X-axis date labels
+    const timeStep = Math.floor(candles.length / 8);
+    for (let i = 0; i <= 8; i++) {
+      const candleIndex = Math.min(i * timeStep, candles.length - 1);
+      const x = indexToX(candleIndex);
+      
+      const line = new Line([x, PADDING, x, CHART_HEIGHT - PADDING], {
+        stroke: "hsl(240 3.7% 15.9%)",
+        strokeWidth: 1,
+        selectable: false,
+        evented: false,
+      });
+      gridLines.push(line);
+
+      // X-axis time labels
+      const candle = candles[candleIndex];
+      const timestamp = candle.timestamp || new Date(Date.now() - (candles.length - candleIndex) * 3600000);
+      const timeLabel = new Text(format(timestamp, "MM/dd HH:mm"), {
+        left: x - 30,
+        top: CHART_HEIGHT - PADDING + 5,
+        fontSize: 11,
+        fill: "hsl(215, 20%, 65%)",
+        selectable: false,
+        evented: false,
+      });
+      gridLines.push(timeLabel);
+    }
+
     fabricCanvas.add(...gridLines);
 
     // Draw candlesticks

@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { Canvas as FabricCanvas, Line, Rect } from "fabric";
+import { Canvas as FabricCanvas, Line, Rect, Text } from "fabric";
 import { CandleData } from "./MockChartDisplay";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { format } from "date-fns";
 
 interface BaseChartCanvasProps {
   candles: CandleData[];
@@ -84,9 +85,25 @@ export const BaseChartCanvas = ({
         evented: false,
       });
       canvas.add(line);
+
+      // Y-axis price labels
+      const priceLabel = new Text(price.toFixed(2), {
+        left: CANVAS_WIDTH - PADDING + 5,
+        top: y - 8,
+        fontSize: 12,
+        fill: "hsl(215, 20%, 65%)",
+        selectable: false,
+        evented: false,
+      });
+      canvas.add(priceLabel);
     }
 
-    for (let x = PADDING; x < CANVAS_WIDTH - PADDING; x += 100) {
+    // Vertical time lines and X-axis labels
+    const timeStep = Math.floor(candles.length / 6);
+    for (let i = 0; i <= 6; i++) {
+      const candleIndex = Math.min(i * timeStep, candles.length - 1);
+      const x = PADDING + candleIndex * ((CANVAS_WIDTH - 2 * PADDING) / candles.length) + ((CANVAS_WIDTH - 2 * PADDING) / candles.length) / 2;
+      
       const line = new Line([x, PADDING, x, CANVAS_HEIGHT - PADDING], {
         stroke: "hsl(220, 20%, 15%)",
         strokeWidth: 1,
@@ -94,6 +111,19 @@ export const BaseChartCanvas = ({
         evented: false,
       });
       canvas.add(line);
+
+      // X-axis time labels
+      const candle = candles[candleIndex];
+      const timestamp = candle.timestamp || new Date(Date.now() - (candles.length - candleIndex) * 3600000);
+      const timeLabel = new Text(format(timestamp, "MM/dd HH:mm"), {
+        left: x - 30,
+        top: CANVAS_HEIGHT - PADDING + 5,
+        fontSize: 11,
+        fill: "hsl(215, 20%, 65%)",
+        selectable: false,
+        evented: false,
+      });
+      canvas.add(timeLabel);
     }
   };
 
