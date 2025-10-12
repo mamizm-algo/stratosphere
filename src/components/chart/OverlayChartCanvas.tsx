@@ -344,12 +344,14 @@ export const OverlayChartCanvas = ({
       maxPrice - ((y - PADDING) / (CANVAS_HEIGHT - 2 * PADDING)) * priceRange;
 
     const bounds = group.getBoundingRect();
-    const entryPrice = yToPrice(bounds.top + bounds.height / 2);
+    // const entryPrice = yToPrice(bounds.top + bounds.height / 2);
     const topPrice = yToPrice(bounds.top);
     const bottomPrice = yToPrice(bounds.top + bounds.height);
-
+    
     const originalData = (group as any).transactionData;
     const position = originalData.position;
+    const entryPrice = position.entry;
+    console.log(entryPrice);
 
     const takeProfit = Math.abs((topPrice - entryPrice) / entryPrice * 100);
     const stopLoss = Math.abs((entryPrice - bottomPrice) / entryPrice * 100);

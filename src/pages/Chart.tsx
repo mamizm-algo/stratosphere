@@ -17,7 +17,7 @@ export type Volatility = "low" | "medium" | "high";
 const Chart = () => {
   const navigate = useNavigate();
   const { addCollection, collections } = useCollections();
-  const [drawMode, setDrawMode] = useState<DrawMode>("select");
+  const [drawMode, setDrawMode] = useState<DrawMode>("candle");
   const [volatility, setVolatility] = useState<Volatility>("medium");
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [showResults, setShowResults] = useState(false);
