@@ -168,23 +168,62 @@ export const HowItWorks = () => {
               </div>
 
               <div className="flex justify-center">
-                <div className="flex flex-col items-center gap-2">
-                  <Search className="w-8 h-8 text-primary animate-pulse" />
-                  <div className="text-sm text-muted-foreground">AI Search</div>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="relative">
+                    {/* Input Node */}
+                    <div className="w-12 h-12 rounded-lg bg-primary/20 border-2 border-primary flex items-center justify-center animate-pulse">
+                      <BarChart3 className="w-6 h-6 text-primary" />
+                    </div>
+                    
+                    {/* Processing Layers */}
+                    <div className="absolute top-14 left-1/2 -translate-x-1/2 flex flex-col gap-2">
+                      {[0, 1, 2].map((i) => (
+                        <div 
+                          key={i}
+                          className="flex gap-1"
+                          style={{ animationDelay: `${i * 200}ms` }}
+                        >
+                          {[0, 1, 2, 3].map((j) => (
+                            <div
+                              key={j}
+                              className="w-2 h-2 rounded-full bg-primary/40 animate-pulse"
+                              style={{ animationDelay: `${(i * 4 + j) * 100}ms` }}
+                            />
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Output Node */}
+                    <div className="absolute top-28 left-1/2 -translate-x-1/2 w-12 h-12 rounded-lg bg-primary border-2 border-primary flex items-center justify-center animate-pulse" style={{ animationDelay: "600ms" }}>
+                      <Search className="w-6 h-6 text-primary-foreground" />
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-24">AI Algorithm</div>
                 </div>
               </div>
 
               <div className="space-y-3">
                 <div className="text-sm font-medium text-muted-foreground text-center">Similar Matches</div>
                 <div className="space-y-2">
-                  {[92, 88, 85].map((score, idx) => (
+                  {[
+                    { score: 92, pattern: "up", candles: 6 },
+                    { score: 88, pattern: "down", candles: 6 },
+                    { score: 85, pattern: "up", candles: 6 }
+                  ].map((match, idx) => (
                     <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50 border border-border/50 animate-fade-in" style={{ animationDelay: `${idx * 150}ms` }}>
-                      <div className="w-20 h-12 rounded border border-primary/30 bg-chart-bg flex items-center justify-center">
-                        <BarChart3 className="w-4 h-4 text-primary" />
+                      <div className="w-24 h-12 rounded border border-primary/30 overflow-hidden">
+                        <MockChartDisplay 
+                          candles={generateMockCandles(match.candles, 100, match.pattern as "up" | "down")} 
+                          width={96} 
+                          height={48} 
+                          showControls={false} 
+                          chartType="candle" 
+                        />
                       </div>
                       <div className="flex-1">
                         <div className="text-xs text-muted-foreground">Match #{idx + 1}</div>
-                        <div className="text-sm font-semibold text-primary">{score}% Similar</div>
+                        <div className="text-sm font-semibold text-primary">{match.score}% Similar</div>
                       </div>
                     </div>
                   ))}
