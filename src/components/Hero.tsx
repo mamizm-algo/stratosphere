@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, TrendingUp, Search, Target, BarChart3, BookmarkCheck, Library } from "lucide-react";
+import { ArrowRight, TrendingUp, BarChart3, Library } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
@@ -56,32 +56,15 @@ export const Hero = () => {
             </Button>
           </div>
 
-          {/* Feature highlights */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-16">
-            <FeatureCard
-              icon={<TrendingUp className="w-6 h-6" />}
-              title="Draw Patterns"
-              description="Sketch your own chart patterns using intuitive drawing tools"
-            />
-            <FeatureCard
-              icon={<BarChart3 className="w-6 h-6" />}
-              title="Browse Assets"
-              description="View real asset charts and select fragments to search"
-            />
-            <FeatureCard
-              icon={<Search className="w-6 h-6" />}
-              title="Find Similar"
-              description="Search across multiple assets to discover historical matches"
-            />
-            <FeatureCard
-              icon={<BookmarkCheck className="w-6 h-6" />}
-              title="Save & Analyze"
-              description="Build your library and track pattern performance"
-            />
+          {/* Library message */}
+          <div className="pt-16">
+            <p className="text-lg text-muted-foreground">
+              Already found your similar results? You can go through them in the library!
+            </p>
           </div>
 
           {/* Secondary Action - View Library */}
-          <div className="pt-8">
+          <div className="pt-12 pb-16">
             <Button 
               type="button"
               size="lg" 
@@ -99,14 +82,3 @@ export const Hero = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => {
-  return (
-    <div className="group p-6 rounded-xl bg-card/50 border border-border backdrop-blur-sm hover:border-primary/50 transition-all duration-300 hover:shadow-card">
-      <div className="inline-flex p-3 rounded-lg bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform">
-        {icon}
-      </div>
-      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
-      <p className="text-muted-foreground">{description}</p>
-    </div>
-  );
-};
