@@ -159,17 +159,19 @@ export const HowItWorks = () => {
               Example: From Pattern to Results
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
               <div className="space-y-3">
                 <div className="text-sm font-medium text-muted-foreground text-center">Your Input</div>
-                <div className="rounded-lg border border-primary/50 overflow-hidden">
-                  <MockChartDisplay candles={generateMockCandles(8, 100, "up")} width={280} height={180} showControls={false} chartType="candle" />
+                <div className="h-[180px] flex items-center justify-center">
+                  <div className="rounded-lg border border-primary/50 overflow-hidden">
+                    <MockChartDisplay candles={generateMockCandles(8, 100, "up")} width={280} height={180} showControls={false} chartType="candle" />
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-3">
                 <div className="text-sm font-medium text-muted-foreground text-center">Dedicated Similarity Search Algorithm</div>
-                <div className="flex justify-center items-center h-[180px]">
+                <div className="h-[180px] flex justify-center items-center">
                   <div className="flex flex-col items-center gap-3">
                     <div className="relative">
                       {/* Input Node */}
@@ -207,12 +209,13 @@ export const HowItWorks = () => {
 
               <div className="space-y-3">
                 <div className="text-sm font-medium text-muted-foreground text-center">Similar Matches</div>
-                <div className="space-y-2">
-                  {[
-                    { score: 92, pattern: "up", candles: 4 },
-                    { score: 88, pattern: "down", candles: 4 },
-                    { score: 85, pattern: "up", candles: 4 }
-                  ].map((match, idx) => (
+                <div className="h-[180px] flex flex-col justify-center">
+                  <div className="space-y-2">
+                    {[
+                      { score: 92, pattern: "up", candles: 15 },
+                      { score: 88, pattern: "down", candles: 15 },
+                      { score: 85, pattern: "up", candles: 15 }
+                    ].map((match, idx) => (
                     <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50 border border-border/50 animate-fade-in" style={{ animationDelay: `${idx * 150}ms` }}>
                       <div className="w-24 h-12 rounded border border-primary/30 overflow-hidden">
                         <MockChartDisplay 
@@ -229,6 +232,7 @@ export const HowItWorks = () => {
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               </div>
             </div>
