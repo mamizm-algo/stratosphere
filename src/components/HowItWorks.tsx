@@ -167,39 +167,41 @@ export const HowItWorks = () => {
                 </div>
               </div>
 
-              <div className="flex justify-center">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="relative">
-                    {/* Input Node */}
-                    <div className="w-12 h-12 rounded-lg bg-primary/20 border-2 border-primary flex items-center justify-center animate-pulse">
-                      <BarChart3 className="w-6 h-6 text-primary" />
-                    </div>
-                    
-                    {/* Processing Layers */}
-                    <div className="absolute top-14 left-1/2 -translate-x-1/2 flex flex-col gap-2">
-                      {[0, 1, 2].map((i) => (
-                        <div 
-                          key={i}
-                          className="flex gap-1"
-                          style={{ animationDelay: `${i * 200}ms` }}
-                        >
-                          {[0, 1, 2, 3].map((j) => (
-                            <div
-                              key={j}
-                              className="w-2 h-2 rounded-full bg-primary/40 animate-pulse"
-                              style={{ animationDelay: `${(i * 4 + j) * 100}ms` }}
-                            />
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Output Node */}
-                    <div className="absolute top-28 left-1/2 -translate-x-1/2 w-12 h-12 rounded-lg bg-primary border-2 border-primary flex items-center justify-center animate-pulse" style={{ animationDelay: "600ms" }}>
-                      <Search className="w-6 h-6 text-primary-foreground" />
+              <div className="space-y-3">
+                <div className="text-sm font-medium text-muted-foreground text-center">Dedicated Similarity Search Algorithm</div>
+                <div className="flex justify-center items-center h-[180px]">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="relative">
+                      {/* Input Node */}
+                      <div className="w-12 h-12 rounded-lg bg-primary/20 border-2 border-primary flex items-center justify-center animate-pulse">
+                        <BarChart3 className="w-6 h-6 text-primary" />
+                      </div>
+                      
+                      {/* Processing Layers */}
+                      <div className="absolute top-14 left-1/2 -translate-x-1/2 flex flex-col gap-2">
+                        {[0, 1, 2].map((i) => (
+                          <div 
+                            key={i}
+                            className="flex gap-1"
+                            style={{ animationDelay: `${i * 200}ms` }}
+                          >
+                            {[0, 1, 2, 3].map((j) => (
+                              <div
+                                key={j}
+                                className="w-2 h-2 rounded-full bg-primary/40 animate-pulse"
+                                style={{ animationDelay: `${(i * 4 + j) * 100}ms` }}
+                              />
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Output Node */}
+                      <div className="absolute top-28 left-1/2 -translate-x-1/2 w-12 h-12 rounded-lg bg-primary border-2 border-primary flex items-center justify-center animate-pulse" style={{ animationDelay: "600ms" }}>
+                        <Search className="w-6 h-6 text-primary-foreground" />
+                      </div>
                     </div>
                   </div>
-                  <div className="text-sm text-muted-foreground mt-24">AI Algorithm</div>
                 </div>
               </div>
 
@@ -207,9 +209,9 @@ export const HowItWorks = () => {
                 <div className="text-sm font-medium text-muted-foreground text-center">Similar Matches</div>
                 <div className="space-y-2">
                   {[
-                    { score: 92, pattern: "up", candles: 6 },
-                    { score: 88, pattern: "down", candles: 6 },
-                    { score: 85, pattern: "up", candles: 6 }
+                    { score: 92, pattern: "up", candles: 4 },
+                    { score: 88, pattern: "down", candles: 4 },
+                    { score: 85, pattern: "up", candles: 4 }
                   ].map((match, idx) => (
                     <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50 border border-border/50 animate-fade-in" style={{ animationDelay: `${idx * 150}ms` }}>
                       <div className="w-24 h-12 rounded border border-primary/30 overflow-hidden">
