@@ -50,7 +50,7 @@ const AssetBrowser = () => {
     const canvas = new FabricCanvas(canvasRef.current, {
       width: CHART_WIDTH,
       height: CHART_HEIGHT,
-      backgroundColor: "hsl(240 10% 3.9%)",
+      backgroundColor: "hsl(220, 25%, 8%)",
       selection: false,
     });
 
@@ -330,18 +330,7 @@ const AssetBrowser = () => {
       <ChartHeader />
       
       <div className="container mx-auto px-6 py-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/")}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Home
-          </Button>
-        </div>
-
+       
         {/* Controls */}
         <div className="bg-card border border-border rounded-lg p-4 mb-6">
           <div className="flex flex-wrap items-center gap-4">

@@ -354,8 +354,8 @@ export const ChartCanvas = ({ drawMode, volatility, onCandleCountChange, onClear
       {candles.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center space-y-2">
-            <p className="text-muted-foreground text-lg">Select "Draw Candles" to begin</p>
-            <p className="text-muted-foreground/60 text-sm">First click sets OPEN, second click sets CLOSE</p>
+            <p className="text-muted-foreground text-lg">First click sets OPEN, second click sets CLOSE</p>
+            <p className="text-muted-foreground/60 text-sm">Draw at least 2 candles to search similar patterns</p>
           </div>
         </div>
       )}

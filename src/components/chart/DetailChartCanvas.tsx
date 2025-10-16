@@ -10,7 +10,6 @@ interface DetailChartCanvasProps {
   chartType: "candle" | "line";
   onChartTypeChange?: (type: "candle" | "line") => void;
   transactionParams?: {
-    entry: number;
     takeProfit: number;
     stopLoss: number;
     timeHorizon: number;
@@ -107,10 +106,10 @@ export const DetailChartCanvas = ({
 
   const drawTransactionBox = (canvas: FabricCanvas, priceToY: (price: number) => number) => {
     if (!transactionParams) return;
-
-    const entryY = priceToY(transactionParams.entry);
-    const takeProfitY = priceToY(transactionParams.entry * (1 + transactionParams.takeProfit / 100 * (transactionParams.position === "long" ? 1 : -1)));
-    const stopLossY = priceToY(transactionParams.entry * (1 - transactionParams.stopLoss / 100 * (transactionParams.position === "long" ? 1 : -1)));
+    const transactionOpenPrice = outcomeCandles[0].open;
+    const entryY = priceToY(transactionOpenPrice);
+    const takeProfitY = priceToY(transactionOpenPrice * (1 + transactionParams.takeProfit / 100 * (transactionParams.position === "long" ? 1 : -1)));
+    const stopLossY = priceToY(transactionOpenPrice * (1 - transactionParams.stopLoss / 100 * (transactionParams.position === "long" ? 1 : -1)));
 
     const boxWidth = (transactionParams.timeHorizon / setupCandles.length) * (DIVIDER_X - 2 * PADDING);
     const boxLeft = DIVIDER_X - 10;

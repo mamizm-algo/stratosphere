@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { TrendingUp, PenTool, BarChart3, Library } from "lucide-react";
+import { TrendingUp, PenTool, BarChart3, Library, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const HomeHeader = () => {
@@ -46,6 +46,17 @@ export const HomeHeader = () => {
             <Library className="w-4 h-4" />
             Library
           </Button>
+        
+          <Button 
+            type="button"
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate("/")}
+            className="gap-2"
+          >
+          <Home className="w-4 h-4" />
+          Home
+        </Button>
         </nav>
       </div>
     </header>

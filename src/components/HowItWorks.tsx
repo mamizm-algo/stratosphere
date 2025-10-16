@@ -34,15 +34,15 @@ export const HowItWorks = () => {
                   </p>
                 </div>
                 
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 border border-border/50">
+                <div className="space-y-6">
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-secondary/50 border border-border/50">
                     <PenTool className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                     <div>
                       <div className="font-medium text-foreground mb-1">Draw Custom</div>
                       <div className="text-sm text-muted-foreground">Sketch patterns from your imagination</div>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 border border-border/50">
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-secondary/50 border border-border/50">
                     <BarChart3 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                     <div>
                       <div className="font-medium text-foreground mb-1">Select Fragment</div>
@@ -73,7 +73,7 @@ export const HowItWorks = () => {
                   </p>
                 </div>
 
-                <div className="relative h-48 rounded-lg bg-chart-bg border border-chart-grid overflow-hidden">
+                <div className="relative h-52 rounded-lg bg-chart-bg border border-chart-grid overflow-hidden">
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="relative">
                       <div className="absolute inset-0 animate-ping">
@@ -171,7 +171,7 @@ export const HowItWorks = () => {
 
               <div className="space-y-3">
                 <div className="text-sm font-medium text-muted-foreground text-center">Dedicated Similarity Search Algorithm</div>
-                <div className="h-[180px] flex justify-center items-center">
+                <div className="h-[70px] flex justify-center items-center">
                   <div className="flex flex-col items-center gap-3">
                     <div className="relative">
                       {/* Input Node */}
@@ -212,11 +212,11 @@ export const HowItWorks = () => {
                 <div className="h-[180px] flex flex-col justify-center">
                   <div className="space-y-2">
                     {[
-                      { score: 92, pattern: "up", candles: 15 },
-                      { score: 88, pattern: "down", candles: 15 },
-                      { score: 85, pattern: "up", candles: 15 }
+                      { score: 92, pattern: "up", candles: 10 },
+                      { score: 88, pattern: "up", candles: 12 },
+                      { score: 85, pattern: "up", candles: 9 }
                     ].map((match, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50 border border-border/50 animate-fade-in" style={{ animationDelay: `${idx * 150}ms` }}>
+                    <div key={idx} className="flex items-center gap-3 p-1 rounded-lg bg-secondary/50 border border-border/50 animate-fade-in" style={{ animationDelay: `${idx * 150}ms` }}>
                       <div className="w-24 h-12 rounded border border-primary/30 overflow-hidden">
                         <MockChartDisplay 
                           candles={generateMockCandles(match.candles, 100, match.pattern as "up" | "down")} 

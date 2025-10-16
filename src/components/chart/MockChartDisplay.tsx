@@ -46,7 +46,7 @@ export const MockChartDisplay = ({
     const minPrice = Math.min(...allPrices);
     const maxPrice = Math.max(...allPrices);
     const priceRange = maxPrice - minPrice;
-    const padding = 20;
+    const padding = height/5;
 
     const candleWidth = (width - padding * 2) / candles.length;
 

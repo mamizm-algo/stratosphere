@@ -19,6 +19,7 @@ import { useCollections } from "@/hooks/useCollections";
 import { CollectionCard } from "@/components/library/CollectionCard";
 import { CollectionDetail } from "@/components/library/CollectionDetail";
 import { Collection } from "@/types/collection";
+import { HomeHeader } from "@/components/HomeHeader";
 
 const Library = () => {
   const { collections, deleteCollection } = useCollections();
@@ -65,7 +66,7 @@ const Library = () => {
   if (selectedCollection) {
     return (
       <div className="flex flex-col h-screen bg-background">
-        <ChartHeader />
+        <HomeHeader />
         <div className="flex-1 overflow-hidden">
           <CollectionDetail
             collection={selectedCollection}
@@ -78,7 +79,7 @@ const Library = () => {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <ChartHeader />
+      <HomeHeader />
 
       <div className="flex-1 overflow-auto">
         <div className="container mx-auto px-6 py-8">

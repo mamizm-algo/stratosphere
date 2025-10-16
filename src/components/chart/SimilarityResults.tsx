@@ -70,12 +70,10 @@ export const SimilarityResults = ({
   const [sortBy, setSortBy] = useState<"similarity" | "date">("similarity");
   const [filterAsset, setFilterAsset] = useState<string>("all");
   const [virtualTransactionOpen, setVirtualTransactionOpen] = useState(false);
-  const [virtualParams, setVirtualParams] = useState<VirtualTransactionParams | null>(null);
   const [outcomeChartType, setOutcomeChartType] = useState<"candle" | "line">("candle");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [baseChartType, setBaseChartType] = useState<"candle" | "line">("candle");
   const [transactionParams, setTransactionParams] = useState<{
-    entry: number;
     takeProfit: number;
     stopLoss: number;
     timeHorizon: number;
@@ -102,9 +100,7 @@ export const SimilarityResults = ({
   };
 
   const handleApplyVirtualTransaction = (params: VirtualTransactionParams) => {
-    setVirtualParams(params);
-    const entry = transactionParams?.entry || setupCandles?.[setupCandles.length - 1]?.close || 100;
-    setTransactionParams({ ...params, entry });
+    setTransactionParams({ ...params });
     toast.success("Virtual transaction parameters applied");
   };
 
@@ -125,7 +121,7 @@ export const SimilarityResults = ({
     const trades = outcomesData.map((outcome) => {
       if (!outcome || outcome.length === 0) return null;
 
-      const entryPrice = transactionParams.entry;
+      const entryPrice = outcome[0].open;
       const isLong = transactionParams.position === "long";
       const takeProfitPrice = entryPrice * (1 + transactionParams.takeProfit / 100 * (isLong ? 1 : -1));
       const stopLossPrice = entryPrice * (1 - transactionParams.stopLoss / 100 * (isLong ? 1 : -1));
@@ -165,7 +161,7 @@ export const SimilarityResults = ({
 
       if (result === "timeout") {
         const lastCandle = outcome[Math.min(outcome.length - 1, transactionParams.timeHorizon - 1)];
-        profit = isLong 
+        profit = isLong
           ? ((lastCandle.close - entryPrice) / entryPrice) * 100
           : ((entryPrice - lastCandle.close) / entryPrice) * 100;
       }
@@ -194,7 +190,7 @@ export const SimilarityResults = ({
       pattern.outcome === "bullish" ? "up" : pattern.outcome === "bearish" ? "down" : "sideways"
     );
 
-    const entryPrice = transactionParams.entry;
+    const entryPrice = outcomeCandles[0].open;
     const isLong = transactionParams.position === "long";
     const takeProfitPrice = entryPrice * (1 + transactionParams.takeProfit / 100 * (isLong ? 1 : -1));
     const stopLossPrice = entryPrice * (1 - transactionParams.stopLoss / 100 * (isLong ? 1 : -1));
@@ -234,7 +230,7 @@ export const SimilarityResults = ({
 
     if (result === "timeout") {
       const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.timeHorizon - 1)];
-      profit = isLong 
+      profit = isLong
         ? ((lastCandle.close - entryPrice) / entryPrice) * 100
         : ((entryPrice - lastCandle.close) / entryPrice) * 100;
     }
@@ -295,15 +291,15 @@ export const SimilarityResults = ({
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-            
-            <Button
+
+            {/* <Button
               variant="outline"
               className="gap-2"
               onClick={() => setVirtualTransactionOpen(true)}
             >
               <Settings className="w-4 h-4" />
               Virtual Transaction
-            </Button>
+            </Button> */}
 
             <Button
               variant="default"
@@ -439,8 +435,8 @@ export const SimilarityResults = ({
       <VirtualTransactionDialog
         open={virtualTransactionOpen}
         onOpenChange={setVirtualTransactionOpen}
-        onApply={handleApplyVirtualTransaction}
-        initialParams={virtualParams || undefined}
+        onApply={setTransactionParams}
+        initialParams={transactionParams || undefined}
       />
 
       <SaveToLibraryDialog
@@ -508,7 +504,6 @@ interface PatternDetailViewProps {
   onSave: () => void;
   individualStats?: IndividualTradeStats;
   transactionParams?: {
-    entry: number;
     takeProfit: number;
     stopLoss: number;
     timeHorizon: number;
@@ -544,7 +539,7 @@ const PatternDetailView = ({
         </Badge>
       </div>
 
-      {individualStats && <TradeStatistics stats={{ winRate: 0, avgProfit: 0, totalTrades: 0 }} individualStats={individualStats} />}
+      {individualStats && <TradeStatistics individualStats={individualStats} />}
 
       <div className="flex-1">
         <DetailChartCanvas
@@ -572,14 +567,12 @@ const OverlayView = ({
   chartType: "candle" | "line";
   onChartTypeChange: (type: "candle" | "line") => void;
   transactionParams: {
-    entry: number;
     takeProfit: number;
     stopLoss: number;
     timeHorizon: number;
     position: "long" | "short";
   } | null;
   onTransactionParamsChange: (params: {
-    entry: number;
     takeProfit: number;
     stopLoss: number;
     timeHorizon: number;
@@ -610,7 +603,7 @@ const OverlayView = ({
       const outcome = outcomesData[idx];
       if (!outcome || outcome.length === 0) return null;
 
-      const entryPrice = transactionParams.entry;
+      const entryPrice = outcome[0].open;
       const isLong = transactionParams.position === "long";
       const takeProfitPrice = entryPrice * (1 + transactionParams.takeProfit / 100 * (isLong ? 1 : -1));
       const stopLossPrice = entryPrice * (1 - transactionParams.stopLoss / 100 * (isLong ? 1 : -1));
@@ -651,7 +644,7 @@ const OverlayView = ({
 
       if (result === "timeout") {
         const lastCandle = outcome[Math.min(outcome.length - 1, transactionParams.timeHorizon - 1)];
-        profit = isLong 
+        profit = isLong
           ? ((lastCandle.close - entryPrice) / entryPrice) * 100
           : ((entryPrice - lastCandle.close) / entryPrice) * 100;
       }
@@ -686,24 +679,6 @@ const OverlayView = ({
             </SelectContent>
           </Select>
         </div>
-
-        <Card className="p-6">
-          <div className="mb-4">
-            <h4 className="text-lg font-semibold text-foreground mb-1">Setup Pattern + Outcome Overlays</h4>
-            <p className="text-sm text-muted-foreground">
-              Setup on the left, outcomes on the right. Draw a transaction box to test your strategy.
-            </p>
-          </div>
-          <OverlayChartCanvas
-            setupCandles={setupCandles}
-            outcomesData={outcomesData}
-            chartType={chartType}
-            onTransactionBoxChange={onTransactionParamsChange}
-            onEditTransaction={() => setShowTransactionDialog(true)}
-            initialTransactionBox={transactionParams}
-          />
-        </Card>
-
         {transactionParams && (
           <>
             <Card className="p-6">
@@ -727,15 +702,25 @@ const OverlayView = ({
                 </div>
               </div>
             </Card>
-
-            {tradeStats && (
-              <Card className="p-6">
-                <h4 className="text-lg font-semibold text-foreground mb-4">Simulated Trade Results</h4>
-                <TradeStatistics stats={tradeStats} />
-              </Card>
-            )}
           </>
         )}
+
+        <Card className="p-6">
+          <div className="mb-4">
+            <h4 className="text-lg font-semibold text-foreground mb-1">Setup Pattern + Outcome Overlays</h4>
+            <p className="text-sm text-muted-foreground">
+              Setup on the left, outcomes on the right. Draw a transaction box to test your strategy. Entry price will always be set at the opening of the first candle of the outcome chart.
+            </p>
+          </div>
+          <OverlayChartCanvas
+            setupCandles={setupCandles}
+            outcomesData={outcomesData}
+            chartType={chartType}
+            onTransactionBoxChange={onTransactionParamsChange}
+            onEditTransaction={() => setShowTransactionDialog(true)}
+            initialTransactionBox={transactionParams}
+          />
+        </Card>
 
         <Card className="p-6">
           <h4 className="text-lg font-semibold text-foreground mb-4">Pattern Insights</h4>
@@ -748,11 +733,10 @@ const OverlayView = ({
 
       <VirtualTransactionDialog
         open={showTransactionDialog}
-        onOpenChange={setShowTransactionDialog}
+        onOpenChange={() => setShowTransactionDialog(true)}
         onApply={(params) => {
           // Add entry price from the last candle of setup or keep existing
-          const entry = transactionParams?.entry || setupCandles[setupCandles.length - 1]?.close || 100;
-          onTransactionParamsChange({ ...params, entry });
+          onTransactionParamsChange({ ...params });
         }}
         initialParams={transactionParams ? {
           takeProfit: transactionParams.takeProfit,

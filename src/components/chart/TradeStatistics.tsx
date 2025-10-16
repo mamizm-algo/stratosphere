@@ -18,7 +18,7 @@ export interface IndividualTradeStats {
 }
 
 interface TradeStatisticsProps {
-  stats: TradeStats;
+  stats?: TradeStats;
   individualStats?: IndividualTradeStats;
 }
 
@@ -26,6 +26,7 @@ export const TradeStatistics = ({ stats, individualStats }: TradeStatisticsProps
   return (
     <div className="space-y-4">
       {/* General Statistics */}
+       {stats && (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -68,6 +69,7 @@ export const TradeStatistics = ({ stats, individualStats }: TradeStatisticsProps
           </Card>
         )}
       </div>
+      )}
 
       {/* Individual Trade Statistics */}
       {individualStats && (

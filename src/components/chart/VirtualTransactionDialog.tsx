@@ -22,7 +22,12 @@ export interface VirtualTransactionParams {
 interface VirtualTransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onApply: (params: VirtualTransactionParams) => void;
+  onApply: (params: {
+    takeProfit: number;
+    stopLoss: number;
+    timeHorizon: number;
+    position: "long" | "short";
+  } | null) => void;
   initialParams?: VirtualTransactionParams;
 }
 

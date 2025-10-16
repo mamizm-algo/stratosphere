@@ -28,7 +28,7 @@ interface ToolbarProps {
 
 export const Toolbar = ({ drawMode, setDrawMode, volatility, setVolatility, onSearchSimilar, onCompareToCollection, onClear, candleCount }: ToolbarProps) => {
   const tools = [
-    { id: "select" as DrawMode, icon: MousePointer2, label: "Select" },
+    // { id: "select" as DrawMode, icon: MousePointer2, label: "Select" },
     { id: "candle" as DrawMode, icon: TrendingUp, label: "Draw Candles" },
   ];
 

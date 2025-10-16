@@ -18,9 +18,9 @@ export const BaseChartCanvas = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<FabricCanvas | null>(null);
 
-  const CANVAS_WIDTH = 1200;
-  const CANVAS_HEIGHT = 500;
-  const PADDING = 40;
+  const CANVAS_WIDTH = 1334;
+  const CANVAS_HEIGHT = 600;
+  const PADDING = 60;
 
   useEffect(() => {
     if (!canvasRef.current) return;

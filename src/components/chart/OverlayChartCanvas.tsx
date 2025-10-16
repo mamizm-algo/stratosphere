@@ -9,7 +9,6 @@ interface OverlayChartCanvasProps {
   outcomesData: CandleData[][];
   chartType: "candle" | "line";
   onTransactionBoxChange?: (params: {
-    entry: number;
     takeProfit: number;
     stopLoss: number;
     timeHorizon: number;
@@ -17,7 +16,6 @@ interface OverlayChartCanvasProps {
   } | null) => void;
   onEditTransaction?: () => void;
   initialTransactionBox?: {
-    entry: number;
     takeProfit: number;
     stopLoss: number;
     timeHorizon: number;
@@ -41,7 +39,7 @@ export const OverlayChartCanvas = ({
   const [drawStartY, setDrawStartY] = useState<number | null>(null);
   const isDrawingRef = useRef(false);
 
-  const CANVAS_WIDTH = 1200;
+  const CANVAS_WIDTH = 1283;
   const CANVAS_HEIGHT = 500;
   const PADDING = 40;
   const DIVIDER_X = CANVAS_WIDTH * 0.6; // Setup takes 60%, outcomes take 40%
@@ -250,7 +248,6 @@ export const OverlayChartCanvas = ({
   const createTransactionBox = (
     canvas: FabricCanvas,
     params: {
-      entry: number;
       takeProfit: number;
       stopLoss: number;
       timeHorizon: number;
@@ -270,9 +267,10 @@ export const OverlayChartCanvas = ({
     const priceToY = (price: number) =>
       PADDING + ((maxPrice - price) / priceRange) * (CANVAS_HEIGHT - 2 * PADDING);
 
-    const entryY = priceToY(params.entry);
-    const takeProfitY = priceToY(params.entry * (1 + params.takeProfit / 100 * (params.position === "long" ? 1 : -1)));
-    const stopLossY = priceToY(params.entry * (1 - params.stopLoss / 100 * (params.position === "long" ? 1 : -1)));
+    const transactionOpenPrice = outcomesData[0][0].open;
+    const entryY = priceToY(transactionOpenPrice);
+    const takeProfitY = priceToY(transactionOpenPrice * (1 + params.takeProfit / 100 * (params.position === "long" ? 1 : -1)));
+    const stopLossY = priceToY(transactionOpenPrice * (1 - params.stopLoss / 100 * (params.position === "long" ? 1 : -1)));
 
     const boxWidth = (params.timeHorizon / setupCandles.length) * (DIVIDER_X - 2 * PADDING);
     const boxLeft = DIVIDER_X - 10;
@@ -301,15 +299,8 @@ export const OverlayChartCanvas = ({
       strokeWidth: 2,
     });
 
-    // Entry line
-    const entryLine = new Line([boxLeft, entryY, boxLeft + boxWidth, entryY], {
-      stroke: "hsl(217, 91%, 60%)",
-      strokeWidth: 2,
-      strokeDashArray: [5, 5],
-    });
-
     // Create group
-    const group = new Group([profitArea, lossArea, entryLine], {
+    const group = new Group([profitArea, lossArea], {
       selectable: true,
       hasControls: true,
       lockRotation: true,
@@ -321,12 +312,7 @@ export const OverlayChartCanvas = ({
 
     // Handle group moving
     group.on("modified", () => {
-      updateTransactionFromBox(group);
-    });
-
-    // Double-click to edit
-    group.on("mousedblclick", () => {
-      onEditTransaction?.();
+      updateTransactionFromBox(group, transactionOpenPrice);
     });
 
     canvas.add(group);
@@ -334,23 +320,22 @@ export const OverlayChartCanvas = ({
     canvas.renderAll();
   };
 
-  const updateTransactionFromBox = (group: Group) => {
+  const updateTransactionFromBox = (group: Group, entryY: number) => {
     const allCandles = [...setupCandles, ...outcomesData.flat()];
     const allPrices = allCandles.flatMap((c) => [c.high, c.low]);
     const minPrice = Math.min(...allPrices);
     const maxPrice = Math.max(...allPrices);
     const priceRange = maxPrice - minPrice;
     const yToPrice = (y: number) =>
-      maxPrice - ((y - PADDING) / (CANVAS_HEIGHT - 2 * PADDING)) * priceRange;
+      Math.round(maxPrice - ((y - PADDING) / (CANVAS_HEIGHT - 2 * PADDING)) * priceRange);
 
     const bounds = group.getBoundingRect();
-    // const entryPrice = yToPrice(bounds.top + bounds.height / 2);
+    const entryPrice = entryY; //yToPrice(bounds.top + bounds.height / 2);
     const topPrice = yToPrice(bounds.top);
     const bottomPrice = yToPrice(bounds.top + bounds.height);
     
     const originalData = (group as any).transactionData;
     const position = originalData.position;
-    const entryPrice = position.entry;
     console.log(entryPrice);
 
     const takeProfit = Math.abs((topPrice - entryPrice) / entryPrice * 100);
@@ -395,7 +380,7 @@ export const OverlayChartCanvas = ({
     const maxPrice = Math.max(...allPrices);
     const priceRange = maxPrice - minPrice;
     const yToPrice = (y: number) =>
-      maxPrice - ((y - PADDING) / (CANVAS_HEIGHT - 2 * PADDING)) * priceRange;
+      Math.round(maxPrice - ((y - PADDING) / (CANVAS_HEIGHT - 2 * PADDING)) * priceRange);
     
     const startPrice = yToPrice(drawStartY);
     const endPrice = yToPrice(pointer.y);
@@ -403,7 +388,7 @@ export const OverlayChartCanvas = ({
     
     // Determine position based on drag direction
     const draggedDown = pointer.y > drawStartY;
-    const position: "long" | "short" = draggedDown ? "long" : "short";
+    const position: "long" | "short" = draggedDown ? "short" : "long";
     
     // Calculate take profit and stop loss based on drag distance
     const dragDistance = Math.abs(endPrice - startPrice);
@@ -463,14 +448,6 @@ export const OverlayChartCanvas = ({
         </Button>
         {transactionBox && (
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onEditTransaction}
-              className="gap-2"
-            >
-              Edit Parameters
-            </Button>
             <Button
               variant="outline"
               size="sm"
