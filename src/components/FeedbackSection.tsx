@@ -3,7 +3,7 @@ import { MessageSquareHeart } from "lucide-react";
 
 export const FeedbackSection = () => {
   // Replace this URL with your actual survey form URL
-  const surveyUrl = "https://forms.google.com/your-survey-link";
+  const surveyUrl = "https://docs.google.com/forms/d/e/1FAIpQLScUHlgkNKGKjIpb4fwFwSRg4BHGQq6K1O3JAsI6znRRvYLUuA/viewform?usp=header";
 
   return (
     <section className="py-20 px-4">
