@@ -57,14 +57,14 @@ export const Hero = () => {
           </div>
 
           {/* Library message */}
-          <div className="pt-16">
+          <div className="pt-8">
             <p className="text-lg text-muted-foreground">
               Already found your similar results? You can go through them in the library!
             </p>
           </div>
 
           {/* Secondary Action - View Library */}
-          <div className="pt-12 pb-16">
+          <div className="pt-4">
             <Button 
               type="button"
               size="lg" 
@@ -80,8 +80,8 @@ export const Hero = () => {
       </div>
 
       {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 animate-bounce">
-        <span className="text-sm text-muted-foreground font-medium">Scroll to explore</span>
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 animate-bounce">
+        <span className="text-sm text-muted-foreground font-medium">See how it works</span>
         <ChevronDown className="w-6 h-6 text-primary" />
       </div>
     </section>
