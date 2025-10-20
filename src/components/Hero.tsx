@@ -80,7 +80,7 @@ export const Hero = () => {
       </div>
 
       {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 animate-bounce">
+      <div className="absolute bottom-20 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
         <span className="text-sm text-muted-foreground font-medium">See how it works</span>
         <ChevronDown className="w-6 h-6 text-primary" />
       </div>
