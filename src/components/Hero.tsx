@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, TrendingUp, BarChart3, Library } from "lucide-react";
+import { ArrowRight, TrendingUp, BarChart3, Library, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
@@ -77,6 +77,12 @@ export const Hero = () => {
             </Button>
           </div>
         </div>
+      </div>
+
+      {/* Scroll indicator */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 animate-bounce">
+        <span className="text-sm text-muted-foreground font-medium">Scroll to explore</span>
+        <ChevronDown className="w-6 h-6 text-primary" />
       </div>
     </section>
   );
