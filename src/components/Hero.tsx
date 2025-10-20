@@ -6,15 +6,15 @@ export const Hero = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-hero">
+    <section className="relative h-screen flex items-center justify-center overflow-hidden bg-gradient-hero">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse delay-1000" />
       </div>
 
-      <div className="container mx-auto px-6 relative z-10">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
+      <div className="container mx-auto px-6 relative z-10 pb-20">
+        <div className="max-w-4xl mx-auto text-center space-y-6">
           {/* Logo/Brand */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 border border-primary/30 backdrop-blur-sm">
             <TrendingUp className="w-5 h-5 text-primary" />
@@ -34,7 +34,7 @@ export const Hero = () => {
           </p>
 
           {/* CTA Buttons - Primary Flows */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-2">
             <Button 
               type="button"
               size="lg" 
@@ -57,14 +57,14 @@ export const Hero = () => {
           </div>
 
           {/* Library message */}
-          <div className="pt-8">
+          <div className="pt-6">
             <p className="text-lg text-muted-foreground">
               Already found your similar results? You can go through them in the library!
             </p>
           </div>
 
           {/* Secondary Action - View Library */}
-          <div className="pt-4">
+          <div className="pt-3">
             <Button 
               type="button"
               size="lg" 
@@ -80,7 +80,7 @@ export const Hero = () => {
       </div>
 
       {/* Scroll indicator */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 animate-bounce">
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 animate-bounce">
         <span className="text-sm text-muted-foreground font-medium">See how it works</span>
         <ChevronDown className="w-6 h-6 text-primary" />
       </div>
