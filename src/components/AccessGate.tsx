@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 // Define valid access codes here
-const VALID_CODES = ["DEMO2024", "STRATOSPHERE", "ACCESS123"];
+const VALID_CODES = ["SOHAM", "AKUL", "TAYLOR", "NICO", "CHRIS", "FADRO", "ADAM", "PAWEL", "TYMON", "KUBA", "SZYMON"];
 
 interface AccessGateProps {
   onAccessGranted: () => void;
