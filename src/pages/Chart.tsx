@@ -10,6 +10,7 @@ import { useCollections } from "@/hooks/useCollections";
 import { CompareToCollectionDialog } from "@/components/library/CompareToCollectionDialog";
 import { VirtualTransactionDialog, VirtualTransactionParams } from "@/components/chart/VirtualTransactionDialog";
 import { toast } from "sonner";
+import { calculateSimilarityScore } from "@/lib/similarityCalculator";
 
 export type DrawMode = "candle" | "line" | "horizontal" | "vertical" | "angled" | "select";
 export type Volatility = "low" | "medium" | "high";
@@ -37,11 +38,16 @@ const Chart = () => {
     setSearchInputCandles(inputCandles);
     
     // Mock search results with actual chart data
+    // In real implementation, this would query the database and use similarity calculator
     const mockResults: SimilarPattern[] = [
       {
         id: "1",
         asset: config.assets[0],
-        similarity: 87,
+        similarity: calculateSimilarityScore({
+          referencePattern: inputCandles,
+          candidatePattern: generateMockCandles(20, 100, "sideways"),
+          searchConfig: config,
+        }),
         date: "2024-01-15",
         timeframe: "1H",
         outcome: "bullish",
@@ -52,7 +58,11 @@ const Chart = () => {
       {
         id: "2",
         asset: config.assets[0],
-        similarity: 92,
+        similarity: calculateSimilarityScore({
+          referencePattern: inputCandles,
+          candidatePattern: generateMockCandles(20, 100, "sideways"),
+          searchConfig: config,
+        }),
         date: "2024-02-10",
         timeframe: "4H",
         outcome: "bearish",
@@ -63,7 +73,11 @@ const Chart = () => {
       {
         id: "3",
         asset: config.assets[1] || config.assets[0],
-        similarity: 78,
+        similarity: calculateSimilarityScore({
+          referencePattern: inputCandles,
+          candidatePattern: generateMockCandles(20, 100, "sideways"),
+          searchConfig: config,
+        }),
         date: "2024-03-05",
         timeframe: "1D",
         outcome: "bullish",
@@ -74,7 +88,11 @@ const Chart = () => {
       {
         id: "4",
         asset: config.assets[0],
-        similarity: 84,
+        similarity: calculateSimilarityScore({
+          referencePattern: inputCandles,
+          candidatePattern: generateMockCandles(20, 100, "sideways"),
+          searchConfig: config,
+        }),
         date: "2024-03-20",
         timeframe: "2H",
         outcome: "neutral",
@@ -85,13 +103,17 @@ const Chart = () => {
       {
         id: "5",
         asset: config.assets[1] || config.assets[0],
-        similarity: 76,
+        similarity: calculateSimilarityScore({
+          referencePattern: inputCandles,
+          candidatePattern: generateMockCandles(20, 100, "sideways"),
+          searchConfig: config,
+        }),
         date: "2024-04-01",
         timeframe: "1H",
         outcome: "bearish",
         setupCandles: generateMockCandles(20, 100, "sideways"),
         outcomeCandles: generateMockCandles(15, 100, "down"),
-        virtualTradeResult: { profit: 3.8, outcome: "win", duration: 7 },
+        virtualTradeResult: { profit: -2.5, outcome: "loss", duration: 6 },
       },
     ];
 

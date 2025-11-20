@@ -13,6 +13,7 @@ import { CandleData, generateMockCandles } from "@/components/chart/MockChartDis
 import { AddToCollectionDialog } from "@/components/library/AddToCollectionDialog";
 import { useCollections } from "@/hooks/useCollections";
 import { toast } from "sonner";
+import { calculateSimilarityScore } from "@/lib/similarityCalculator";
 
 type Timeframe = "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
 
@@ -292,18 +293,27 @@ const AssetBrowser = () => {
 
     // Get the selected candle fragment
     const selectedCandles = candles.slice(selectedRange.start, selectedRange.end + 1);
+    setCurrentFragmentData(selectedCandles);
 
-    // Generate mock search results
-    const mockResults: SimilarPattern[] = Array.from({ length: 5 }, (_, i) => ({
-      id: `result-${i}`,
-      similarity: 95 - i * 5,
-      asset: config.assets[i % config.assets.length],
-      date: new Date(Date.now() - i * 86400000 * 7).toISOString(),
-      timeframe: timeframe,
-      outcome: i % 2 === 0 ? "bullish" : "bearish",
-      setupCandles: selectedCandles,
-      outcomeCandles: generateMockCandles(20, selectedCandles[selectedCandles.length - 1].close, i % 2 === 0 ? "up" : "down"),
-    }));
+    // Generate mock search results with calculated similarity scores
+    const mockResults: SimilarPattern[] = Array.from({ length: 5 }, (_, i) => {
+      const candidateCandles = generateMockCandles(20, selectedCandles[selectedCandles.length - 1].close, i % 2 === 0 ? "up" : "down");
+      
+      return {
+        id: `result-${i}`,
+        similarity: calculateSimilarityScore({
+          referencePattern: selectedCandles,
+          candidatePattern: candidateCandles,
+          searchConfig: config,
+        }),
+        asset: config.assets[i % config.assets.length],
+        date: new Date(Date.now() - i * 86400000 * 7).toISOString(),
+        timeframe: timeframe,
+        outcome: i % 2 === 0 ? "bullish" : "bearish",
+        setupCandles: selectedCandles,
+        outcomeCandles: candidateCandles,
+      };
+    });
 
     setSearchResults(mockResults);
     setSearchDialogOpen(false);
