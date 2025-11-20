@@ -10,7 +10,8 @@ import { useCollections } from "@/hooks/useCollections";
 import { CompareToCollectionDialog } from "@/components/library/CompareToCollectionDialog";
 import { VirtualTransactionDialog, VirtualTransactionParams } from "@/components/chart/VirtualTransactionDialog";
 import { toast } from "sonner";
-import { calculateSimilarityScore } from "@/lib/similarityCalculator";
+import { calculateSimilarityScore, searchSimilarPatterns } from "@/lib/similarityCalculator";
+import { CANDLE_DATA } from "@/data/candles";
 
 export type DrawMode = "candle" | "line" | "horizontal" | "vertical" | "angled" | "select";
 export type Volatility = "low" | "medium" | "high";
@@ -32,92 +33,14 @@ const Chart = () => {
   const handleClearRef = useRef<any>(null);
 
   const handleSearch = (config: SearchConfig) => {
-    
-    // Store the input chart for the collection
-    const inputCandles = generateMockCandles(20, 100, "sideways");
-    setSearchInputCandles(inputCandles);
-    
-    // Mock search results with actual chart data
-    // In real implementation, this would query the database and use similarity calculator
-    const mockResults: SimilarPattern[] = [
-      {
-        id: "1",
-        asset: config.assets[0],
-        similarity: calculateSimilarityScore({
-          referencePattern: inputCandles,
-          candidatePattern: generateMockCandles(20, 100, "sideways"),
-          searchConfig: config,
-        }),
-        date: "2024-01-15",
-        timeframe: "1H",
-        outcome: "bullish",
-        setupCandles: generateMockCandles(20, 100, "sideways"),
-        outcomeCandles: generateMockCandles(15, 100, "up"),
-        virtualTradeResult: { profit: 4.2, outcome: "win", duration: 8 },
-      },
-      {
-        id: "2",
-        asset: config.assets[0],
-        similarity: calculateSimilarityScore({
-          referencePattern: inputCandles,
-          candidatePattern: generateMockCandles(20, 100, "sideways"),
-          searchConfig: config,
-        }),
-        date: "2024-02-10",
-        timeframe: "4H",
-        outcome: "bearish",
-        setupCandles: generateMockCandles(20, 100, "sideways"),
-        outcomeCandles: generateMockCandles(15, 100, "down"),
-        virtualTradeResult: { profit: -1.8, outcome: "loss", duration: 5 },
-      },
-      {
-        id: "3",
-        asset: config.assets[1] || config.assets[0],
-        similarity: calculateSimilarityScore({
-          referencePattern: inputCandles,
-          candidatePattern: generateMockCandles(20, 100, "sideways"),
-          searchConfig: config,
-        }),
-        date: "2024-03-05",
-        timeframe: "1D",
-        outcome: "bullish",
-        setupCandles: generateMockCandles(20, 100, "sideways"),
-        outcomeCandles: generateMockCandles(15, 100, "up"),
-        virtualTradeResult: { profit: 5.1, outcome: "win", duration: 12 },
-      },
-      {
-        id: "4",
-        asset: config.assets[0],
-        similarity: calculateSimilarityScore({
-          referencePattern: inputCandles,
-          candidatePattern: generateMockCandles(20, 100, "sideways"),
-          searchConfig: config,
-        }),
-        date: "2024-03-20",
-        timeframe: "2H",
-        outcome: "neutral",
-        setupCandles: generateMockCandles(20, 100, "sideways"),
-        outcomeCandles: generateMockCandles(15, 100, "sideways"),
-        virtualTradeResult: { profit: 0.3, outcome: "timeout", duration: 10 },
-      },
-      {
-        id: "5",
-        asset: config.assets[1] || config.assets[0],
-        similarity: calculateSimilarityScore({
-          referencePattern: inputCandles,
-          candidatePattern: generateMockCandles(20, 100, "sideways"),
-          searchConfig: config,
-        }),
-        date: "2024-04-01",
-        timeframe: "1H",
-        outcome: "bearish",
-        setupCandles: generateMockCandles(20, 100, "sideways"),
-        outcomeCandles: generateMockCandles(15, 100, "down"),
-        virtualTradeResult: { profit: -2.5, outcome: "loss", duration: 6 },
-      },
-    ];
+    setSearchInputCandles(searchInputCandles);
+    const searchResults = searchSimilarPatterns(
+          searchInputCandles,
+          CANDLE_DATA,
+          config
+        );
 
-    setSearchResults(mockResults);
+    setSearchResults(searchResults);
     setShowResults(true);
   };
 
@@ -176,6 +99,7 @@ const Chart = () => {
               volatility={volatility}
               onCandleCountChange={setCandleCount}
               onClear={(clearFn) => { handleClearRef.current = clearFn; }}
+              setSearchInputCandles={setSearchInputCandles}
             />
           </div>
         </div>

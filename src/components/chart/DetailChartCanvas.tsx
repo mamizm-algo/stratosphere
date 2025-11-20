@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas, Line, Rect, Group, Text } from "fabric";
 import { CandleData } from "./MockChartDisplay";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -24,13 +24,13 @@ export const DetailChartCanvas = ({
   onChartTypeChange,
   transactionParams,
 }: DetailChartCanvasProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fabricCanvasRef = useRef<FabricCanvas | null>(null);
-
   const CANVAS_WIDTH = 1200;
   const CANVAS_HEIGHT = 500;
   const PADDING = 40;
-  const DIVIDER_X = CANVAS_WIDTH * 0.6; // Setup takes 60%, outcome takes 40%
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fabricCanvasRef = useRef<FabricCanvas | null>(null);
+  const [dividerX, setdividerX] = useState<number>(CANVAS_WIDTH * (setupCandles.length / (setupCandles.length + outcomeCandles.length || 1)));
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -73,14 +73,14 @@ export const DetailChartCanvas = ({
     drawGrid(canvas, minPrice, maxPrice, priceToY);
 
     // Draw setup candles
-    const setupCandleWidth = (DIVIDER_X - 2 * PADDING) / setupCandles.length;
+    const setupCandleWidth = (CANVAS_WIDTH - 2 * PADDING) / (setupCandles.length + outcomeCandles.length || 1);
     setupCandles.forEach((candle, i) => {
       const x = PADDING + i * setupCandleWidth + setupCandleWidth / 2;
       drawCandle(canvas, candle, x, setupCandleWidth * 0.7, priceToY);
     });
 
     // Draw vertical divider
-    const divider = new Line([DIVIDER_X, 0, DIVIDER_X, CANVAS_HEIGHT], {
+    const divider = new Line([dividerX, 0, dividerX, CANVAS_HEIGHT], {
       stroke: "hsl(180, 100%, 50%)",
       strokeWidth: 2,
       strokeDashArray: [10, 5],
@@ -90,9 +90,9 @@ export const DetailChartCanvas = ({
     canvas.add(divider);
 
     // Draw outcome candles
-    const outcomeCandleWidth = (CANVAS_WIDTH - DIVIDER_X - PADDING) / outcomeCandles.length;
+    const outcomeCandleWidth = (CANVAS_WIDTH - 2 * PADDING) /(setupCandles.length + outcomeCandles.length || 1);
     outcomeCandles.forEach((candle, i) => {
-      const x = DIVIDER_X + i * outcomeCandleWidth + outcomeCandleWidth / 2;
+      const x = dividerX + i * outcomeCandleWidth + outcomeCandleWidth / 2;
       drawCandle(canvas, candle, x, outcomeCandleWidth * 0.7, priceToY);
     });
 
@@ -111,8 +111,8 @@ export const DetailChartCanvas = ({
     const takeProfitY = priceToY(transactionOpenPrice * (1 + transactionParams.takeProfit / 100 * (transactionParams.position === "long" ? 1 : -1)));
     const stopLossY = priceToY(transactionOpenPrice * (1 - transactionParams.stopLoss / 100 * (transactionParams.position === "long" ? 1 : -1)));
 
-    const boxWidth = (transactionParams.timeHorizon / setupCandles.length) * (DIVIDER_X - 2 * PADDING);
-    const boxLeft = DIVIDER_X - 10;
+    const boxWidth = (transactionParams.timeHorizon / setupCandles.length) * (dividerX - 2 * PADDING);
+    const boxLeft = dividerX - 10;
 
     // Profit area (green)
     const profitHeight = Math.abs(takeProfitY - entryY);
@@ -194,12 +194,12 @@ export const DetailChartCanvas = ({
       
       let x: number;
       if (isInSetup) {
-        const setupWidth = DIVIDER_X - 2 * PADDING;
+        const setupWidth = dividerX - 2 * PADDING;
         x = PADDING + (candleIndex / setupCandles.length) * setupWidth + (setupWidth / setupCandles.length) / 2;
       } else {
         const outcomeIndex = candleIndex - setupCandles.length;
-        const outcomeWidth = CANVAS_WIDTH - DIVIDER_X - PADDING;
-        x = DIVIDER_X + (outcomeIndex / outcomeCandles.length) * outcomeWidth + (outcomeWidth / outcomeCandles.length) / 2;
+        const outcomeWidth = CANVAS_WIDTH - dividerX - PADDING;
+        x = dividerX + (outcomeIndex / outcomeCandles.length) * outcomeWidth + (outcomeWidth / outcomeCandles.length) / 2;
       }
       
       const line = new Line([x, PADDING, x, CANVAS_HEIGHT - PADDING], {
@@ -212,7 +212,7 @@ export const DetailChartCanvas = ({
 
       // X-axis time labels
       const candle = allCandles[candleIndex];
-      const timestamp = candle.timestamp || new Date(Date.now() - (allCandles.length - candleIndex) * 3600000);
+      const timestamp = candle.ctm || new Date(Date.now() - (allCandles.length - candleIndex) * 3600000);
       const timeLabel = new Text(format(timestamp, "MM/dd HH:mm"), {
         left: x - 30,
         top: CANVAS_HEIGHT - PADDING + 5,

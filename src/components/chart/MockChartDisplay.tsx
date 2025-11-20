@@ -7,7 +7,8 @@ export interface CandleData {
   close: number;
   high: number;
   low: number;
-  timestamp?: Date;
+  ctm?: Date;
+  vol?: number;
 }
 
 interface MockChartDisplayProps {
@@ -149,7 +150,7 @@ export const generateMockCandles = (count: number, basePrice: number = 100, tren
       close,
       high,
       low,
-      timestamp: new Date(now - (count - i) * 3600000), // 1 hour per candle
+      ctm: new Date(now - (count - i) * 3600000), // 1 hour per candle
     });
 
     currentPrice = close;

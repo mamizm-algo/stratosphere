@@ -2,30 +2,25 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas, Rect, Line, Group, FabricObject } from "fabric";
 import { DrawMode, Volatility } from "@/pages/Chart";
 import { toast } from "sonner";
-
-interface Candle {
-  id: string;
-  open: number;
-  close: number;
-  high: number;
-  low: number;
-  x: number;
-}
+import { CandleData } from "./MockChartDisplay";
 
 interface ChartCanvasProps {
   drawMode: DrawMode;
   volatility: Volatility;
   onCandleCountChange?: (count: number) => void;
   onClear?: (clearFn: () => void) => void;
+  setSearchInputCandles: (candles: CandleData[]) => void
 }
 
-export const ChartCanvas = ({ drawMode, volatility, onCandleCountChange, onClear }: ChartCanvasProps) => {
+export const ChartCanvas = ({ drawMode, volatility, onCandleCountChange, onClear, setSearchInputCandles }: ChartCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<FabricCanvas | null>(null);
-  const [candles, setCandles] = useState<Candle[]>([]);
+  const [candles, setCandles] = useState<CandleData[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [openPrice, setOpenPrice] = useState<number | null>(null);
   const [previewLine, setPreviewLine] = useState<Line | null>(null);
+
+  console.log(candles);
 
   const volatilityMultiplier = {
     low: 0.25,
@@ -96,7 +91,7 @@ export const ChartCanvas = ({ drawMode, volatility, onCandleCountChange, onClear
     }
   };
 
-  const createCandleGroup = (candle: Candle): Group => {
+  const createCandleGroup = (candle: CandleData): Group => {
     const candleWidth = 30;
     const isBullish = candle.close < candle.open; // Note: inverted because canvas Y is top-down
     const color = isBullish ? "hsl(142, 76%, 36%)" : "hsl(0, 72%, 51%)";
@@ -136,7 +131,7 @@ export const ChartCanvas = ({ drawMode, volatility, onCandleCountChange, onClear
     // Handle horizontal dragging on the group (order change only)
     group.on("moving", (e) => {
       const obj = e.transform?.target as Group;
-      const candleData = (obj as any).candleData as Candle;
+      const candleData = (obj as any).candleData as CandleData;
       
       // Update only X position (horizontal movement for order change)
       candleData.x = obj.left || candle.x;
@@ -166,9 +161,9 @@ export const ChartCanvas = ({ drawMode, volatility, onCandleCountChange, onClear
     });
 
     (topWickControl as any).wickType = "high";
-    (topWickControl as any).candleId = candle.id;
+    (topWickControl as any).candleId = candle.x;
     (bottomWickControl as any).wickType = "low";
-    (bottomWickControl as any).candleId = candle.id;
+    (bottomWickControl as any).candleId = candle.x;
 
     topWickControl.on("mouseover", () => {
       topWickControl.set({ opacity: 0.7 });
@@ -196,7 +191,7 @@ export const ChartCanvas = ({ drawMode, volatility, onCandleCountChange, onClear
       
       setCandles((prev) =>
         prev.map((c) => {
-          if (c.id === candleId) {
+          if (c.x === candleId) {
             const newHigh = obj.top! + 5;
             return { ...c, high: Math.min(newHigh, Math.min(c.open, c.close)) };
           }
@@ -211,7 +206,7 @@ export const ChartCanvas = ({ drawMode, volatility, onCandleCountChange, onClear
       
       setCandles((prev) =>
         prev.map((c) => {
-          if (c.id === candleId) {
+          if (c.x === candleId) {
             const newLow = obj.top! + 5;
             return { ...c, low: Math.max(newLow, Math.max(c.open, c.close)) };
           }
@@ -276,23 +271,24 @@ export const ChartCanvas = ({ drawMode, volatility, onCandleCountChange, onClear
       // Second click - set CLOSE price and create candle
       const open = openPrice!;
       const close = y;
+      setOpenPrice(y);
       const x = 50 + candles.length * 50;
 
       const candleHeight = Math.abs(close - open);
       const wickHeight = candleHeight * volatilityMultiplier[volatility];
 
-      const newCandle: Candle = {
-        id: `candle-${Date.now()}`,
+      const newCandle: CandleData = {
         x,
         open,
         close,
-        high: Math.min(open, close) - wickHeight,
-        low: Math.max(open, close) + wickHeight,
+        high: Math.max(open, close) + wickHeight,
+        low: Math.min(open, close) - wickHeight,
       };
 
       const updatedCandles = [...candles, newCandle];
+      setSearchInputCandles(updatedCandles);
       setCandles(updatedCandles);
-      setIsDrawing(false);
+      // setIsDrawing(false);
       setOpenPrice(close); // Next candle opens at this closing price
       
       // Notify parent of candle count change
@@ -328,6 +324,7 @@ export const ChartCanvas = ({ drawMode, volatility, onCandleCountChange, onClear
       if (!canvas) return;
       
       // Clear all candles
+      setSearchInputCandles([]);
       setCandles([]);
       setIsDrawing(false);
       setOpenPrice(null);

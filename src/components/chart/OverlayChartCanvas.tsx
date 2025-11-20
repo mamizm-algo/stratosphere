@@ -31,18 +31,19 @@ export const OverlayChartCanvas = ({
   onEditTransaction,
   initialTransactionBox,
 }: OverlayChartCanvasProps) => {
+  const CANVAS_WIDTH = 1283;
+  const CANVAS_HEIGHT = 500;
+  const PADDING = 40;
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricCanvasRef = useRef<FabricCanvas | null>(null);
   const [isDrawingBox, setIsDrawingBox] = useState(false);
   const [transactionBox, setTransactionBox] = useState<Group | null>(null);
   const [drawMode, setDrawMode] = useState<"select" | "draw">("select");
   const [drawStartY, setDrawStartY] = useState<number | null>(null);
+  const [dividerX, setdividerX] = useState<number>(CANVAS_WIDTH * (setupCandles.length / (setupCandles.length + outcomesData[0]?.length || 1)));
   const isDrawingRef = useRef(false);
 
-  const CANVAS_WIDTH = 1283;
-  const CANVAS_HEIGHT = 500;
-  const PADDING = 40;
-  const DIVIDER_X = CANVAS_WIDTH * 0.6; // Setup takes 60%, outcomes take 40%
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -112,7 +113,28 @@ export const OverlayChartCanvas = ({
 
   const drawChart = (canvas: FabricCanvas) => {
     // Calculate price range for all data
-    const allCandles = [...setupCandles, ...outcomesData.flat()];
+    const referenceSetupCandle = setupCandles[setupCandles.length-1];
+    const allCandles = [...setupCandles.map(setupCandle => {return {
+          x: setupCandle.x,
+          open: setupCandle.open / referenceSetupCandle.close,
+          close: setupCandle.close / referenceSetupCandle.close,
+          high: setupCandle.high / referenceSetupCandle.close,
+          low: setupCandle.low / referenceSetupCandle.close,
+          ctm: setupCandle.ctm,
+          vol: setupCandle.vol,
+      }}), ...outcomesData.map(outcome => {  
+            const referenceOutcomeCandle = outcome[0];
+            return outcome.map((candle) => {
+            return {
+              x: candle.x,
+              open: candle.open / referenceOutcomeCandle.open,
+              close: candle.close / referenceOutcomeCandle.open,
+              high: candle.high / referenceOutcomeCandle.open,
+              low: candle.low / referenceOutcomeCandle.open,
+              ctm: candle.ctm,
+              vol: candle.vol,
+          }
+      })}).flat()];
     const allPrices = allCandles.flatMap((c) => [c.high, c.low]);
     const minPrice = Math.min(...allPrices);
     const maxPrice = Math.max(...allPrices);
@@ -124,14 +146,23 @@ export const OverlayChartCanvas = ({
     drawGrid(canvas, minPrice, maxPrice, priceToY);
 
     // Draw setup candles
-    const setupCandleWidth = (DIVIDER_X - 2 * PADDING) / setupCandles.length;
+    const setupCandleWidth = (CANVAS_WIDTH - 2 * PADDING) / (setupCandles.length + outcomesData[0]?.length || 1);
     setupCandles.forEach((candle, i) => {
       const x = PADDING + i * setupCandleWidth + setupCandleWidth / 2;
-      drawCandle(canvas, candle, x, setupCandleWidth * 0.7, priceToY, 1);
+      const normalizedCandle = {
+          x: candle.x,
+          open: candle.open / referenceSetupCandle.close,
+          close: candle.close / referenceSetupCandle.close,
+          high: candle.high / referenceSetupCandle.close,
+          low: candle.low / referenceSetupCandle.close,
+          ctm: candle.ctm,
+          vol: candle.vol,
+      };
+      drawCandle(canvas, normalizedCandle, x, setupCandleWidth * 0.7, priceToY, 1);
     });
 
     // Draw vertical divider
-    const divider = new Line([DIVIDER_X, 0, DIVIDER_X, CANVAS_HEIGHT], {
+    const divider = new Line([dividerX, 0, dividerX, CANVAS_HEIGHT], {
       stroke: "hsl(180, 100%, 50%)",
       strokeWidth: 2,
       strokeDashArray: [10, 5],
@@ -141,11 +172,21 @@ export const OverlayChartCanvas = ({
     canvas.add(divider);
 
     // Draw outcome candles (overlaid with transparency)
-    const outcomeCandleWidth = (CANVAS_WIDTH - DIVIDER_X - PADDING) / (outcomesData[0]?.length || 1);
+    const outcomeCandleWidth = (CANVAS_WIDTH - PADDING) /  (setupCandles.length + outcomesData[0]?.length || 1);
     outcomesData.forEach((outcome) => {
+      const referenceOutcomeCandle = outcome[0];
       outcome.forEach((candle, i) => {
-        const x = DIVIDER_X + i * outcomeCandleWidth + outcomeCandleWidth / 2;
-        drawCandle(canvas, candle, x, outcomeCandleWidth * 0.7, priceToY, 0.3);
+        const x = dividerX + i * outcomeCandleWidth + outcomeCandleWidth / 2;
+        const normalizedCandle = {
+          x: candle.x,
+          open: candle.open / referenceOutcomeCandle.open,
+          close: candle.close / referenceOutcomeCandle.open,
+          high: candle.high / referenceOutcomeCandle.open,
+          low: candle.low / referenceOutcomeCandle.open,
+          ctm: candle.ctm,
+          vol: candle.vol,
+      };
+        drawCandle(canvas, normalizedCandle, x, outcomeCandleWidth * 0.7, priceToY, 0.3);
       });
     });
 
@@ -272,8 +313,8 @@ export const OverlayChartCanvas = ({
     const takeProfitY = priceToY(transactionOpenPrice * (1 + params.takeProfit / 100 * (params.position === "long" ? 1 : -1)));
     const stopLossY = priceToY(transactionOpenPrice * (1 - params.stopLoss / 100 * (params.position === "long" ? 1 : -1)));
 
-    const boxWidth = (params.timeHorizon / setupCandles.length) * (DIVIDER_X - 2 * PADDING);
-    const boxLeft = DIVIDER_X - 10;
+    const boxWidth = (params.timeHorizon / setupCandles.length) * (dividerX - 2 * PADDING);
+    const boxLeft = dividerX - 10;
 
     // Profit area (green)
     const profitHeight = Math.abs(takeProfitY - entryY);
@@ -340,7 +381,7 @@ export const OverlayChartCanvas = ({
 
     const takeProfit = Math.abs((topPrice - entryPrice) / entryPrice * 100);
     const stopLoss = Math.abs((entryPrice - bottomPrice) / entryPrice * 100);
-    const timeHorizon = Math.round((bounds.width / (DIVIDER_X - 2 * PADDING)) * setupCandles.length);
+    const timeHorizon = Math.round((bounds.width / (dividerX - 2 * PADDING)) * setupCandles.length);
 
     const updatedParams = {
       entry: entryPrice,

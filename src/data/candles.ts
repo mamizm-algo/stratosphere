@@ -1,5 +1,5 @@
 import { CandleData } from "@/components/chart/MockChartDisplay";
-
+import candleDataJson from './candle-data.json'
 /**
  * Candle data source module
  * 
@@ -12,13 +12,26 @@ import { CandleData } from "@/components/chart/MockChartDisplay";
  * 3. Replace the CANDLE_DATA constant with the imported data
  */
 
+const candleData: CandleData[] = candleDataJson.slice(0, 11000);
+console.log(candleData.length);
 // Placeholder for candle data
 // Replace this with imported JSON data when ready
-export const CANDLE_DATA: Record<string, CandleData[]> = {
+export const CANDLE_DATA: Record<string, CandleData[]> = {"GOLD_1m": candleData.map((candle_json) => {
+  return {
+    x: 1,
+    open: candle_json.open,
+    close: candle_json.open + candle_json.close,
+    high: candle_json.open + candle_json.high,
+    low: candle_json.open + candle_json.low,
+    ctm: new Date(candle_json.ctm),
+    vol: candle_json.vol
+  }
+})};
+ //{
   // Format: "ASSET_TIMEFRAME": CandleData[]
   // Example: "BTC/USD_1h": [...candles],
   // This will be populated from JSON import
-};
+//};
 
 /**
  * Get candles for a specific asset and timeframe
@@ -43,8 +56,8 @@ export const getCandles = (
   
   // Filter by date range if provided
   return candles.filter((candle) => {
-    if (!candle.timestamp) return true;
-    const candleTime = new Date(candle.timestamp).getTime();
+    if (!candle.ctm) return true;
+    const candleTime = new Date(candle.ctm).getTime();
     const fromTime = dateFrom ? new Date(dateFrom).getTime() : 0;
     const toTime = dateTo ? new Date(dateTo).getTime() : Infinity;
     return candleTime >= fromTime && candleTime <= toTime;

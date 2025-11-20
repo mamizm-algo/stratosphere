@@ -114,7 +114,7 @@ export const BaseChartCanvas = ({
 
       // X-axis time labels
       const candle = candles[candleIndex];
-      const timestamp = candle.timestamp || new Date(Date.now() - (candles.length - candleIndex) * 3600000);
+      const timestamp = candle.ctm || new Date(Date.now() - (candles.length - candleIndex) * 3600000);
       const timeLabel = new Text(format(timestamp, "MM/dd HH:mm"), {
         left: x - 30,
         top: CANVAS_HEIGHT - PADDING + 5,

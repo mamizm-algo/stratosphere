@@ -41,7 +41,8 @@ const AssetBrowser = () => {
 
   // Load candles from imported data
   useEffect(() => {
-    const candleData = getCandles(asset, timeframe);
+    const allData = getCandles(asset, timeframe);
+    const candleData = allData.slice(allData.length - 200);
     
     // If no data available, generate mock data as fallback
     if (candleData.length === 0) {
@@ -139,7 +140,7 @@ const AssetBrowser = () => {
 
       // X-axis time labels
       const candle = candles[candleIndex];
-      const timestamp = candle.timestamp || new Date(Date.now() - (candles.length - candleIndex) * 3600000);
+      const timestamp = candle.ctm || new Date(Date.now() - (candles.length - candleIndex) * 3600000);
       const timeLabel = new Text(format(timestamp, "MM/dd HH:mm"), {
         left: x - 30,
         top: CHART_HEIGHT - PADDING + 5,
