@@ -13,7 +13,8 @@ import { CandleData, generateMockCandles } from "@/components/chart/MockChartDis
 import { AddToCollectionDialog } from "@/components/library/AddToCollectionDialog";
 import { useCollections } from "@/hooks/useCollections";
 import { toast } from "sonner";
-import { calculateSimilarityScore } from "@/lib/similarityCalculator";
+import { searchSimilarPatterns } from "@/lib/similarityCalculator";
+import { CANDLE_DATA, getCandles } from "@/data/candles";
 
 type Timeframe = "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
 
@@ -38,10 +39,17 @@ const AssetBrowser = () => {
   const CHART_HEIGHT = 600;
   const PADDING = 60;
 
-  // Generate mock candles for the selected asset
+  // Load candles from imported data
   useEffect(() => {
-    const mockCandles = generateMockCandles(100, 50000, "sideways");
-    setCandles(mockCandles);
+    const candleData = getCandles(asset, timeframe);
+    
+    // If no data available, generate mock data as fallback
+    if (candleData.length === 0) {
+      const mockCandles = generateMockCandles(100, 50000, "sideways");
+      setCandles(mockCandles);
+    } else {
+      setCandles(candleData);
+    }
   }, [asset, timeframe]);
 
   // Initialize canvas
@@ -295,29 +303,33 @@ const AssetBrowser = () => {
     const selectedCandles = candles.slice(selectedRange.start, selectedRange.end + 1);
     setCurrentFragmentData(selectedCandles);
 
-    // Generate mock search results with calculated similarity scores
-    const mockResults: SimilarPattern[] = Array.from({ length: 5 }, (_, i) => {
-      const candidateCandles = generateMockCandles(20, selectedCandles[selectedCandles.length - 1].close, i % 2 === 0 ? "up" : "down");
-      
-      return {
-        id: `result-${i}`,
-        similarity: calculateSimilarityScore({
-          referencePattern: selectedCandles,
-          candidatePattern: candidateCandles,
-          searchConfig: config,
-        }),
-        asset: config.assets[i % config.assets.length],
-        date: new Date(Date.now() - i * 86400000 * 7).toISOString(),
-        timeframe: timeframe,
-        outcome: i % 2 === 0 ? "bullish" : "bearish",
-        setupCandles: selectedCandles,
-        outcomeCandles: candidateCandles,
-      };
-    });
+    // Search through all imported data for similar patterns
+    const searchResults = searchSimilarPatterns(
+      selectedCandles,
+      CANDLE_DATA,
+      config
+    );
 
-    setSearchResults(mockResults);
+    // Convert search results to SimilarPattern format
+    const patterns: SimilarPattern[] = searchResults.map((result) => ({
+      id: result.id,
+      similarity: result.similarity,
+      asset: result.asset,
+      date: result.date,
+      timeframe: result.timeframe,
+      outcome: result.outcome,
+      setupCandles: result.setupCandles,
+      outcomeCandles: result.outcomeCandles,
+    }));
+
+    setSearchResults(patterns);
     setSearchDialogOpen(false);
-    toast.success(`Found ${mockResults.length} similar patterns`);
+    
+    if (patterns.length === 0) {
+      toast.info("No similar patterns found. Try lowering the similarity threshold.");
+    } else {
+      toast.success(`Found ${patterns.length} similar patterns`);
+    }
   };
 
   const handleSaveToLibrary = (pattern: SimilarPattern) => {
