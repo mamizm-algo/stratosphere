@@ -8,38 +8,38 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Brand colors: Navy #1C2534, Orange #FA960C, White #F5F5F5 */
-    --background: 215 25% 12%;
-    --foreground: 0 0% 96%;
+    /* Brand colors: Oxford Navy, Pine Blue, Platinum, Prussian Blue, Blue State, Pale Slate */
+    --background: 222 47% 11%;
+    --foreground: 216 24% 96%;
 
-    --card: 215 20% 15%;
-    --card-foreground: 0 0% 96%;
+    --card: 215 51% 25%;
+    --card-foreground: 216 24% 96%;
 
-    --popover: 215 20% 15%;
-    --popover-foreground: 0 0% 96%;
+    --popover: 215 51% 25%;
+    --popover-foreground: 216 24% 96%;
 
-    --primary: 30 98% 52%;
-    --primary-foreground: 215 25% 12%;
+    --primary: 176 41% 31%;
+    --primary-foreground: 216 24% 96%;
 
-    --secondary: 215 25% 20%;
-    --secondary-foreground: 0 0% 96%;
+    --secondary: 215 19% 35%;
+    --secondary-foreground: 216 24% 96%;
 
-    --muted: 215 20% 20%;
-    --muted-foreground: 215 10% 60%;
+    --muted: 215 19% 35%;
+    --muted-foreground: 213 27% 84%;
 
-    --accent: 215 20% 20%;
-    --accent-foreground: 0 0% 96%;
+    --accent: 176 41% 31%;
+    --accent-foreground: 216 24% 96%;
 
     --destructive: 0 63% 31%;
-    --destructive-foreground: 0 0% 96%;
+    --destructive-foreground: 216 24% 96%;
 
-    --border: 215 20% 20%;
-    --input: 215 20% 20%;
-    --ring: 30 98% 52%;
+    --border: 215 51% 25%;
+    --input: 215 51% 25%;
+    --ring: 176 41% 31%;
 
     --radius: 0.5rem;
 
-    --chart-1: 30 98% 52%;
+    --chart-1: 176 41% 31%;
     --chart-2: 142 71% 45%;
     --chart-3: 217 91% 60%;
     --chart-4: 280 65% 60%;
@@ -49,14 +49,14 @@ All colors MUST be HSL.
     --bearish: 0 84% 60%;
     --neutral: 45 93% 47%;
     
-    --chart-bg: 215 25% 10%;
-    --chart-grid: 215 15% 25%;
+    --chart-bg: 222 47% 8%;
+    --chart-grid: 215 51% 25%;
     
-    --gradient-primary: linear-gradient(135deg, hsl(30 98% 52%) 0%, hsl(30 98% 62%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(215 25% 12%) 0%, hsl(215 30% 15%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(176 41% 31%) 0%, hsl(176 41% 41%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(222 47% 11%) 0%, hsl(215 51% 25%) 100%);
     
-    --shadow-glow: 0 10px 40px -10px hsl(30 98% 52% / 0.3);
-    --shadow-card: 0 4px 20px hsl(215 25% 5% / 0.5);
+    --shadow-glow: 0 10px 40px -10px hsl(176 41% 31% / 0.3);
+    --shadow-card: 0 4px 20px hsl(222 47% 5% / 0.5);
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
