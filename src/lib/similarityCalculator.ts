@@ -158,7 +158,7 @@ export const searchSimilarPatterns = (
   const results: SearchResult[] = [];
   const patternLength = referencePattern.length;
   const outcomeLength = 80; // Default outcome bars to display
-  const maxResults = 50; // Maximum number of results to return
+  const maxResults = 200; // Maximum number of results to return
   
   // Iterate through all assets and timeframes in the search config
   searchConfig.assets.forEach((asset) => {

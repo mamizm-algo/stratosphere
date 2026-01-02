@@ -110,12 +110,8 @@ export const SimilarityResults = ({
       return null;
     }
 
-    const outcomesData = filteredPatterns.slice(0, 10).map((pattern) => {
-      return pattern.outcomeCandles || generateMockCandles(
-        15,
-        setupCandles?.[setupCandles.length - 1]?.close || 100,
-        pattern.outcome === "bullish" ? "up" : pattern.outcome === "bearish" ? "down" : "sideways"
-      );
+    const outcomesData = filteredPatterns.map((pattern) => {
+      return pattern.outcomeCandles;
     });
 
     const trades = outcomesData.map((outcome) => {
@@ -246,7 +242,7 @@ export const SimilarityResults = ({
   };
 
   const handleSaveToLibrary = (name: string) => {
-    addCollection(name, setupCandles || generateMockCandles(20, 100, "sideways"), patterns);
+    addCollection(name, setupCandles, patterns);
     toast.success(`Collection "${name}" saved to library`);
   };
 
@@ -574,7 +570,7 @@ const OverlayView = ({
   const [tradeStats, setTradeStats] = useState<TradeStats | null>(null);
 
   // Prepare outcomes data
-  const outcomesData = patterns.slice(0, 10).map((pattern) => {
+  const outcomesData = patterns.map((pattern) => {
     return pattern.outcomeCandles || generateMockCandles(
       15,
       setupCandles[setupCandles.length - 1]?.close || 100,
@@ -590,7 +586,7 @@ const OverlayView = ({
     }
 
     // Mock calculation - simulate trade outcomes
-    const trades = patterns.slice(0, 10).map((pattern, idx) => {
+    const trades = patterns.map((pattern, idx) => {
       const outcome = outcomesData[idx];
       if (!outcome || outcome.length === 0) return null;
 
