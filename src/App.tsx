@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Chart from "./pages/Chart";
 import Library from "./pages/Library";
 import AssetBrowser from "./pages/AssetBrowser";
+import Results from "./pages/Results";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => {
             <Route path="/chart" element={<Chart />} />
             <Route path="/library" element={<Library />} />
             <Route path="/browse-assets" element={<AssetBrowser />} />
+            <Route path="/results" element={<Results />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

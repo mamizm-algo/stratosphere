@@ -1,17 +1,17 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { generateMockCandles } from "@/components/chart/MockChartDisplay";
 import { ChartCanvas } from "@/components/chart/ChartCanvas";
 import { Toolbar } from "@/components/chart/Toolbar";
 import { ChartHeader } from "@/components/chart/ChartHeader";
 import { SimilaritySearchDialog, SearchConfig } from "@/components/chart/SimilaritySearchDialog";
-import { SimilarityResults, SimilarPattern } from "@/components/chart/SimilarityResults";
-import { useNavigate } from "react-router-dom";
 import { useCollections } from "@/hooks/useCollections";
 import { CompareToCollectionDialog } from "@/components/library/CompareToCollectionDialog";
 import { VirtualTransactionDialog, VirtualTransactionParams } from "@/components/chart/VirtualTransactionDialog";
 import { toast } from "sonner";
-import { calculateSimilarityScore, searchSimilarPatterns } from "@/lib/similarityCalculator";
+import { searchSimilarPatterns } from "@/lib/similarityCalculator";
 import { CANDLE_DATA } from "@/data/candles";
+import { storeSearchResults } from "./Results";
 
 export type DrawMode = "candle" | "line" | "horizontal" | "vertical" | "angled" | "select";
 export type Volatility = "low" | "medium" | "high";
@@ -22,10 +22,7 @@ const Chart = () => {
   const [drawMode, setDrawMode] = useState<DrawMode>("candle");
   const [volatility, setVolatility] = useState<Volatility>("medium");
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [searchResults, setSearchResults] = useState<SimilarPattern[]>([]);
   const [searchInputCandles, setSearchInputCandles] = useState<any[]>([]);
-  const [savedPatterns, setSavedPatterns] = useState<SimilarPattern[]>([]);
   const [compareToCollectionOpen, setCompareToCollectionOpen] = useState(false);
   const [currentChartData, setCurrentChartData] = useState<any[]>([]);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
@@ -33,26 +30,15 @@ const Chart = () => {
   const handleClearRef = useRef<any>(null);
 
   const handleSearch = (config: SearchConfig) => {
-    setSearchInputCandles(searchInputCandles);
     const searchResults = searchSimilarPatterns(
-          searchInputCandles,
-          CANDLE_DATA,
-          config
-        );
+      searchInputCandles,
+      CANDLE_DATA,
+      config
+    );
 
-    setSearchResults(searchResults);
-    setShowResults(true);
-  };
-
-  const handleSaveToLibrary = (pattern: SimilarPattern) => {
-    setSavedPatterns((prev) => [...prev, pattern]);
-    toast.success("Pattern saved to library");
-  };
-
-  const handleSaveAsCollection = (name: string) => {
-    addCollection(name, searchInputCandles, searchResults);
-    toast.success(`Collection "${name}" saved to library!`);
-    setShowResults(false);
+    // Store results and navigate to results page
+    storeSearchResults(searchResults, searchInputCandles);
+    navigate("/results");
   };
 
   const handleCompareToCollection = () => {
@@ -110,16 +96,6 @@ const Chart = () => {
         onOpenChange={setSearchDialogOpen}
         onSearch={handleSearch}
       />
-
-      {showResults && (
-        <SimilarityResults
-          patterns={searchResults}
-          onClose={() => setShowResults(false)}
-          onSaveToLibrary={handleSaveToLibrary}
-          setupCandles={searchInputCandles}
-          onSaveAsCollection={handleSaveAsCollection}
-        />
-      )}
 
       <CompareToCollectionDialog
         open={compareToCollectionOpen}
