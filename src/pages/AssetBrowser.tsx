@@ -6,7 +6,6 @@ import { AssetSearchInput } from "@/components/chart/AssetSearchInput";
 import { Canvas as FabricCanvas, Line, Rect, Text } from "fabric";
 import { format } from "date-fns";
 import { FolderPlus } from "lucide-react";
-import { ChartHeader } from "@/components/chart/ChartHeader";
 import { SimilaritySearchDialog, SearchConfig } from "@/components/chart/SimilaritySearchDialog";
 import { SimilarPattern } from "@/pages/Results";
 import { CandleData, generateMockCandles } from "@/components/chart/MockChartDisplay";
@@ -16,6 +15,7 @@ import { toast } from "sonner";
 import { searchSimilarPatterns } from "@/lib/similarityCalculator";
 import { CANDLE_DATA, getCandles } from "@/data/candles";
 import { storeSearchResults } from "@/pages/Results";
+import { HomeHeader } from "@/components/HomeHeader";
 
 type Timeframe = "1m" ;//| "5m" | "15m" | "1h" | "4h" | "1d";
 
@@ -218,7 +218,7 @@ const AssetBrowser = () => {
         // First click - draw left boundary
         firstClickX = x;
         leftBoundary = new Line([x, PADDING, x, CHART_HEIGHT - PADDING], {
-          stroke: "hsl(30, 98%, 52%)",
+          stroke: "hsl(176 41% 31%)",
           strokeWidth: 2,
           selectable: false,
           evented: false,
@@ -233,7 +233,7 @@ const AssetBrowser = () => {
         const endX = Math.max(firstClickX, x);
 
         rightBoundary = new Line([x, PADDING, x, CHART_HEIGHT - PADDING], {
-          stroke: "hsl(30, 98%, 52%)",
+          stroke: "hsl(176 41% 31%)",
           strokeWidth: 2,
           selectable: false,
           evented: false,
@@ -245,8 +245,8 @@ const AssetBrowser = () => {
           top: PADDING,
           width: endX - startX,
           height: CHART_HEIGHT - PADDING * 2,
-          fill: "rgba(255, 153, 0, 0.1)",
-          stroke: "hsl(30, 98%, 52%)",
+          fill: "rgba(46, 111, 107, 0.1)",
+          stroke: "rgba(46, 111, 107, 0.1)",
           strokeWidth: 2,
           selectable: false,
           evented: false,
@@ -354,7 +354,7 @@ const AssetBrowser = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <ChartHeader />
+      <HomeHeader />
       
       <div className="container mx-auto px-6 py-6">
        

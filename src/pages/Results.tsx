@@ -44,6 +44,7 @@ import { DetailChartCanvas } from "@/components/chart/DetailChartCanvas";
 import { BaseChartCanvas } from "@/components/chart/BaseChartCanvas";
 import { SaveToLibraryDialog } from "@/components/library/SaveToLibraryDialog";
 import { useCollections } from "@/hooks/useCollections";
+import { HomeHeader } from "@/components/HomeHeader";
 
 const RESULTS_STORAGE_KEY = "similarity_search_results";
 const SETUP_CANDLES_STORAGE_KEY = "similarity_search_setup_candles";
@@ -82,8 +83,6 @@ const Results = () => {
   const [setupCandles, setSetupCandles] = useState<CandleData[]>([]);
   const [isSaved, setIsSaved] = useState(false);
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
-
   const [viewMode, setViewMode] = useState<"base" | "grid" | "detail" | "overlay">("grid");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sortBy, setSortBy] = useState<"similarity" | "date">("similarity");
@@ -150,10 +149,6 @@ const Results = () => {
     if (blocker.state === "blocked") {
       blocker.proceed();
     }
-    if (pendingNavigation) {
-      navigate(pendingNavigation);
-      setPendingNavigation(null);
-    }
   };
 
   const handleCancelLeave = () => {
@@ -161,17 +156,8 @@ const Results = () => {
     if (blocker.state === "blocked") {
       blocker.reset();
     }
-    setPendingNavigation(null);
   };
 
-  const handleNavigation = (path: string) => {
-    if (!isSaved && patterns.length > 0) {
-      setPendingNavigation(path);
-      setShowLeaveWarning(true);
-    } else {
-      navigate(path);
-    }
-  };
 
   const sortedPatterns = [...patterns].sort((a, b) => {
     if (sortBy === "similarity") {
@@ -333,7 +319,11 @@ const Results = () => {
   };
 
   const handleSaveToLibrary = (name: string) => {
-    addCollection(name, setupCandles, patterns);
+    try{
+      addCollection(name, setupCandles, patterns);
+    } catch (e) {
+      toast.success(`We couldn't save your collection. Try removing some old collections first.`);
+    }
     setIsSaved(true);
     clearSearchResults();
     toast.success(`Collection "${name}" saved to library`);
@@ -343,7 +333,7 @@ const Results = () => {
   if (patterns.length === 0) {
     return (
       <div className="flex flex-col h-screen bg-background">
-        <ResultsHeader onNavigate={handleNavigation} />
+        <HomeHeader />
         <div className="flex-1 flex items-center justify-center">
           <Card className="p-8 text-center max-w-md">
             <FileSearch className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
@@ -367,27 +357,7 @@ const Results = () => {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <ResultsHeader onNavigate={handleNavigation} />
-
-      {/* Unsaved Warning Banner */}
-      {!isSaved && (
-        <div className="bg-primary/10 border-b border-primary/20 px-6 py-3">
-          <div className="container mx-auto flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-primary flex-shrink-0" />
-            <p className="text-sm text-foreground">
-              These results are not saved. Save to library to preserve them permanently.
-            </p>
-            <Button
-              size="sm"
-              onClick={() => setSaveDialogOpen(true)}
-              className="ml-auto gap-2"
-            >
-              <Save className="w-4 h-4" />
-              Save Now
-            </Button>
-          </div>
-        </div>
-      )}
+      <HomeHeader/>
 
       <div className="container mx-auto flex-1 flex flex-col py-6 overflow-hidden">
         {/* Header */}
@@ -598,63 +568,6 @@ const Results = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-};
-
-// Header component with navigation
-const ResultsHeader = ({ onNavigate }: { onNavigate: (path: string) => void }) => {
-  return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-sm">
-      <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <TrendingUp className="w-5 h-5 text-primary" />
-          </div>
-          <span className="text-xl text-foreground">STRATOSPHERE</span>
-        </div>
-
-        <nav className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onNavigate("/")}
-            className="gap-2"
-          >
-            <Home className="w-4 h-4" />
-            Home
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onNavigate("/chart")}
-            className="gap-2"
-          >
-            Chart
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onNavigate("/browse-assets")}
-            className="gap-2"
-          >
-            Browse
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onNavigate("/library")}
-            className="gap-2"
-          >
-            <Library className="w-4 h-4" />
-            Library
-          </Button>
-        </nav>
-      </div>
-    </header>
   );
 };
 

@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { ChartHeader } from "@/components/chart/ChartHeader";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {

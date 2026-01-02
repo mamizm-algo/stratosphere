@@ -102,8 +102,7 @@ export const SimilaritySearchDialog = ({
       setIsSearching(false);
       onSearch(config);
       onOpenChange(false);
-      toast.success("Search started! You'll be notified when results are ready.");
-    }, 1000);
+    }, 100);
   };
 
   return (

@@ -3,7 +3,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from "react-router-dom";
 import { AccessGate } from "@/components/AccessGate";
 import Index from "./pages/Index";
 import Chart from "./pages/Chart";
@@ -42,25 +45,38 @@ const App = () => {
     );
   }
 
+  const router = createBrowserRouter([
+  { path: "/", element:<Index /> },
+  { path: "/chart", element:<Chart /> },
+  { path: "/library", element:<Library /> },
+  { path: "/browse-assets", element:<AssetBrowser /> },
+  { path: "/results", element:<Results /> },
+  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */},
+  { path: "*", element:<NotFound /> },
+]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/chart" element={<Chart />} />
-            <Route path="/library" element={<Library />} />
-            <Route path="/browse-assets" element={<AssetBrowser />} />
-            <Route path="/results" element={<Results />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <RouterProvider router={router}/>
+       
       </TooltipProvider>
     </QueryClientProvider>
   );
 };
 
 export default App;
+
+//  {/* <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+//           <Routes>
+//             <Route path="/" element={<Index />} />
+//             <Route path="/chart" element={<Chart />} />
+//             <Route path="/library" element={<Library />} />
+//             <Route path="/browse-assets" element={<AssetBrowser />} />
+//             <Route path="/results" element={<Results />} />
+//             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+//             <Route path="*" element={<NotFound />} />
+//           </Routes>
+//         </BrowserRouter> */}

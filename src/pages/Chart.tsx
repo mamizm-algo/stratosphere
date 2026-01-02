@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { generateMockCandles } from "@/components/chart/MockChartDisplay";
 import { ChartCanvas } from "@/components/chart/ChartCanvas";
 import { Toolbar } from "@/components/chart/Toolbar";
-import { ChartHeader } from "@/components/chart/ChartHeader";
 import { SimilaritySearchDialog, SearchConfig } from "@/components/chart/SimilaritySearchDialog";
 import { useCollections } from "@/hooks/useCollections";
 import { CompareToCollectionDialog } from "@/components/library/CompareToCollectionDialog";
@@ -12,6 +11,7 @@ import { toast } from "sonner";
 import { searchSimilarPatterns } from "@/lib/similarityCalculator";
 import { CANDLE_DATA } from "@/data/candles";
 import { storeSearchResults } from "./Results";
+import { HomeHeader } from "@/components/HomeHeader";
 
 export type DrawMode = "candle" | "line" | "horizontal" | "vertical" | "angled" | "select";
 export type Volatility = "low" | "medium" | "high";
@@ -67,7 +67,7 @@ const Chart = () => {
   return (
     <>
       <div className="flex flex-col h-screen bg-background">
-        <ChartHeader />
+        <HomeHeader />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Toolbar 
             drawMode={drawMode} 

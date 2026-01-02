@@ -362,7 +362,6 @@ export const SimilarityResults = ({
                   <PatternCard
                     key={pattern.id}
                     pattern={pattern}
-                    onSave={() => handleSavePattern(pattern)}
                     onClick={() => {
                       setCurrentIndex(filteredPatterns.indexOf(pattern));
                       setViewMode("detail");
@@ -446,11 +445,9 @@ export const SimilarityResults = ({
 
 const PatternCard = ({
   pattern,
-  onSave,
   onClick,
 }: {
   pattern: SimilarPattern;
-  onSave: () => void;
   onClick?: () => void;
 }) => {
   const outcomeIcon =
