@@ -67,7 +67,6 @@ export const calculateBatchSimilarity = (
     calculateSimilarityScore({
       referencePattern,
       candidatePattern,
-      searchConfig,
     })
   );
 };
@@ -192,7 +191,6 @@ export const searchSimilarPatterns = (
         const similarity = calculateSimilarityScore({
           referencePattern,
           candidatePattern,
-          searchConfig,
         });
         
         // Filter by threshold

@@ -50,8 +50,8 @@ export const SimilaritySearchDialog = ({
   onOpenChange,
   onSearch,
 }: SimilaritySearchDialogProps) => {
-  const [selectedAssets, setSelectedAssets] = useState<string[]>(["BTC/USD"]);
-  const [selectedTimeframes, setSelectedTimeframes] = useState<string[]>(["1h"]);
+  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const [selectedTimeframes, setSelectedTimeframes] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [timeOfDay, setTimeOfDay] = useState("");
