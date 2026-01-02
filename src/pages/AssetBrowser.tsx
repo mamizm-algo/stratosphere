@@ -16,17 +16,10 @@ import { toast } from "sonner";
 import { searchSimilarPatterns } from "@/lib/similarityCalculator";
 import { CANDLE_DATA, getCandles } from "@/data/candles";
 
-type Timeframe = "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
+type Timeframe = "1m" ;//| "5m" | "15m" | "1h" | "4h" | "1d";
 
 const AVAILABLE_ASSETS = [
-  { id: "BTC/USD", name: "Bitcoin" },
-  { id: "ETH/USD", name: "Ethereum" },
-  { id: "SPX", name: "S&P 500" },
-  { id: "AAPL", name: "Apple" },
-  { id: "TSLA", name: "Tesla" },
-  { id: "GOLD", name: "Gold" },
-  { id: "EUR/USD", name: "Euro/Dollar" },
-  { id: "GBP/USD", name: "Pound/Dollar" },
+  { id: "GOLD", name: "Gold" }
 ];
 
 const AssetBrowser = () => {
@@ -34,8 +27,8 @@ const AssetBrowser = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
   
-  const [asset, setAsset] = useState("BTC/USD");
-  const [timeframe, setTimeframe] = useState<Timeframe>("1h");
+  const [asset, setAsset] = useState("GOLD");
+  const [timeframe, setTimeframe] = useState<Timeframe>("1m");
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedRange, setSelectedRange] = useState<{ start: number; end: number } | null>(null);
@@ -43,6 +36,9 @@ const AssetBrowser = () => {
   const [searchResults, setSearchResults] = useState<SimilarPattern[]>([]);
   const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
   const [currentFragmentData, setCurrentFragmentData] = useState<CandleData[]>([]);
+  const [outcomeData, setOutcomeData] = useState<CandleData[]>([]);
+
+  
 
   const { collections, addResultToCollection } = useCollections();
 
@@ -55,13 +51,7 @@ const AssetBrowser = () => {
     const allData = getCandles(asset, timeframe);
     const candleData = allData.slice(allData.length - 200);
     
-    // If no data available, generate mock data as fallback
-    if (candleData.length === 0) {
-      const mockCandles = generateMockCandles(100, 50000, "sideways");
-      setCandles(mockCandles);
-    } else {
-      setCandles(candleData);
-    }
+    setCandles(candleData);
   }, [asset, timeframe]);
 
   // Initialize canvas
@@ -351,7 +341,10 @@ const AssetBrowser = () => {
   const handleAddToCollection = () => {
     if (!selectedRange) return;
     const fragmentData = candles.slice(selectedRange.start, selectedRange.end + 1);
+    const outcomeData = candles.slice(selectedRange.end + 1, selectedRange.end + 100);
+
     setCurrentFragmentData(fragmentData);
+    setOutcomeData(outcomeData);
     setAddToCollectionOpen(true);
   };
 
@@ -384,11 +377,11 @@ const AssetBrowser = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="1m">1 min</SelectItem>
-                <SelectItem value="5m">5 min</SelectItem>
+                {/* <SelectItem value="5m">5 min</SelectItem>
                 <SelectItem value="15m">15 min</SelectItem>
                 <SelectItem value="1h">1 hour</SelectItem>
                 <SelectItem value="4h">4 hours</SelectItem>
-                <SelectItem value="1d">1 day</SelectItem>
+                <SelectItem value="1d">1 day</SelectItem> */}
               </SelectContent>
             </Select>
 
@@ -482,6 +475,7 @@ const AssetBrowser = () => {
         onOpenChange={setAddToCollectionOpen}
         collections={collections}
         chartData={currentFragmentData}
+        outcomeData={outcomeData}
         onAddToCollection={handleConfirmAddToCollection}
       />
     </div>

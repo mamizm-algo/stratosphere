@@ -32,24 +32,17 @@ export interface SearchConfig {
 }
 
 const AVAILABLE_ASSETS = [
-  { id: "BTC/USD", name: "Bitcoin" },
-  { id: "ETH/USD", name: "Ethereum" },
-  { id: "SPX", name: "S&P 500" },
-  { id: "AAPL", name: "Apple" },
-  { id: "TSLA", name: "Tesla" },
-  { id: "GOLD", name: "Gold" },
-  { id: "EUR/USD", name: "Euro/Dollar" },
-  { id: "GBP/USD", name: "Pound/Dollar" },
+  { id: "GOLD", name: "Gold" }
 ];
 
 const AVAILABLE_TIMEFRAMES = [
   { id: "1m", name: "1 Minute" },
-  { id: "5m", name: "5 Minutes" },
-  { id: "15m", name: "15 Minutes" },
-  { id: "30m", name: "30 Minutes" },
-  { id: "1h", name: "1 Hour" },
-  { id: "4h", name: "4 Hours" },
-  { id: "1d", name: "1 Day" },
+  // { id: "5m", name: "5 Minutes" },
+  // { id: "15m", name: "15 Minutes" },
+  // { id: "30m", name: "30 Minutes" },
+  // { id: "1h", name: "1 Hour" },
+  // { id: "4h", name: "4 Hours" },
+  // { id: "1d", name: "1 Day" },
 ];
 
 export const SimilaritySearchDialog = ({
@@ -225,7 +218,7 @@ export const SimilaritySearchDialog = ({
                 onValueChange={setSimilarityThreshold}
                 min={0}
                 max={100}
-                step={5}
+                step={1}
                 className="py-4"
               />
               <div className="flex justify-between text-xs text-muted-foreground">

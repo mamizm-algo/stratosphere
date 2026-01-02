@@ -19,7 +19,6 @@ import { SearchConfig } from "@/components/chart/SimilaritySearchDialog";
 export interface SimilarityCalculationParams {
   referencePattern: CandleData[]; // The pattern to search for
   candidatePattern: CandleData[]; // The pattern to compare against
-  searchConfig: SearchConfig; // Search filters and parameters
 }
 
 /**
@@ -34,7 +33,7 @@ export interface SimilarityCalculationParams {
 export const calculateSimilarityScore = (
   params: SimilarityCalculationParams
 ): number => {
-  const { referencePattern, candidatePattern, searchConfig } = params;
+  const { referencePattern, candidatePattern } = params;
 
   const similarityResult = similarity_pair_by_optimal_k(referencePattern.map(refCandle => refCandle.close), candidatePattern.map(candCandle => candCandle.close));
   console.log(100*similarityResult[0]);

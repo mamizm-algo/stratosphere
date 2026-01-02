@@ -15,12 +15,14 @@ import { CandleData, generateMockCandles } from "@/components/chart/MockChartDis
 import { SimilarPattern } from "@/components/chart/SimilarityResults";
 import { FolderOpen, Plus, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { calculateSimilarityScore } from "@/lib/similarityCalculator";
 
 interface AddToCollectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   collections: Collection[];
   chartData: CandleData[];
+  outcomeData: CandleData[];
   onAddToCollection: (collectionId: string, result: SimilarPattern) => void;
 }
 
@@ -29,18 +31,22 @@ export const AddToCollectionDialog = ({
   onOpenChange,
   collections,
   chartData,
+  outcomeData,
   onAddToCollection,
 }: AddToCollectionDialogProps) => {
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const [similarityScore, setSimilarityScore] = useState<number | null>(null);
 
   const calculateSimilarity = (collection: Collection) => {
-    // Mock similarity calculation - random score between 60-95%
-    const score = Math.floor(Math.random() * 35) + 60;
+    const score = calculateSimilarityScore({
+      referencePattern: collection.representativeChart,
+      candidatePattern: chartData
+    });
     return score;
   };
 
   const handleSelectCollection = (collection: Collection) => {
+    console.log("calculating similarity to collection")
     setSelectedCollection(collection);
     const score = calculateSimilarity(collection);
     setSimilarityScore(score);
@@ -57,7 +63,7 @@ export const AddToCollectionDialog = ({
       timeframe: "Custom",
       outcome: "neutral",
       setupCandles: chartData,
-      outcomeCandles: generateMockCandles(15, 100, "sideways"),
+      outcomeCandles: outcomeData,
     };
 
     onAddToCollection(selectedCollection.id, newResult);

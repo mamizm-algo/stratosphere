@@ -485,15 +485,6 @@ const PatternCard = ({
           {outcomeIcon}
           <span className="text-xs text-muted-foreground">{pattern.date}</span>
         </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={onSave}
-          className="opacity-0 group-hover:opacity-100 transition-opacity gap-2"
-        >
-          <BookmarkPlus className="w-4 h-4" />
-          Save
-        </Button>
       </div>
     </Card>
   );
