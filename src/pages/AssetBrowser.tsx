@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AssetSearchInput } from "@/components/chart/AssetSearchInput";
 import { Canvas as FabricCanvas, Line, Rect, Text } from "fabric";
 import { format } from "date-fns";
-import { ArrowLeft, Search as SearchIcon, FolderPlus } from "lucide-react";
+import { FolderPlus } from "lucide-react";
 import { ChartHeader } from "@/components/chart/ChartHeader";
 import { SimilaritySearchDialog, SearchConfig } from "@/components/chart/SimilaritySearchDialog";
 import { SimilarityResults, SimilarPattern } from "@/components/chart/SimilarityResults";
@@ -17,6 +17,17 @@ import { searchSimilarPatterns } from "@/lib/similarityCalculator";
 import { CANDLE_DATA, getCandles } from "@/data/candles";
 
 type Timeframe = "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
+
+const AVAILABLE_ASSETS = [
+  { id: "BTC/USD", name: "Bitcoin" },
+  { id: "ETH/USD", name: "Ethereum" },
+  { id: "SPX", name: "S&P 500" },
+  { id: "AAPL", name: "Apple" },
+  { id: "TSLA", name: "Tesla" },
+  { id: "GOLD", name: "Gold" },
+  { id: "EUR/USD", name: "Euro/Dollar" },
+  { id: "GBP/USD", name: "Pound/Dollar" },
+];
 
 const AssetBrowser = () => {
   const navigate = useNavigate();
@@ -356,14 +367,14 @@ const AssetBrowser = () => {
        
         {/* Controls */}
         <div className="bg-card border border-border rounded-lg p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <SearchIcon className="w-4 h-4 text-muted-foreground" />
-              <Input
-                value={asset}
-                onChange={(e) => setAsset(e.target.value)}
+              <AssetSearchInput
+                assets={AVAILABLE_ASSETS}
+                selectedAssets={[asset]}
+                onAssetSelect={(assetId) => setAsset(assetId)}
                 placeholder="Search asset..."
-                className="w-48"
+                className="w-64"
               />
             </div>
 

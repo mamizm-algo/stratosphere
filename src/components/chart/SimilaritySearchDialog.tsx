@@ -12,9 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { AssetSearchInput } from "@/components/chart/AssetSearchInput";
 
 interface SimilaritySearchDialogProps {
   open: boolean;
@@ -65,12 +65,14 @@ export const SimilaritySearchDialog = ({
   const [similarityThreshold, setSimilarityThreshold] = useState([70]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const handleAssetToggle = (assetId: string) => {
-    setSelectedAssets((prev) =>
-      prev.includes(assetId)
-        ? prev.filter((id) => id !== assetId)
-        : [...prev, assetId]
-    );
+  const handleAssetSelect = (assetId: string) => {
+    if (!selectedAssets.includes(assetId)) {
+      setSelectedAssets((prev) => [...prev, assetId]);
+    }
+  };
+
+  const handleAssetRemove = (assetId: string) => {
+    setSelectedAssets((prev) => prev.filter((id) => id !== assetId));
   };
 
   const handleTimeframeToggle = (timeframeId: string) => {
@@ -128,31 +130,16 @@ export const SimilaritySearchDialog = ({
             <div className="space-y-3">
               <Label className="text-base font-semibold">Assets</Label>
               <p className="text-sm text-muted-foreground">
-                Select one or more assets to search
+                Search and add assets to include in the search
               </p>
-              <div className="grid grid-cols-2 gap-3">
-                {AVAILABLE_ASSETS.map((asset) => (
-                  <div
-                    key={asset.id}
-                    className="flex items-center space-x-2 p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors"
-                  >
-                    <Checkbox
-                      id={asset.id}
-                      checked={selectedAssets.includes(asset.id)}
-                      onCheckedChange={() => handleAssetToggle(asset.id)}
-                    />
-                    <label
-                      htmlFor={asset.id}
-                      className="text-sm font-medium leading-none cursor-pointer flex-1"
-                    >
-                      {asset.name}
-                      <span className="block text-xs text-muted-foreground">
-                        {asset.id}
-                      </span>
-                    </label>
-                  </div>
-                ))}
-              </div>
+              <AssetSearchInput
+                assets={AVAILABLE_ASSETS}
+                selectedAssets={selectedAssets}
+                onAssetSelect={handleAssetSelect}
+                onAssetRemove={handleAssetRemove}
+                multiSelect={true}
+                placeholder="Search and add assets..."
+              />
             </div>
 
             {/* Time Frame (Candle Granularity) */}

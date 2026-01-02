@@ -12,7 +12,7 @@ import candleDataJson from './candle-data.json'
  * 3. Replace the CANDLE_DATA constant with the imported data
  */
 
-const candleData: CandleData[] = candleDataJson.slice(0, 11000);
+const candleData: CandleData[] = candleDataJson.slice(0, 11000).map(c => ({ ...c, x: 0, ctm: new Date(c.ctm) }));
 console.log(candleData.length);
 // Placeholder for candle data
 // Replace this with imported JSON data when ready
