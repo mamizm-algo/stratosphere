@@ -8,13 +8,14 @@ import { format } from "date-fns";
 import { FolderPlus } from "lucide-react";
 import { ChartHeader } from "@/components/chart/ChartHeader";
 import { SimilaritySearchDialog, SearchConfig } from "@/components/chart/SimilaritySearchDialog";
-import { SimilarityResults, SimilarPattern } from "@/components/chart/SimilarityResults";
+import { SimilarPattern } from "@/pages/Results";
 import { CandleData, generateMockCandles } from "@/components/chart/MockChartDisplay";
 import { AddToCollectionDialog } from "@/components/library/AddToCollectionDialog";
 import { useCollections } from "@/hooks/useCollections";
 import { toast } from "sonner";
 import { searchSimilarPatterns } from "@/lib/similarityCalculator";
 import { CANDLE_DATA, getCandles } from "@/data/candles";
+import { storeSearchResults } from "@/pages/Results";
 
 type Timeframe = "1m" ;//| "5m" | "15m" | "1h" | "4h" | "1d";
 
@@ -33,7 +34,6 @@ const AssetBrowser = () => {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedRange, setSelectedRange] = useState<{ start: number; end: number } | null>(null);
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<SimilarPattern[]>([]);
   const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
   const [currentFragmentData, setCurrentFragmentData] = useState<CandleData[]>([]);
   const [outcomeData, setOutcomeData] = useState<CandleData[]>([]);
@@ -303,7 +303,6 @@ const AssetBrowser = () => {
 
     // Get the selected candle fragment
     const selectedCandles = candles.slice(selectedRange.start, selectedRange.end + 1);
-    setCurrentFragmentData(selectedCandles);
 
     // Search through all imported data for similar patterns
     const searchResults = searchSimilarPatterns(
@@ -324,13 +323,14 @@ const AssetBrowser = () => {
       outcomeCandles: result.outcomeCandles,
     }));
 
-    setSearchResults(patterns);
     setSearchDialogOpen(false);
     
     if (patterns.length === 0) {
       toast.info("No similar patterns found. Try lowering the similarity threshold.");
     } else {
-      toast.success(`Found ${patterns.length} similar patterns`);
+      // Store results and navigate to results page
+      storeSearchResults(patterns, selectedCandles);
+      navigate("/results");
     }
   };
 
@@ -341,10 +341,10 @@ const AssetBrowser = () => {
   const handleAddToCollection = () => {
     if (!selectedRange) return;
     const fragmentData = candles.slice(selectedRange.start, selectedRange.end + 1);
-    const outcomeData = candles.slice(selectedRange.end + 1, selectedRange.end + 100);
+    const outcome = candles.slice(selectedRange.end + 1, selectedRange.end + 100);
 
     setCurrentFragmentData(fragmentData);
-    setOutcomeData(outcomeData);
+    setOutcomeData(outcome);
     setAddToCollectionOpen(true);
   };
 
@@ -453,15 +453,6 @@ const AssetBrowser = () => {
           )}
         </div>
 
-        {/* Search Results */}
-        {searchResults.length > 0 && (
-          <SimilarityResults
-            patterns={searchResults}
-            onClose={() => setSearchResults([])}
-            onSaveToLibrary={handleSaveToLibrary}
-            setupCandles={selectedRange ? candles.slice(selectedRange.start, selectedRange.end + 1) : undefined}
-          />
-        )}
       </div>
 
       <SimilaritySearchDialog
