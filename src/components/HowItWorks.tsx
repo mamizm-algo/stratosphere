@@ -26,7 +26,7 @@ export const HowItWorks = () => {
                   <div className="inline-flex p-4 rounded-xl bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform">
                     <PenTool className="w-8 h-8" />
                   </div>
-                  <h3 className="text-2xl font-semibold text-foreground mb-3">
+                  <h3 className="text-2xl text-foreground mb-3">
                     Create Your Pattern
                   </h3>
                   <p className="text-muted-foreground mb-6">
@@ -65,8 +65,8 @@ export const HowItWorks = () => {
                   <div className="inline-flex p-4 rounded-xl bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform">
                     <Search className="w-8 h-8" />
                   </div>
-                  <h3 className="text-2xl font-semibold text-foreground mb-3">
-                    AI Pattern Search
+                  <h3 className="text-2xl text-foreground mb-3">
+                    Pattern Similarity Search
                   </h3>
                   <p className="text-muted-foreground mb-6">
                     Our algorithm scans thousands of historical charts to find patterns similar to yours.
@@ -110,7 +110,7 @@ export const HowItWorks = () => {
                   <div className="inline-flex p-4 rounded-xl bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform">
                     <BookmarkCheck className="w-8 h-8" />
                   </div>
-                  <h3 className="text-2xl font-semibold text-foreground mb-3">
+                  <h3 className="text-2xl text-foreground mb-3">
                     Analyze & Save
                   </h3>
                   <p className="text-muted-foreground mb-6">
