@@ -173,9 +173,6 @@ const Results = () => {
 
   const uniqueAssets = Array.from(new Set(patterns.map((p) => p.asset)));
 
-  const handleSavePattern = (pattern: SimilarPattern) => {
-    toast.success(`Pattern saved to library: ${pattern.asset} - ${pattern.similarity}%`);
-  };
 
   const handleApplyVirtualTransaction = (params: VirtualTransactionParams) => {
     setTransactionParams({ ...params });
@@ -461,7 +458,6 @@ const Results = () => {
                   <PatternCard
                     key={pattern.id}
                     pattern={pattern}
-                    onSave={() => handleSavePattern(pattern)}
                     onClick={() => {
                       setCurrentIndex(filteredPatterns.indexOf(pattern));
                       setViewMode("detail");
@@ -477,7 +473,6 @@ const Results = () => {
               <div className="flex flex-col">
                 <PatternDetailView
                   pattern={filteredPatterns[currentIndex]}
-                  onSave={() => handleSavePattern(filteredPatterns[currentIndex])}
                   individualStats={getIndividualStats(filteredPatterns[currentIndex])}
                   transactionParams={transactionParams}
                   setupCandles={setupCandles}
@@ -574,11 +569,9 @@ const Results = () => {
 // Pattern Card Component
 const PatternCard = ({
   pattern,
-  onSave,
   onClick,
 }: {
   pattern: SimilarPattern;
-  onSave: () => void;
   onClick?: () => void;
 }) => {
   const outcomeIcon =
@@ -617,7 +610,6 @@ const PatternCard = ({
 // Pattern Detail View Component
 interface PatternDetailViewProps {
   pattern: SimilarPattern;
-  onSave: () => void;
   individualStats?: IndividualTradeStats;
   transactionParams?: {
     takeProfit: number;
@@ -630,7 +622,6 @@ interface PatternDetailViewProps {
 
 const PatternDetailView = ({
   pattern,
-  onSave,
   individualStats,
   transactionParams,
   setupCandles: propSetupCandles,

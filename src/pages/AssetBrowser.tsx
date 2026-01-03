@@ -1,306 +1,327 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AssetSearchInput } from "@/components/chart/AssetSearchInput";
-import { Canvas as FabricCanvas, Line, Rect, Text } from "fabric";
-import { format } from "date-fns";
-import { FolderPlus } from "lucide-react";
-import { SimilaritySearchDialog, SearchConfig } from "@/components/chart/SimilaritySearchDialog";
-import { SimilarPattern } from "@/pages/Results";
-import { CandleData, generateMockCandles } from "@/components/chart/MockChartDisplay";
-import { AddToCollectionDialog } from "@/components/library/AddToCollectionDialog";
-import { useCollections } from "@/hooks/useCollections";
-import { toast } from "sonner";
-import { searchSimilarPatterns } from "@/lib/similarityCalculator";
-import { CANDLE_DATA, getCandles } from "@/data/candles";
-import { storeSearchResults } from "@/pages/Results";
+import { CandleData } from "@/components/chart/MockChartDisplay";
+import { SearchConfig, SimilaritySearchDialog } from "@/components/chart/SimilaritySearchDialog";
 import { HomeHeader } from "@/components/HomeHeader";
+import { AddToCollectionDialog } from "@/components/library/AddToCollectionDialog";
+import { CANDLE_DATA, getCandles } from "@/data/candles";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  createChart,
+  CrosshairMode,
+  IChartApi,
+  ISeriesApi,
+  CandlestickData,
+  BarSeries,
+  BaselineSeries,
+  CandlestickSeries,
+  ISeriesPrimitive,
+  Time,
+  IPrimitivePaneRenderer,
+  IPrimitivePaneView,
+  Logical
+} from "lightweight-charts";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { FolderPlus } from "lucide-react";
+import { searchSimilarPatterns } from "@/lib/similarityCalculator";
+import { SimilarPattern, storeSearchResults } from "./Results";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useCollections } from "@/hooks/useCollections";
 
 type Timeframe = "1m" ;//| "5m" | "15m" | "1h" | "4h" | "1d";
-
 const AVAILABLE_ASSETS = [
   { id: "GOLD", name: "Gold" }
 ];
 
+
+class RangeSelectionPrimitive implements ISeriesPrimitive<Time> {
+  private startLogical: number;
+  private endLogical: number | null = null;
+  private chart: IChartApi;
+
+  constructor(chart: IChartApi, startLogical: number) {
+    this.chart = chart;
+    this.startLogical = startLogical;
+  }
+
+  updateEndLogical(logical: number) {
+    this.endLogical = logical;
+  }
+
+  paneViews(): IPrimitivePaneView[] {
+    return [
+      {
+        renderer: () => ({
+          draw: (target) => {
+            target.useMediaCoordinateSpace((scope) => {
+              const ctx = scope.context;
+              const height = scope.mediaSize.height;
+              const timeScale = this.chart.timeScale();
+
+              const startX = timeScale.logicalToCoordinate(this.startLogical as Logical);
+              const endX =
+                this.endLogical !== null
+                  ? timeScale.logicalToCoordinate(this.endLogical as Logical)
+                  : null;
+
+              if (startX === null) return;
+
+              ctx.save();
+
+              if (endX === null) {
+                // First click: vertical line
+                ctx.strokeStyle = "rgba(80,160,255,0.9)";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(startX, 0);
+                ctx.lineTo(startX, height);
+                ctx.stroke();
+              } else {
+                // Final range
+                const left = Math.min(startX, endX);
+                const width = Math.abs(endX - startX);
+
+                ctx.fillStyle = "rgba(80,160,255,0.2)";
+                ctx.strokeStyle = "rgba(80,160,255,0.9)";
+                ctx.lineWidth = 2;
+
+                ctx.fillRect(left, 0, width, height);
+                ctx.strokeRect(left, 0, width, height);
+              }
+
+              ctx.restore();
+            });
+          },
+        }),
+      },
+    ];
+  }
+}
+
 const AssetBrowser = () => {
-  const navigate = useNavigate();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
-  
-  const [asset, setAsset] = useState("GOLD");
-  const [timeframe, setTimeframe] = useState<Timeframe>("1m");
-  const [candles, setCandles] = useState<CandleData[]>([]);
-  const [isSelecting, setIsSelecting] = useState(false);
-  const [selectedRange, setSelectedRange] = useState<{ start: number; end: number } | null>(null);
-  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
-  const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
-  const [currentFragmentData, setCurrentFragmentData] = useState<CandleData[]>([]);
-  const [outcomeData, setOutcomeData] = useState<CandleData[]>([]);
+const navigate = useNavigate();
+const chartRef = useRef<HTMLDivElement | null>(null);
+const chartApiRef = useRef<IChartApi | null>(null);
+const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+const [candles, setCandles] = useState<CandleData[]>([]);
+const [asset, setAsset] = useState("GOLD");
+const [timeframe, setTimeframe] = useState<Timeframe>("1m");
+const clickHandlerRef = useRef<((param: any) => void) | null>(null);
+const crosshairHandlerRef = useRef<((param: any) => void) | null>(null);
+const [isSelecting, setIsSelecting] = useState(false);
+const [selectedRange, setSelectedRange] = useState<{ start: number; end: number } | null>(null);
+const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+const selectionPrimitiveRef = useRef<RangeSelectionPrimitive | null>(null);
+const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
+const { collections, addResultToCollection } = useCollections();
+const [currentFragmentData, setCurrentFragmentData] = useState<CandleData[]>([]);
+const [outcomeData, setOutcomeData] = useState<CandleData[]>([]);
 
-  
 
-  const { collections, addResultToCollection } = useCollections();
-
-  const CHART_WIDTH = 1200;
-  const CHART_HEIGHT = 600;
-  const PADDING = 60;
 
   // Load candles from imported data
   useEffect(() => {
     const allData = getCandles(asset, timeframe);
-    const candleData = allData.slice(allData.length - 200);
+    const candleData = allData.slice(allData.length - 2000);
     
     setCandles(candleData);
   }, [asset, timeframe]);
 
-  // Initialize canvas
-  useEffect(() => {
-    if (!canvasRef.current || fabricCanvas) return;
 
-    const canvas = new FabricCanvas(canvasRef.current, {
-      width: CHART_WIDTH,
-      height: CHART_HEIGHT,
-      backgroundColor: "hsl(220, 25%, 8%)",
-      selection: false,
-    });
+useEffect(() => {
+  if (!chartRef.current) return;
 
-    setFabricCanvas(canvas);
+  const chart = createChart(chartRef.current, {
+  // width: 900,
+  // height: 500,
+  layout: {
+    background: { color: "hsl(220, 25%, 8%)" },
+    textColor: "hsl(215, 20%, 65%)",
+  },
+  grid: {
+    vertLines: { color: "hsl(240 3.7% 15.9%)" },
+    horzLines: { color: "hsl(240 3.7% 15.9%)" },
+  },
+  crosshair: {
+    mode: CrosshairMode.Normal,
+  },
+  timeScale: {
+    borderColor: "hsl(240 3.7% 15.9%)",
+  },
+  // ✅ make chart responsive
+  rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
+  leftPriceScale: { visible: false },
+  handleScroll: true,
+  handleScale: true,
+  // this tells lightweight-charts to fill the container
+  width: chartRef.current.clientWidth,
+  height: chartRef.current.clientHeight,
+});
 
-    return () => {
-      canvas.dispose();
-    };
-  }, []);
+  const series = chart.addSeries(CandlestickSeries);
 
-  // Draw candles on canvas
-  useEffect(() => {
-    if (!fabricCanvas || candles.length === 0) return;
+  chartApiRef.current = chart;
+  seriesRef.current = series;
 
-    // Clear existing objects except selection overlays
-    const objects = fabricCanvas.getObjects();
-    objects.forEach((obj) => {
-      if (!(obj as any).isSelection) {
-        fabricCanvas.remove(obj);
-      }
-    });
+  return () => chart.remove();
+}, []);
 
-    // Calculate scales
-    const allPrices = candles.flatMap((c) => [c.high, c.low]);
-    const minPrice = Math.min(...allPrices);
-    const maxPrice = Math.max(...allPrices);
-    const priceRange = maxPrice - minPrice;
+useEffect(() => {
+  const chart = chartApiRef.current;
+  if (!chart) return;
 
-    const candleWidth = (CHART_WIDTH - PADDING * 2) / candles.length;
-
-    const priceToY = (price: number) => {
-      return CHART_HEIGHT - PADDING - ((price - minPrice) / priceRange) * (CHART_HEIGHT - PADDING * 2);
-    };
-
-    const indexToX = (index: number) => {
-      return PADDING + index * candleWidth + candleWidth / 2;
-    };
-
-    // Draw grid with Y-axis price labels
-    const gridLines: (Line | Text)[] = [];
-    for (let i = 0; i <= 10; i++) {
-      const y = PADDING + (i * (CHART_HEIGHT - PADDING * 2)) / 10;
-      const line = new Line([PADDING, y, CHART_WIDTH - PADDING, y], {
-        stroke: "hsl(240 3.7% 15.9%)",
-        strokeWidth: 1,
-        selectable: false,
-        evented: false,
-      });
-      gridLines.push(line);
-
-      // Y-axis price labels
-      const price = maxPrice - (i * priceRange) / 10;
-      const priceLabel = new Text(price.toFixed(2), {
-        left: CHART_WIDTH - PADDING + 5,
-        top: y - 8,
-        fontSize: 12,
-        fill: "hsl(215, 20%, 65%)",
-        selectable: false,
-        evented: false,
-      });
-      gridLines.push(priceLabel);
+  const resizeObserver = new ResizeObserver(() => {
+    if (chartRef.current) {
+      chart.resize(
+        chartRef.current.clientWidth,
+        chartRef.current.clientHeight
+      );
     }
+  });
 
-    // Vertical time lines with X-axis date labels
-    const timeStep = Math.floor(candles.length / 8);
-    for (let i = 0; i <= 8; i++) {
-      const candleIndex = Math.min(i * timeStep, candles.length - 1);
-      const x = indexToX(candleIndex);
-      
-      const line = new Line([x, PADDING, x, CHART_HEIGHT - PADDING], {
-        stroke: "hsl(240 3.7% 15.9%)",
-        strokeWidth: 1,
-        selectable: false,
-        evented: false,
-      });
-      gridLines.push(line);
+  resizeObserver.observe(chartRef.current);
 
-      // X-axis time labels
-      const candle = candles[candleIndex];
-      const timestamp = candle.ctm || new Date(Date.now() - (candles.length - candleIndex) * 3600000);
-      const timeLabel = new Text(format(timestamp, "MM/dd HH:mm"), {
-        left: x - 30,
-        top: CHART_HEIGHT - PADDING + 5,
-        fontSize: 11,
-        fill: "hsl(215, 20%, 65%)",
-        selectable: false,
-        evented: false,
-      });
-      gridLines.push(timeLabel);
+  return () => {
+    resizeObserver.disconnect();
+  };
+}, []);
+
+
+
+useEffect(() => {
+  if (!seriesRef.current) return;
+
+  const data: CandlestickData[] = candles.map(c => ({
+    time: c.ctm.getTime(),
+    open: c.open,
+    high: c.high,
+    low: c.low,
+    close: c.close,
+  }));
+
+  seriesRef.current.setData(data);
+}, [candles]);
+
+const startSelection = () => {
+  const chart = chartApiRef.current;
+  const series = seriesRef.current;
+  if (!chart || !series) return;
+
+  setIsSelecting(true);
+  setSelectedRange(null);
+
+  const handleClick = (param: any) => {
+    if (param.logical === undefined) return;
+
+    if (!selectionPrimitiveRef.current) {
+      const primitive = new RangeSelectionPrimitive(
+        chart,
+        param.logical as Logical
+      );
+      selectionPrimitiveRef.current = primitive;
+      series.attachPrimitive(primitive);
+    } else {
+      finalizeSelection(param.logical as Logical);
     }
-
-    fabricCanvas.add(...gridLines);
-
-    // Draw candlesticks
-    candles.forEach((candle, index) => {
-      const x = indexToX(index);
-      const isBullish = candle.close > candle.open;
-
-      // Wick
-      const wick = new Line([x, priceToY(candle.high), x, priceToY(candle.low)], {
-        stroke: isBullish ? "hsl(142, 71%, 45%)" : "hsl(0, 84%, 60%)",
-        strokeWidth: 1,
-        selectable: false,
-        evented: false,
-      });
-
-      // Body
-      const bodyTop = Math.min(priceToY(candle.open), priceToY(candle.close));
-      const bodyBottom = Math.max(priceToY(candle.open), priceToY(candle.close));
-      const bodyHeight = Math.max(bodyBottom - bodyTop, 1);
-
-      const body = new Rect({
-        left: x - candleWidth / 4,
-        top: bodyTop,
-        width: candleWidth / 2,
-        height: bodyHeight,
-        fill: isBullish ? "hsl(142, 71%, 45%)" : "hsl(0, 84%, 60%)",
-        selectable: false,
-        evented: false,
-      });
-
-      fabricCanvas.add(wick, body);
-    });
-
-    fabricCanvas.renderAll();
-  }, [fabricCanvas, candles]);
-
-  const handleStartSelection = () => {
-    if (!fabricCanvas) return;
-    
-    setIsSelecting(true);
-    setSelectedRange(null);
-    
-    // Remove existing selection overlays
-    const objects = fabricCanvas.getObjects();
-    objects.forEach((obj) => {
-      if ((obj as any).isSelection) {
-        fabricCanvas.remove(obj);
-      }
-    });
-
-    let firstClickX: number | null = null;
-    let selectionOverlay: Rect | null = null;
-    let leftBoundary: Line | null = null;
-    let rightBoundary: Line | null = null;
-
-    const handleClick = (e: any) => {
-      const pointer = fabricCanvas.getPointer(e.e);
-      const x = pointer.x;
-
-      if (x < PADDING || x > CHART_WIDTH - PADDING) return;
-
-      if (firstClickX === null) {
-        // First click - draw left boundary
-        firstClickX = x;
-        leftBoundary = new Line([x, PADDING, x, CHART_HEIGHT - PADDING], {
-          stroke: "hsl(176 41% 31%)",
-          strokeWidth: 2,
-          selectable: false,
-          evented: false,
-        });
-        (leftBoundary as any).isSelection = true;
-        fabricCanvas.add(leftBoundary);
-        fabricCanvas.renderAll();
-        toast.info("Click again to set the right boundary");
-      } else {
-        // Second click - draw right boundary and overlay
-        const startX = Math.min(firstClickX, x);
-        const endX = Math.max(firstClickX, x);
-
-        rightBoundary = new Line([x, PADDING, x, CHART_HEIGHT - PADDING], {
-          stroke: "hsl(176 41% 31%)",
-          strokeWidth: 2,
-          selectable: false,
-          evented: false,
-        });
-        (rightBoundary as any).isSelection = true;
-
-        selectionOverlay = new Rect({
-          left: startX,
-          top: PADDING,
-          width: endX - startX,
-          height: CHART_HEIGHT - PADDING * 2,
-          fill: "rgba(46, 111, 107, 0.1)",
-          stroke: "rgba(46, 111, 107, 0.1)",
-          strokeWidth: 2,
-          selectable: false,
-          evented: false,
-        });
-        (selectionOverlay as any).isSelection = true;
-
-        fabricCanvas.add(selectionOverlay, rightBoundary);
-        fabricCanvas.renderAll();
-
-        // Calculate selected candle indices
-        const candleWidth = (CHART_WIDTH - PADDING * 2) / candles.length;
-        const startIndex = Math.floor((startX - PADDING) / candleWidth);
-        const endIndex = Math.ceil((endX - PADDING) / candleWidth);
-
-        setSelectedRange({
-          start: Math.max(0, startIndex),
-          end: Math.min(candles.length - 1, endIndex),
-        });
-
-        setIsSelecting(false);
-        fabricCanvas.off("mouse:down", handleClick);
-        toast.success("Fragment selected! Click 'Search Similar' to find matches.");
-      }
-    };
-
-    fabricCanvas.on("mouse:down", handleClick);
   };
 
-  const handleCancelSelection = () => {
-    if (!fabricCanvas) return;
+  const handleMove = (param: any) => {
+    if (
+      !selectionPrimitiveRef.current ||
+      param.logical === undefined
+    )
+      return;
 
-    setIsSelecting(false);
-    setSelectedRange(null);
+    selectionPrimitiveRef.current.updateEndLogical(
+      param.logical as Logical
+    );
 
-    // Remove selection overlays
-    const objects = fabricCanvas.getObjects();
-    objects.forEach((obj) => {
-      if ((obj as any).isSelection) {
-        fabricCanvas.remove(obj);
-      }
-    });
-
-    fabricCanvas.off("mouse:down");
-    fabricCanvas.renderAll();
+    const range = chart.timeScale().getVisibleLogicalRange();
+    if (range) {
+      chart.timeScale().setVisibleLogicalRange(range);
+    }
   };
 
-  const handleSearchSimilar = () => {
+  clickHandlerRef.current = handleClick;
+  crosshairHandlerRef.current = handleMove;
+
+  chart.subscribeClick(handleClick);
+  chart.subscribeCrosshairMove(handleMove);
+};
+
+
+const cleanupSelectionListeners = () => {
+  const chart = chartApiRef.current;
+  if (!chart) return;
+
+  if (clickHandlerRef.current) {
+    chart.unsubscribeClick(clickHandlerRef.current);
+    clickHandlerRef.current = null;
+  }
+
+  if (crosshairHandlerRef.current) {
+    chart.unsubscribeCrosshairMove(crosshairHandlerRef.current);
+    crosshairHandlerRef.current = null;
+  }
+};
+
+
+const finalizeSelection = (endLogical: number) => {
+  const primitive = selectionPrimitiveRef.current;
+  if (!primitive) return;
+
+  primitive.updateEndLogical(endLogical);
+
+  const start = Math.min(
+    primitive["startLogical"],
+    endLogical
+  );
+  const end = Math.max(
+    primitive["startLogical"],
+    endLogical
+  );
+
+  setSelectedRange({ start, end });
+
+  setIsSelecting(false);
+  cleanupSelectionListeners();
+};
+
+
+const cancelSelection = () => {
+  const chart = chartApiRef.current;
+  const series = seriesRef.current;
+
+  // 1️⃣ Remove primitive from chart
+  if (selectionPrimitiveRef.current && series) {
+    series.detachPrimitive(selectionPrimitiveRef.current);
+    selectionPrimitiveRef.current = null;
+  }
+
+  // 2️⃣ Cleanup listeners
+  cleanupSelectionListeners();
+
+  // 3️⃣ Reset state
+  setIsSelecting(false);
+  setSelectedRange(null);
+
+  // 4️⃣ Force redraw so rectangle disappears immediately
+  if (chart) {
+    const range = chart.timeScale().getVisibleLogicalRange();
+    if (range) {
+      chart.timeScale().setVisibleLogicalRange(range);
+    }
+  }
+};
+
+ const handleSearchSimilar = () => {
     if (!selectedRange) return;
     setSearchDialogOpen(true);
   };
 
-  const handleSearch = (config: SearchConfig) => {
+const handleSearch = (config: SearchConfig) => {
     if (!selectedRange) return;
-
     // Get the selected candle fragment
     const selectedCandles = candles.slice(selectedRange.start, selectedRange.end + 1);
 
@@ -333,11 +354,7 @@ const AssetBrowser = () => {
       navigate("/results");
     }
   };
-
-  const handleSaveToLibrary = (pattern: SimilarPattern) => {
-    toast.success("Pattern saved to library");
-  };
-
+  
   const handleAddToCollection = () => {
     if (!selectedRange) return;
     const fragmentData = candles.slice(selectedRange.start, selectedRange.end + 1);
@@ -352,7 +369,7 @@ const AssetBrowser = () => {
     addResultToCollection(collectionId, result);
   };
 
-  return (
+return (
     <div className="min-h-screen bg-background">
       <HomeHeader />
       
@@ -390,7 +407,7 @@ const AssetBrowser = () => {
             {!isSelecting && !selectedRange && (
               <Button
                 type="button"
-                onClick={handleStartSelection}
+                onClick={startSelection}
                 variant="default"
               >
                 Select Fragment
@@ -400,7 +417,7 @@ const AssetBrowser = () => {
             {isSelecting && (
               <Button
                 type="button"
-                onClick={handleCancelSelection}
+                onClick={cancelSelection}
                 variant="outline"
               >
                 Cancel Selection
@@ -427,7 +444,7 @@ const AssetBrowser = () => {
                 </Button>
                 <Button
                   type="button"
-                  onClick={handleCancelSelection}
+                  onClick={cancelSelection}
                   variant="outline"
                 >
                   Clear Selection
@@ -440,19 +457,21 @@ const AssetBrowser = () => {
           </div>
         </div>
 
-        {/* Chart */}
-        <div className="bg-card border border-border rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">{asset} - {timeframe}</h2>
-          <div className="flex justify-center">
-            <canvas ref={canvasRef} className="border border-border rounded" />
-          </div>
-          {isSelecting && (
+        <div className="bg-card border border-border rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">
+            {asset} – {timeframe}
+          </h2>
+
+          <div
+            ref={chartRef}
+            className="w-full h-[600px]" // or h-full inside a flex container
+          />
+           {isSelecting && (
             <p className="text-center text-muted-foreground mt-4">
               Click on the chart to set the left boundary, then click again to set the right boundary
             </p>
           )}
         </div>
-
       </div>
 
       <SimilaritySearchDialog
@@ -471,6 +490,7 @@ const AssetBrowser = () => {
       />
     </div>
   );
-};
+}
 
 export default AssetBrowser;
+

@@ -1,8 +1,49 @@
-import { useEffect, useRef, useState } from "react";
-import { Canvas as FabricCanvas, Line, Rect, Group, Text } from "fabric";
+import { useEffect, useRef } from "react";
 import { CandleData } from "./MockChartDisplay";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { format } from "date-fns";
+import {  CandlestickSeries, createChart, CrosshairMode, IChartApi, IPrimitivePaneView, ISeriesApi, ISeriesPrimitive, Logical, Time } from "lightweight-charts";
+
+
+class SetupOutcomeDividerPrimitive implements ISeriesPrimitive<Time> {
+  private dividerLogical: Logical;
+  private chart: IChartApi;
+
+  constructor(chart: IChartApi, dividerLogical: Logical) {
+    this.chart = chart;
+    this.dividerLogical = dividerLogical;
+  }
+
+  paneViews(): IPrimitivePaneView[] {
+    return [
+      {
+        renderer: () => ({
+          draw: (target) => {
+            target.useMediaCoordinateSpace((scope) => {
+              const ctx = scope.context;
+              const height = scope.mediaSize.height;
+
+              const dividerX = this.chart.timeScale().logicalToCoordinate(
+                this.dividerLogical
+              );
+
+              if (dividerX === null) return;
+
+              ctx.save();
+              ctx.strokeStyle = "rgba(80,160,255,0.9)";
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(dividerX, 0);
+              ctx.lineTo(dividerX, height);
+              ctx.stroke();
+              ctx.restore();
+            });
+          },
+        }),
+      },
+    ];
+  }
+}
+
 
 interface DetailChartCanvasProps {
   setupCandles: CandleData[];
@@ -24,260 +65,98 @@ export const DetailChartCanvas = ({
   onChartTypeChange,
   transactionParams,
 }: DetailChartCanvasProps) => {
-  const CANVAS_WIDTH = 1200;
-  const CANVAS_HEIGHT = 500;
-  const PADDING = 40;
+const chartRef = useRef<HTMLDivElement | null>(null);
+const chartApiRef = useRef<IChartApi | null>(null);
+const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+const selectionPrimitiveRef = useRef<SetupOutcomeDividerPrimitive | null>(null);
+  
+useEffect(() => {
+  if (!chartRef.current) return;
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fabricCanvasRef = useRef<FabricCanvas | null>(null);
-  const [dividerX, setdividerX] = useState<number>(CANVAS_WIDTH * (setupCandles.length / (setupCandles.length + outcomeCandles.length || 1)));
+  const chart = createChart(chartRef.current, {
+  // width: 900,
+  // height: 500,
+  layout: {
+    background: { color: "hsl(220, 25%, 8%)" },
+    textColor: "hsl(215, 20%, 65%)",
+  },
+  grid: {
+    vertLines: { color: "hsl(240 3.7% 15.9%)" },
+    horzLines: { color: "hsl(240 3.7% 15.9%)" },
+  },
+  crosshair: {
+    mode: CrosshairMode.Normal,
+  },
+  timeScale: {
+    borderColor: "hsl(240 3.7% 15.9%)",
+  },
+  // ✅ make chart responsive
+  rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
+  leftPriceScale: { visible: false },
+  handleScroll: true,
+  handleScale: true,
+  // this tells lightweight-charts to fill the container
+  width: chartRef.current.clientWidth,
+  height: chartRef.current.clientHeight,
+});
 
-  useEffect(() => {
-    if (!canvasRef.current) return;
+  const series = chart.addSeries(CandlestickSeries);
 
-    const canvas = new FabricCanvas(canvasRef.current, {
-      width: CANVAS_WIDTH,
-      height: CANVAS_HEIGHT,
-      backgroundColor: "hsl(220, 25%, 8%)",
-      selection: false,
-    });
+  chartApiRef.current = chart;
+  seriesRef.current = series;
 
-    fabricCanvasRef.current = canvas;
-    drawChart(canvas);
+  return () => chart.remove();
+}, []);
 
-    return () => {
-      canvas.dispose();
-    };
-  }, []);
+useEffect(() => {
+  const chart = chartApiRef.current;
+  if (!chart) return;
 
-  useEffect(() => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
-
-    canvas.clear();
-    canvas.backgroundColor = "hsl(220, 25%, 8%)";
-    drawChart(canvas);
-  }, [setupCandles, outcomeCandles, chartType, transactionParams]);
-
-  const drawChart = (canvas: FabricCanvas) => {
-    // Calculate price range for all data
-    const allCandles = [...setupCandles, ...outcomeCandles];
-    const allPrices = allCandles.flatMap((c) => [c.high, c.low]);
-    const minPrice = Math.min(...allPrices);
-    const maxPrice = Math.max(...allPrices);
-    const priceRange = maxPrice - minPrice;
-    const priceToY = (price: number) =>
-      PADDING + ((maxPrice - price) / priceRange) * (CANVAS_HEIGHT - 2 * PADDING);
-
-    // Draw grid
-    drawGrid(canvas, minPrice, maxPrice, priceToY);
-
-    // Draw setup candles
-    const setupCandleWidth = (CANVAS_WIDTH - 2 * PADDING) / (setupCandles.length + outcomeCandles.length || 1);
-    setupCandles.forEach((candle, i) => {
-      const x = PADDING + i * setupCandleWidth + setupCandleWidth / 2;
-      drawCandle(canvas, candle, x, setupCandleWidth * 0.7, priceToY);
-    });
-
-    // Draw vertical divider
-    const divider = new Line([dividerX, 0, dividerX, CANVAS_HEIGHT], {
-      stroke: "hsl(180, 100%, 50%)",
-      strokeWidth: 2,
-      strokeDashArray: [10, 5],
-      selectable: false,
-      evented: false,
-    });
-    canvas.add(divider);
-
-    // Draw outcome candles
-    const outcomeCandleWidth = (CANVAS_WIDTH - 2 * PADDING) /(setupCandles.length + outcomeCandles.length || 1);
-    outcomeCandles.forEach((candle, i) => {
-      const x = dividerX + i * outcomeCandleWidth + outcomeCandleWidth / 2;
-      drawCandle(canvas, candle, x, outcomeCandleWidth * 0.7, priceToY);
-    });
-
-    // Draw transaction box if parameters are provided
-    if (transactionParams) {
-      drawTransactionBox(canvas, priceToY);
-    }
-
-    canvas.renderAll();
-  };
-
-  const drawTransactionBox = (canvas: FabricCanvas, priceToY: (price: number) => number) => {
-    if (!transactionParams) return;
-    const transactionOpenPrice = outcomeCandles[0].open;
-    const entryY = priceToY(transactionOpenPrice);
-    const takeProfitY = priceToY(transactionOpenPrice * (1 + transactionParams.takeProfit / 100 * (transactionParams.position === "long" ? 1 : -1)));
-    const stopLossY = priceToY(transactionOpenPrice * (1 - transactionParams.stopLoss / 100 * (transactionParams.position === "long" ? 1 : -1)));
-
-    const boxWidth = (transactionParams.timeHorizon / setupCandles.length) * (dividerX - 2 * PADDING);
-    const boxLeft = dividerX - 10;
-
-    // Profit area (green)
-    const profitHeight = Math.abs(takeProfitY - entryY);
-    const profitArea = new Rect({
-      left: boxLeft,
-      top: transactionParams.position === "long" ? takeProfitY : entryY,
-      width: boxWidth,
-      height: profitHeight,
-      fill: "rgba(34, 197, 94, 0.3)",
-      stroke: "hsl(142, 76%, 36%)",
-      strokeWidth: 2,
-      selectable: false,
-      evented: false,
-    });
-
-    // Loss area (red)
-    const lossHeight = Math.abs(stopLossY - entryY);
-    const lossArea = new Rect({
-      left: boxLeft,
-      top: transactionParams.position === "long" ? entryY : stopLossY,
-      width: boxWidth,
-      height: lossHeight,
-      fill: "rgba(239, 68, 68, 0.3)",
-      stroke: "hsl(0, 72%, 51%)",
-      strokeWidth: 2,
-      selectable: false,
-      evented: false,
-    });
-
-    // Entry line
-    const entryLine = new Line([boxLeft, entryY, boxLeft + boxWidth, entryY], {
-      stroke: "hsl(217, 91%, 60%)",
-      strokeWidth: 2,
-      strokeDashArray: [5, 5],
-      selectable: false,
-      evented: false,
-    });
-
-    canvas.add(profitArea, lossArea, entryLine);
-  };
-
-  const drawGrid = (
-    canvas: FabricCanvas,
-    minPrice: number,
-    maxPrice: number,
-    priceToY: (price: number) => number
-  ) => {
-    // Horizontal price lines with Y-axis labels
-    const priceStep = (maxPrice - minPrice) / 5;
-    for (let i = 0; i <= 5; i++) {
-      const price = minPrice + i * priceStep;
-      const y = priceToY(price);
-      const line = new Line([PADDING, y, CANVAS_WIDTH - PADDING, y], {
-        stroke: "hsl(220, 20%, 15%)",
-        strokeWidth: 1,
-        selectable: false,
-        evented: false,
-      });
-      canvas.add(line);
-
-      // Y-axis price labels
-      const priceLabel = new Text(price.toFixed(2), {
-        left: CANVAS_WIDTH - PADDING + 5,
-        top: y - 8,
-        fontSize: 12,
-        fill: "hsl(215, 20%, 65%)",
-        selectable: false,
-        evented: false,
-      });
-      canvas.add(priceLabel);
-    }
-
-    // Vertical time lines with X-axis labels
-    const allCandles = [...setupCandles, ...outcomeCandles];
-    const timeStep = Math.floor(allCandles.length / 6);
-    for (let i = 0; i <= 6; i++) {
-      const candleIndex = Math.min(i * timeStep, allCandles.length - 1);
-      const isInSetup = candleIndex < setupCandles.length;
-      
-      let x: number;
-      if (isInSetup) {
-        const setupWidth = dividerX - 2 * PADDING;
-        x = PADDING + (candleIndex / setupCandles.length) * setupWidth + (setupWidth / setupCandles.length) / 2;
-      } else {
-        const outcomeIndex = candleIndex - setupCandles.length;
-        const outcomeWidth = CANVAS_WIDTH - dividerX - PADDING;
-        x = dividerX + (outcomeIndex / outcomeCandles.length) * outcomeWidth + (outcomeWidth / outcomeCandles.length) / 2;
-      }
-      
-      const line = new Line([x, PADDING, x, CANVAS_HEIGHT - PADDING], {
-        stroke: "hsl(220, 20%, 15%)",
-        strokeWidth: 1,
-        selectable: false,
-        evented: false,
-      });
-      canvas.add(line);
-
-      // X-axis time labels
-      const candle = allCandles[candleIndex];
-      const timestamp = candle.ctm || new Date(Date.now() - (allCandles.length - candleIndex) * 3600000);
-      const timeLabel = new Text(format(timestamp, "MM/dd HH:mm"), {
-        left: x - 30,
-        top: CANVAS_HEIGHT - PADDING + 5,
-        fontSize: 11,
-        fill: "hsl(215, 20%, 65%)",
-        selectable: false,
-        evented: false,
-      });
-      canvas.add(timeLabel);
-    }
-  };
-
-  const drawCandle = (
-    canvas: FabricCanvas,
-    candle: CandleData,
-    x: number,
-    width: number,
-    priceToY: (price: number) => number
-  ) => {
-    const isBullish = candle.close > candle.open;
-    const color = isBullish ? "hsl(142, 76%, 36%)" : "hsl(0, 72%, 51%)";
-
-    if (chartType === "candle") {
-      // Wick
-      const wick = new Line(
-        [x, priceToY(candle.high), x, priceToY(candle.low)],
-        {
-          stroke: color,
-          strokeWidth: 2,
-          selectable: false,
-          evented: false,
-        }
+  const resizeObserver = new ResizeObserver(() => {
+    if (chartRef.current) {
+      chart.resize(
+        chartRef.current.clientWidth,
+        chartRef.current.clientHeight
       );
-      canvas.add(wick);
-
-      // Body
-      const bodyTop = Math.min(priceToY(candle.open), priceToY(candle.close));
-      const bodyHeight = Math.abs(priceToY(candle.close) - priceToY(candle.open));
-      const body = new Rect({
-        left: x - width / 2,
-        top: bodyTop,
-        width,
-        height: Math.max(bodyHeight, 1),
-        fill: color,
-        stroke: color,
-        strokeWidth: 1,
-        selectable: false,
-        evented: false,
-      });
-      canvas.add(body);
-    } else {
-      // Line chart - connect close prices
-      const closeY = priceToY(candle.close);
-      const circle = new Rect({
-        left: x - 2,
-        top: closeY - 2,
-        width: 4,
-        height: 4,
-        fill: "hsl(217, 91%, 60%)",
-        selectable: false,
-        evented: false,
-      });
-      canvas.add(circle);
     }
+  });
+
+  resizeObserver.observe(chartRef.current);
+
+  return () => {
+    resizeObserver.disconnect();
   };
+}, []);
+
+
+
+useEffect(() => {
+  if (!seriesRef.current || !chartApiRef.current) return;
+
+  // Combine both sets of candles
+  const allCandles = setupCandles.concat(outcomeCandles);
+  const seriesData = allCandles.map((c) => ({
+    time: new Date(c.ctm).getTime(),
+    open: c.open,
+    high: c.high,
+    low: c.low,
+    close: c.close,
+  }));
+  seriesRef.current.setData(seriesData);
+
+  if (selectionPrimitiveRef.current) {
+    seriesRef.current.detachPrimitive(selectionPrimitiveRef.current);
+  }
+
+  const dividerIndex = setupCandles.length; // e.g., first candle of outcomeCandles
+  const primitive = new SetupOutcomeDividerPrimitive(
+      chartApiRef.current!,
+      dividerIndex as Logical
+  );
+  seriesRef.current!.attachPrimitive(primitive);
+  selectionPrimitiveRef.current = primitive;
+}, [setupCandles, outcomeCandles]);
+
 
   return (
     <div className="space-y-4">
@@ -295,9 +174,10 @@ export const DetailChartCanvas = ({
           </Select>
         </div>
       )}
-      <div className="rounded-lg border border-border overflow-hidden shadow-card bg-chart-bg">
-        <canvas ref={canvasRef} className="w-full" />
-      </div>
+      <div
+        ref={chartRef}
+        className="w-full h-[600px]" // or h-full inside a flex container
+      />
     </div>
   );
 };
