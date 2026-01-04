@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas, Line, Rect, Group, FabricObject } from "fabric";
 import { CandleData } from "./MockChartDisplay";
 import { Button } from "../ui/button";
-import { Pencil, Trash2 } from "lucide-react";
-import { ISeriesPrimitive, Time, Logical, IChartApi, IPrimitivePaneView, CandlestickSeries, createChart, CrosshairMode, ISeriesApi } from "lightweight-charts";
+import { ChartCandlestick, Trash2 } from "lucide-react";
+import { ISeriesPrimitive, Time, Logical, IChartApi, IPrimitivePaneView, CandlestickSeries, createChart, CrosshairMode, ISeriesApi, MouseEventParams } from "lightweight-charts";
+
+
 
 
 class SetupOutcomeDividerPrimitive implements ISeriesPrimitive<Time> {
@@ -46,6 +48,101 @@ class SetupOutcomeDividerPrimitive implements ISeriesPrimitive<Time> {
   }
 }
 
+interface TransactionBoxModel {
+  entryPrice: number;        // where profit & loss meet
+  profitSize: number;        // height
+  lossSize: number;          // height
+  startLogical: Logical;     // left edge
+  width: number;             // candles
+  position: "long" | "short";
+}
+
+
+class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
+ private chart: IChartApi;
+  private series: ISeriesApi<"Candlestick">;
+  private model: TransactionBoxModel;
+
+  constructor(
+    chart: IChartApi,
+    series: ISeriesApi<"Candlestick">,
+    model: TransactionBoxModel
+  ) {
+    this.chart = chart;
+    this.series = series;
+    this.model = model;
+  }
+
+  getModel() {
+    return this.model;
+  }
+
+    update(patch: Partial<TransactionBoxModel>) {
+    this.model = { ...this.model, ...patch };
+  }
+
+  paneViews(): IPrimitivePaneView[] {
+    return [{
+      renderer: () => ({
+        draw: (target) => {
+          target.useMediaCoordinateSpace(scope => {
+            const ctx = scope.context;
+            const timeScale = this.chart.timeScale();
+            const priceScale = this.chart.priceScale("right");
+
+            const x1 = timeScale.logicalToCoordinate(this.model.startLogical);
+            const x2 = timeScale.logicalToCoordinate(
+              (this.model.startLogical + this.model.width) as Logical
+            );
+
+            if (x1 === null || x2 === null) return;
+
+          const entryY = this.series.priceToCoordinate(this.model.entryPrice);
+          if (entryY === null) return;
+
+          const profitTop =
+            this.model.position === "long"
+              ? this.model.entryPrice + this.model.profitSize
+              : this.model.entryPrice - this.model.profitSize;
+
+          const lossBottom =
+            this.model.position === "long"
+              ? this.model.entryPrice - this.model.lossSize
+              : this.model.entryPrice + this.model.lossSize;
+
+          const profitY = this.series.priceToCoordinate(profitTop);
+          const lossY = this.series.priceToCoordinate(lossBottom);
+          if (profitY === null || lossY === null) return;
+
+
+            ctx.save();
+
+            // Profit zone
+            ctx.fillStyle = "rgba(0, 200, 140, 0.25)";
+            ctx.fillRect(
+              x1,
+              Math.min(entryY, profitY),
+              x2 - x1,
+              Math.abs(entryY - profitY)
+            );
+
+            // Loss zone
+            ctx.fillStyle = "rgba(200,0,0,0.25)";
+            ctx.fillRect(
+              x1,
+              Math.min(entryY, lossY),
+              x2 - x1,
+              Math.abs(entryY - lossY)
+            );
+
+            ctx.restore();
+          });
+        },
+      }),
+    }];
+  }
+}
+
 interface OverlayChartCanvasProps {
   setupCandles: CandleData[];
   outcomesData: CandleData[][];
@@ -73,18 +170,17 @@ export const OverlayChartCanvas = ({
   onEditTransaction,
   initialTransactionBox,
 }: OverlayChartCanvasProps) => {
-  const [transactionBox, setTransactionBox] = useState<Group | null>(null);
+  const [transactionBox, setTransactionBox] = useState<TransactionBoxModel | null>(null);
   const [drawMode, setDrawMode] = useState<"select" | "draw">("select");
   const chartRef = useRef<HTMLDivElement | null>(null);
   const chartApiRef = useRef<IChartApi | null>(null);
-  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-    
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);  
+  const transactionPrimitiveRef = useRef<TransactionBoxPrimitive | null>(null);
+
 useEffect(() => {
   if (!chartRef.current) return;
 
   const chart = createChart(chartRef.current, {
-  // width: 900,
-  // height: 500,
   layout: {
     background: { color: "hsl(220, 25%, 8%)" },
     textColor: "hsl(215, 20%, 65%)",
@@ -194,6 +290,43 @@ useEffect(() => {
   };
 }, []);
 
+// Transaction box
+const handleTransactionButton = () => {
+  if (drawMode === "select") {
+    const chart = chartApiRef.current;
+    const series = seriesRef.current;
+    if (!chart || !series) return;
+
+    setDrawMode("draw");
+
+    const model: TransactionBoxModel = {
+      entryPrice: 100,
+      profitSize: 3,
+      lossSize: 2,
+      startLogical: setupCandles.length as Logical,
+      width: 20,
+      position: "long",
+    };
+
+    setTransactionBox(model)
+
+    const primitive = new TransactionBoxPrimitive(chart, series, model);
+    transactionPrimitiveRef.current = primitive;
+    series.attachPrimitive(primitive);
+
+    chart.applyOptions(chart.options()); // force first draw
+  } else {
+    const series = seriesRef.current;
+    series.detachPrimitive(transactionPrimitiveRef.current);
+    transactionPrimitiveRef.current = null;
+    setDrawMode("select");
+  }
+};
+
+const handleDeleteBox = () => {
+
+}
+
 
   return (
     <div className="space-y-4">
@@ -201,25 +334,14 @@ useEffect(() => {
         <Button
           variant={drawMode === "draw" ? "default" : "outline"}
           size="sm"
-          onClick={() => setDrawMode(drawMode === "draw" ? "select" : "draw")}
+          onClick={handleTransactionButton}
           className="gap-2"
         >
-          <Pencil className="w-4 h-4" />
-          {drawMode === "draw" ? "Drag to Draw Box (↑=Long, ↓=Short)" : "Draw Transaction Box"}
+          {drawMode === "select" ?
+          <ChartCandlestick className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />
+          }
+          {drawMode === "select" ?"Draw Transaction Box" : "Delete Box"}
         </Button>
-        {transactionBox && (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDeleteBox}
-              className="gap-2"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete Box
-            </Button>
-          </>
-        )}
       </div>
        <div
         ref={chartRef}

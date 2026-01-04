@@ -20,16 +20,19 @@ export const Hero = () => {
             <TrendingUp className="w-5 h-5 text-primary" />
             <span className="text-sm font-semibold text-foreground">Stratosphere Trading Analytics</span>
           </div>
-
+          {/* Subheadline */}
+          <p className="text-5xl md:text-3xl text-muted-foreground max-w-4xl mx-auto">
+            Research, backtest and validate trades using 
+          </p>
+          
           {/* Main headline */}
           <h1 className="text-5xl md:text-7xl font-bold text-foreground leading-tight">
-            Create, Analyze, and
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> Predict </span>
-            Trading Patterns
+            Pattern
+            <span className="bg-gradient-primary bg-clip-text text-transparent"> Similarity Score </span>
           </h1>
 
           {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl md:text-xl text-muted-foreground max-w-xl mx-auto">
             Draw synthetic charts, discover similar historical patterns, and validate your trading strategies with data-driven insights.
           </p>
 

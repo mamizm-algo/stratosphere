@@ -2,7 +2,7 @@ import { Collection } from "@/types/collection";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FolderOpen, Trash2, Calendar } from "lucide-react";
+import { SquarePen, Trash2, Calendar } from "lucide-react";
 import { MockChartDisplay } from "@/components/chart/MockChartDisplay";
 
 interface CollectionCardProps {
@@ -23,6 +23,11 @@ export const CollectionCard = ({
             collection.results.length
         )
       : 0;
+
+  const editName = (name: string) => {
+    collection.name = name;
+    // TODO move to library to verify uniqueness and open editing modal
+  }
 
   return (
     <Card className="p-5 hover:shadow-glow transition-all group cursor-pointer">
@@ -68,10 +73,10 @@ export const CollectionCard = ({
           size="sm"
           variant="outline"
           className="flex-1 gap-2"
-          onClick={() => onOpen(collection)}
+          onClick={() => editName("new name")}
         >
-          <FolderOpen className="w-4 h-4" />
-          Open
+          <SquarePen className="w-4 h-4" />
+          Edit
         </Button>
         <Button
           size="sm"

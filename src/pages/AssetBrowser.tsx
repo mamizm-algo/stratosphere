@@ -119,22 +119,19 @@ const [currentFragmentData, setCurrentFragmentData] = useState<CandleData[]>([])
 const [outcomeData, setOutcomeData] = useState<CandleData[]>([]);
 
 
-
-  // Load candles from imported data
-  useEffect(() => {
-    const allData = getCandles(asset, timeframe);
-    const candleData = allData.slice(allData.length - 2000);
-    
-    setCandles(candleData);
-  }, [asset, timeframe]);
+// Load candles from imported data
+useEffect(() => {
+  const allData = getCandles(asset, timeframe);
+  const candleData = allData.slice(allData.length - 2000);
+  
+  setCandles(candleData);
+}, [asset, timeframe]);
 
 
 useEffect(() => {
   if (!chartRef.current) return;
 
   const chart = createChart(chartRef.current, {
-  // width: 900,
-  // height: 500,
   layout: {
     background: { color: "hsl(220, 25%, 8%)" },
     textColor: "hsl(215, 20%, 65%)",
@@ -186,8 +183,6 @@ useEffect(() => {
     resizeObserver.disconnect();
   };
 }, []);
-
-
 
 useEffect(() => {
   if (!seriesRef.current) return;
@@ -305,14 +300,6 @@ const cancelSelection = () => {
   // 3️⃣ Reset state
   setIsSelecting(false);
   setSelectedRange(null);
-
-  // 4️⃣ Force redraw so rectangle disappears immediately
-  if (chart) {
-    const range = chart.timeScale().getVisibleLogicalRange();
-    if (range) {
-      chart.timeScale().setVisibleLogicalRange(range);
-    }
-  }
 };
 
  const handleSearchSimilar = () => {
