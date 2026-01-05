@@ -45,6 +45,7 @@ import { BaseChartCanvas } from "@/components/chart/BaseChartCanvas";
 import { SaveToLibraryDialog } from "@/components/library/SaveToLibraryDialog";
 import { useCollections } from "@/hooks/useCollections";
 import { HomeHeader } from "@/components/HomeHeader";
+import { TransactionBoxModel } from "@/components/chart/SimilarityResults";
 
 const RESULTS_STORAGE_KEY = "similarity_search_results";
 const SETUP_CANDLES_STORAGE_KEY = "similarity_search_setup_candles";
@@ -91,12 +92,7 @@ const Results = () => {
   const [outcomeChartType, setOutcomeChartType] = useState<"candle" | "line">("candle");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [baseChartType, setBaseChartType] = useState<"candle" | "line">("candle");
-  const [transactionParams, setTransactionParams] = useState<{
-    takeProfit: number;
-    stopLoss: number;
-    timeHorizon: number;
-    position: "long" | "short";
-  } | null>(null);
+  const [transactionParams, setTransactionParams] = useState<TransactionBoxModel | null>(null);
 
   // Load results from sessionStorage on mount
   useEffect(() => {
@@ -512,7 +508,7 @@ const Results = () => {
             <div className="h-full">
               <OverlayView
                 patterns={filteredPatterns}
-                setupCandles={setupCandles.length > 0 ? setupCandles : generateMockCandles(20, 100, "sideways")}
+                setupCandles={setupCandles}
                 chartType={outcomeChartType}
                 onChartTypeChange={setOutcomeChartType}
                 transactionParams={transactionParams}
@@ -676,20 +672,9 @@ const OverlayView = ({
   setupCandles: CandleData[];
   chartType: "candle" | "line";
   onChartTypeChange: (type: "candle" | "line") => void;
-  transactionParams: {
-    takeProfit: number;
-    stopLoss: number;
-    timeHorizon: number;
-    position: "long" | "short";
-  } | null;
-  onTransactionParamsChange: (params: {
-    takeProfit: number;
-    stopLoss: number;
-    timeHorizon: number;
-    position: "long" | "short";
-  } | null) => void;
+  transactionParams: TransactionBoxModel | null;
+  onTransactionParamsChange: (params:TransactionBoxModel | null) => void;
 }) => {
-  const [showTransactionDialog, setShowTransactionDialog] = useState(false);
   const [tradeStats, setTradeStats] = useState<TradeStats | null>(null);
 
   const outcomesData = patterns.map((pattern) => {
@@ -821,8 +806,7 @@ const OverlayView = ({
             outcomesData={outcomesData}
             chartType={chartType}
             onTransactionBoxChange={onTransactionParamsChange}
-            onEditTransaction={() => setShowTransactionDialog(true)}
-            initialTransactionBox={transactionParams}
+            transactionBox={transactionParams}
           />
         </Card>
 
@@ -833,20 +817,6 @@ const OverlayView = ({
           </p>
         </Card>
       </div>
-
-      <VirtualTransactionDialog
-        open={showTransactionDialog}
-        onOpenChange={() => setShowTransactionDialog(true)}
-        onApply={(params) => {
-          onTransactionParamsChange({ ...params });
-        }}
-        initialParams={transactionParams ? {
-          takeProfit: transactionParams.takeProfit,
-          stopLoss: transactionParams.stopLoss,
-          timeHorizon: transactionParams.timeHorizon,
-          position: transactionParams.position,
-        } : undefined}
-      />
     </ScrollArea>
   );
 };

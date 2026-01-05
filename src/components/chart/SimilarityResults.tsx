@@ -25,13 +25,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { MockChartDisplay, generateMockCandles, CandleData } from "./MockChartDisplay";
-import { VirtualTransactionDialog, VirtualTransactionParams } from "./VirtualTransactionDialog";
 import { TradeStatistics, TradeStats, IndividualTradeStats } from "./TradeStatistics";
 import { OverlayChartCanvas } from "./OverlayChartCanvas";
 import { DetailChartCanvas } from "./DetailChartCanvas";
 import { BaseChartCanvas } from "./BaseChartCanvas";
 import { SaveToLibraryDialog } from "@/components/library/SaveToLibraryDialog";
 import { useCollections } from "@/hooks/useCollections";
+import { Logical } from "lightweight-charts";
 
 export interface SimilarPattern {
   id: string;
@@ -57,6 +57,15 @@ interface SimilarityResultsProps {
   onSaveAsCollection?: (name: string) => void;
 }
 
+export interface TransactionBoxModel {
+  entryPrice: number;        // where profit & loss meet
+  profitSize: number;        // height
+  lossSize: number;          // height
+  startLogical: Logical;     // left edge
+  duration: number;             // candles
+  position: "long" | "short";
+}
+
 export const SimilarityResults = ({
   patterns,
   onClose,
@@ -69,16 +78,10 @@ export const SimilarityResults = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sortBy, setSortBy] = useState<"similarity" | "date">("similarity");
   const [filterAsset, setFilterAsset] = useState<string>("all");
-  const [virtualTransactionOpen, setVirtualTransactionOpen] = useState(false);
   const [outcomeChartType, setOutcomeChartType] = useState<"candle" | "line">("candle");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [baseChartType, setBaseChartType] = useState<"candle" | "line">("candle");
-  const [transactionParams, setTransactionParams] = useState<{
-    takeProfit: number;
-    stopLoss: number;
-    timeHorizon: number;
-    position: "long" | "short";
-  } | null>(null);
+  const [transactionParams, setTransactionParams] = useState<TransactionBoxModel | null>(null);
 
   const sortedPatterns = [...patterns].sort((a, b) => {
     if (sortBy === "similarity") {
@@ -99,11 +102,6 @@ export const SimilarityResults = ({
     toast.success(`Pattern saved to library: ${pattern.asset} - ${pattern.similarity}%`);
   };
 
-  const handleApplyVirtualTransaction = (params: VirtualTransactionParams) => {
-    setTransactionParams({ ...params });
-    toast.success("Virtual transaction parameters applied");
-  };
-
   // Calculate statistics based on virtual transaction
   const calculateStats = (): TradeStats | null => {
     if (!transactionParams) {
@@ -117,38 +115,38 @@ export const SimilarityResults = ({
     const trades = outcomesData.map((outcome) => {
       if (!outcome || outcome.length === 0) return null;
 
-      const entryPrice = outcome[0].open;
+      const entryPrice = 100;
       const isLong = transactionParams.position === "long";
-      const takeProfitPrice = entryPrice * (1 + transactionParams.takeProfit / 100 * (isLong ? 1 : -1));
-      const stopLossPrice = entryPrice * (1 - transactionParams.stopLoss / 100 * (isLong ? 1 : -1));
+      const takeProfitPrice = entryPrice + transactionParams.profitSize;
+      const stopLossPrice = entryPrice + transactionParams.lossSize;
 
       let result: "win" | "loss" | "timeout" = "timeout";
       let profit = 0;
-      let duration = transactionParams.timeHorizon;
+      let duration = transactionParams.duration;
 
-      for (let i = 0; i < Math.min(outcome.length, transactionParams.timeHorizon); i++) {
+      for (let i = 0; i < Math.min(outcome.length, transactionParams.duration); i++) {
         const candle = outcome[i];
         if (isLong) {
-          if (candle.high >= takeProfitPrice) {
+          if (candle.high / outcome[0].open * 100 >= takeProfitPrice) {
             result = "win";
-            profit = transactionParams.takeProfit;
+            profit = transactionParams.profitSize / 100;
             duration = i + 1;
             break;
-          } else if (candle.low <= stopLossPrice) {
+          } else if (candle.low / outcome[0].open * 100 <= stopLossPrice) {
             result = "loss";
-            profit = -transactionParams.stopLoss;
+            profit = -transactionParams.lossSize / 100;
             duration = i + 1;
             break;
           }
         } else {
-          if (candle.low <= takeProfitPrice) {
+          if (candle.low / outcome[0].open * 100  <= takeProfitPrice) {
             result = "win";
-            profit = transactionParams.takeProfit;
+            profit = transactionParams.profitSize / 100;
             duration = i + 1;
             break;
-          } else if (candle.high >= stopLossPrice) {
+          } else if (candle.high / outcome[0].open * 100 >= stopLossPrice) {
             result = "loss";
-            profit = -transactionParams.stopLoss;
+            profit = -transactionParams.lossSize / 100;
             duration = i + 1;
             break;
           }
@@ -156,10 +154,10 @@ export const SimilarityResults = ({
       }
 
       if (result === "timeout") {
-        const lastCandle = outcome[Math.min(outcome.length - 1, transactionParams.timeHorizon - 1)];
-        profit = isLong
-          ? ((lastCandle.close - entryPrice) / entryPrice) * 100
-          : ((entryPrice - lastCandle.close) / entryPrice) * 100;
+        const lastCandle = outcome[Math.min(outcome.length - 1, transactionParams.duration - 1)];
+        profit = isLong 
+          ? ((lastCandle.close / outcome[0].open * 100 - entryPrice) / entryPrice) * 100
+          : ((entryPrice / outcome[0].open * 100 - lastCandle.close) / entryPrice) * 100;
       }
 
       return { result, profit, duration };
@@ -188,36 +186,36 @@ export const SimilarityResults = ({
 
     const entryPrice = outcomeCandles[0].open;
     const isLong = transactionParams.position === "long";
-    const takeProfitPrice = entryPrice * (1 + transactionParams.takeProfit / 100 * (isLong ? 1 : -1));
-    const stopLossPrice = entryPrice * (1 - transactionParams.stopLoss / 100 * (isLong ? 1 : -1));
+    const takeProfitPrice = entryPrice * (1 + transactionParams.profitSize / 100 * (isLong ? 1 : -1));
+    const stopLossPrice = entryPrice * (1 - transactionParams.lossSize / 100 * (isLong ? 1 : -1));
 
     let result: "win" | "loss" | "timeout" = "timeout";
     let profit = 0;
-    let duration = transactionParams.timeHorizon;
+    let duration = transactionParams.duration;
 
-    for (let i = 0; i < Math.min(outcomeCandles.length, transactionParams.timeHorizon); i++) {
+    for (let i = 0; i < Math.min(outcomeCandles.length, transactionParams.duration); i++) {
       const candle = outcomeCandles[i];
       if (isLong) {
         if (candle.high >= takeProfitPrice) {
           result = "win";
-          profit = transactionParams.takeProfit;
+          profit = transactionParams.profitSize;
           duration = i + 1;
           break;
         } else if (candle.low <= stopLossPrice) {
           result = "loss";
-          profit = -transactionParams.stopLoss;
+          profit = -transactionParams.lossSize;
           duration = i + 1;
           break;
         }
       } else {
         if (candle.low <= takeProfitPrice) {
           result = "win";
-          profit = transactionParams.takeProfit;
+          profit = transactionParams.profitSize;
           duration = i + 1;
           break;
         } else if (candle.high >= stopLossPrice) {
           result = "loss";
-          profit = -transactionParams.stopLoss;
+          profit = -transactionParams.lossSize;
           duration = i + 1;
           break;
         }
@@ -225,7 +223,7 @@ export const SimilarityResults = ({
     }
 
     if (result === "timeout") {
-      const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.timeHorizon - 1)];
+      const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.duration - 1)];
       profit = isLong
         ? ((lastCandle.close - entryPrice) / entryPrice) * 100
         : ((entryPrice - lastCandle.close) / entryPrice) * 100;
@@ -287,15 +285,6 @@ export const SimilarityResults = ({
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-
-            {/* <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => setVirtualTransactionOpen(true)}
-            >
-              <Settings className="w-4 h-4" />
-              Virtual Transaction
-            </Button> */}
 
             <Button
               variant="default"
@@ -379,7 +368,7 @@ export const SimilarityResults = ({
                   pattern={filteredPatterns[currentIndex]}
                   onSave={() => handleSavePattern(filteredPatterns[currentIndex])}
                   individualStats={getIndividualStats(filteredPatterns[currentIndex])}
-                  transactionParams={transactionParams}
+                  transactionParams= {transactionParams}
                 />
                 <div className="flex items-center justify-between mt-6 pt-6 border-t">
                   <Button
@@ -416,7 +405,7 @@ export const SimilarityResults = ({
             <div className="h-full">
               <OverlayView
                 patterns={filteredPatterns}
-                setupCandles={setupCandles || generateMockCandles(20, 100, "sideways")}
+                setupCandles={setupCandles}
                 chartType={outcomeChartType}
                 onChartTypeChange={setOutcomeChartType}
                 transactionParams={transactionParams}
@@ -426,13 +415,6 @@ export const SimilarityResults = ({
           )}
         </div>
       </div>
-
-      <VirtualTransactionDialog
-        open={virtualTransactionOpen}
-        onOpenChange={setVirtualTransactionOpen}
-        onApply={setTransactionParams}
-        initialParams={transactionParams || undefined}
-      />
 
       <SaveToLibraryDialog
         open={saveDialogOpen}
@@ -457,7 +439,7 @@ const PatternCard = ({
       <TrendingDown className="w-4 h-4 text-bearish" />
     ) : null;
 
-  const candles = pattern.setupCandles || generateMockCandles(15, 100, pattern.outcome === "bullish" ? "up" : pattern.outcome === "bearish" ? "down" : "sideways");
+  const candles = pattern.setupCandles;
 
   return (
     <Card className="p-4 hover:shadow-glow transition-all cursor-pointer group" onClick={onClick}>
@@ -487,12 +469,7 @@ interface PatternDetailViewProps {
   pattern: SimilarPattern;
   onSave: () => void;
   individualStats?: IndividualTradeStats;
-  transactionParams?: {
-    takeProfit: number;
-    stopLoss: number;
-    timeHorizon: number;
-    position: "long" | "short";
-  } | null;
+  transactionParams?: TransactionBoxModel | null;
 }
 
 const PatternDetailView = ({
@@ -502,12 +479,8 @@ const PatternDetailView = ({
   transactionParams,
 }: PatternDetailViewProps) => {
   const [chartType, setChartType] = useState<"candle" | "line">("candle");
-  const setupCandles = pattern.setupCandles || generateMockCandles(20, 100, "sideways");
-  const outcomeCandles = pattern.outcomeCandles || generateMockCandles(
-    15,
-    setupCandles[setupCandles.length - 1]?.close || 100,
-    pattern.outcome === "bullish" ? "up" : pattern.outcome === "bearish" ? "down" : "sideways"
-  );
+  const setupCandles = pattern.setupCandles;
+  const outcomeCandles = pattern.outcomeCandles;
 
   return (
     <div className="flex-1 flex flex-col gap-6">
@@ -550,103 +523,15 @@ const OverlayView = ({
   setupCandles: CandleData[];
   chartType: "candle" | "line";
   onChartTypeChange: (type: "candle" | "line") => void;
-  transactionParams: {
-    takeProfit: number;
-    stopLoss: number;
-    timeHorizon: number;
-    position: "long" | "short";
-  } | null;
-  onTransactionParamsChange: (params: {
-    takeProfit: number;
-    stopLoss: number;
-    timeHorizon: number;
-    position: "long" | "short";
-  } | null) => void;
+  transactionParams: TransactionBoxModel | null;
+  onTransactionParamsChange: (params: TransactionBoxModel | null) => void;
 }) => {
-  const [showTransactionDialog, setShowTransactionDialog] = useState(false);
-  const [tradeStats, setTradeStats] = useState<TradeStats | null>(null);
 
   // Prepare outcomes data
   const outcomesData = patterns.map((pattern) => {
-    return pattern.outcomeCandles || generateMockCandles(
-      15,
-      setupCandles[setupCandles.length - 1]?.close || 100,
-      pattern.outcome === "bullish" ? "up" : pattern.outcome === "bearish" ? "down" : "sideways"
-    );
+    return pattern.outcomeCandles;
   });
 
-  // Calculate statistics when transaction params change
-  useEffect(() => {
-    if (!transactionParams) {
-      setTradeStats(null);
-      return;
-    }
-
-    // Mock calculation - simulate trade outcomes
-    const trades = patterns.map((pattern, idx) => {
-      const outcome = outcomesData[idx];
-      if (!outcome || outcome.length === 0) return null;
-
-      const entryPrice = outcome[0].open;
-      const isLong = transactionParams.position === "long";
-      const takeProfitPrice = entryPrice * (1 + transactionParams.takeProfit / 100 * (isLong ? 1 : -1));
-      const stopLossPrice = entryPrice * (1 - transactionParams.stopLoss / 100 * (isLong ? 1 : -1));
-
-      // Simulate: check if price hits TP or SL
-      let result: "win" | "loss" | "timeout" = "timeout";
-      let profit = 0;
-      let duration = transactionParams.timeHorizon;
-
-      for (let i = 0; i < Math.min(outcome.length, transactionParams.timeHorizon); i++) {
-        const candle = outcome[i];
-        if (isLong) {
-          if (candle.high >= takeProfitPrice) {
-            result = "win";
-            profit = transactionParams.takeProfit;
-            duration = i + 1;
-            break;
-          } else if (candle.low <= stopLossPrice) {
-            result = "loss";
-            profit = -transactionParams.stopLoss;
-            duration = i + 1;
-            break;
-          }
-        } else {
-          if (candle.low <= takeProfitPrice) {
-            result = "win";
-            profit = transactionParams.takeProfit;
-            duration = i + 1;
-            break;
-          } else if (candle.high >= stopLossPrice) {
-            result = "loss";
-            profit = -transactionParams.stopLoss;
-            duration = i + 1;
-            break;
-          }
-        }
-      }
-
-      if (result === "timeout") {
-        const lastCandle = outcome[Math.min(outcome.length - 1, transactionParams.timeHorizon - 1)];
-        profit = isLong
-          ? ((lastCandle.close - entryPrice) / entryPrice) * 100
-          : ((entryPrice - lastCandle.close) / entryPrice) * 100;
-      }
-
-      return { result, profit, duration };
-    }).filter(t => t !== null);
-
-    const wins = trades.filter(t => t!.result === "win").length;
-    const avgProfit = trades.reduce((acc, t) => acc + t!.profit, 0) / trades.length;
-    const avgDuration = trades.reduce((acc, t) => acc + t!.duration, 0) / trades.length;
-
-    setTradeStats({
-      winRate: (wins / trades.length) * 100,
-      avgProfit,
-      totalTrades: trades.length,
-      avgDuration,
-    });
-  }, [transactionParams, patterns]);
 
   return (
     <ScrollArea className="h-full">
@@ -663,31 +548,6 @@ const OverlayView = ({
             </SelectContent>
           </Select>
         </div>
-        {transactionParams && (
-          <>
-            <Card className="p-6">
-              <h4 className="text-lg font-semibold text-foreground mb-4">Transaction Parameters</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Position</p>
-                  <p className="text-lg font-semibold capitalize">{transactionParams.position}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Take Profit</p>
-                  <p className="text-lg font-semibold text-bullish">{transactionParams.takeProfit.toFixed(2)}%</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Stop Loss</p>
-                  <p className="text-lg font-semibold text-bearish">{transactionParams.stopLoss.toFixed(2)}%</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Time Horizon</p>
-                  <p className="text-lg font-semibold">{transactionParams.timeHorizon} candles</p>
-                </div>
-              </div>
-            </Card>
-          </>
-        )}
 
         <Card className="p-6">
           <div className="mb-4">
@@ -696,13 +556,13 @@ const OverlayView = ({
               Setup on the left, outcomes on the right. Draw a transaction box to test your strategy. Entry price will always be set at the opening of the first candle of the outcome chart.
             </p>
           </div>
+          
           <OverlayChartCanvas
             setupCandles={setupCandles}
             outcomesData={outcomesData}
             chartType={chartType}
             onTransactionBoxChange={onTransactionParamsChange}
-            onEditTransaction={() => setShowTransactionDialog(true)}
-            initialTransactionBox={transactionParams}
+            transactionBox={transactionParams}
           />
         </Card>
 
@@ -714,21 +574,6 @@ const OverlayView = ({
           </p>
         </Card>
       </div>
-
-      <VirtualTransactionDialog
-        open={showTransactionDialog}
-        onOpenChange={() => setShowTransactionDialog(true)}
-        onApply={(params) => {
-          // Add entry price from the last candle of setup or keep existing
-          onTransactionParamsChange({ ...params });
-        }}
-        initialParams={transactionParams ? {
-          takeProfit: transactionParams.takeProfit,
-          stopLoss: transactionParams.stopLoss,
-          timeHorizon: transactionParams.timeHorizon,
-          position: transactionParams.position,
-        } : undefined}
-      />
     </ScrollArea>
   );
 };

@@ -1,10 +1,44 @@
 import { useEffect, useRef, useState } from "react";
-import { Canvas as FabricCanvas, Line, Rect, Group, FabricObject } from "fabric";
 import { CandleData } from "./MockChartDisplay";
 import { Button } from "../ui/button";
 import { ChartCandlestick, Trash2 } from "lucide-react";
 import { ISeriesPrimitive, Time, Logical, IChartApi, IPrimitivePaneView, CandlestickSeries, createChart, CrosshairMode, ISeriesApi, MouseEventParams } from "lightweight-charts";
+import { TransactionBoxModel } from "./SimilarityResults";
 
+const EDGE_TOLERANCE = 6;
+
+function detectHoveredEdge(
+  y: number,
+  x: number,
+  model: TransactionBoxModel,
+  series: ISeriesApi<"Candlestick">,
+  chart: IChartApi
+): HoverEdge {
+  const entryY = series.priceToCoordinate(model.entryPrice);
+  if (entryY === null) return null;
+
+  const profitPrice = model.entryPrice + model.profitSize;
+
+  const lossPrice = model.entryPrice + model.lossSize;
+
+  const profitY = series.priceToCoordinate(profitPrice);
+  const lossY = series.priceToCoordinate(lossPrice);
+  if (profitY === null || lossY === null) return null;
+ 
+  const timeScale = chart.timeScale();
+  const x2 = timeScale.logicalToCoordinate(
+    (model.startLogical + model.duration) as Logical
+  );
+
+  if (x2 !== null && Math.abs(x - x2) < EDGE_TOLERANCE) {
+    return "right";
+  }
+
+  if (Math.abs(y - profitY) < EDGE_TOLERANCE) return "profit";
+  if (Math.abs(y - lossY) < EDGE_TOLERANCE) return "loss";
+
+  return null;
+}
 
 
 
@@ -48,20 +82,13 @@ class SetupOutcomeDividerPrimitive implements ISeriesPrimitive<Time> {
   }
 }
 
-interface TransactionBoxModel {
-  entryPrice: number;        // where profit & loss meet
-  profitSize: number;        // height
-  lossSize: number;          // height
-  startLogical: Logical;     // left edge
-  width: number;             // candles
-  position: "long" | "short";
-}
-
+type HoverEdge = "profit" | "loss" | "left" | "right" | null;
 
 class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
- private chart: IChartApi;
+  private chart: IChartApi;
   private series: ISeriesApi<"Candlestick">;
   private model: TransactionBoxModel;
+  private hoverEdge: HoverEdge = null;
 
   constructor(
     chart: IChartApi,
@@ -73,11 +100,15 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
     this.model = model;
   }
 
+  setHover(edge: HoverEdge) {
+    this.hoverEdge = edge;
+  }
+
   getModel() {
     return this.model;
   }
 
-    update(patch: Partial<TransactionBoxModel>) {
+  update(patch: Partial<TransactionBoxModel>) {
     this.model = { ...this.model, ...patch };
   }
 
@@ -88,52 +119,56 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
           target.useMediaCoordinateSpace(scope => {
             const ctx = scope.context;
             const timeScale = this.chart.timeScale();
-            const priceScale = this.chart.priceScale("right");
 
             const x1 = timeScale.logicalToCoordinate(this.model.startLogical);
             const x2 = timeScale.logicalToCoordinate(
-              (this.model.startLogical + this.model.width) as Logical
+              (this.model.startLogical + this.model.duration) as Logical
             );
-
             if (x1 === null || x2 === null) return;
 
-          const entryY = this.series.priceToCoordinate(this.model.entryPrice);
-          if (entryY === null) return;
+            const entryY = this.series.priceToCoordinate(this.model.entryPrice);
+            if (entryY === null) return;
 
-          const profitTop =
-            this.model.position === "long"
-              ? this.model.entryPrice + this.model.profitSize
-              : this.model.entryPrice - this.model.profitSize;
+            const profitTop = this.model.entryPrice + this.model.profitSize;
 
-          const lossBottom =
-            this.model.position === "long"
-              ? this.model.entryPrice - this.model.lossSize
-              : this.model.entryPrice + this.model.lossSize;
+            const lossBottom = this.model.entryPrice + this.model.lossSize;
 
-          const profitY = this.series.priceToCoordinate(profitTop);
-          const lossY = this.series.priceToCoordinate(lossBottom);
-          if (profitY === null || lossY === null) return;
-
+            const profitY = this.series.priceToCoordinate(profitTop);
+            const lossY = this.series.priceToCoordinate(lossBottom);
+            if (profitY === null || lossY === null) return;
 
             ctx.save();
 
-            // Profit zone
+            // === zones ===
             ctx.fillStyle = "rgba(0, 200, 140, 0.25)";
-            ctx.fillRect(
-              x1,
-              Math.min(entryY, profitY),
-              x2 - x1,
-              Math.abs(entryY - profitY)
-            );
+            ctx.fillRect(x1, Math.min(entryY, profitY), x2 - x1, Math.abs(entryY - profitY));
 
-            // Loss zone
             ctx.fillStyle = "rgba(200,0,0,0.25)";
-            ctx.fillRect(
-              x1,
-              Math.min(entryY, lossY),
-              x2 - x1,
-              Math.abs(entryY - lossY)
-            );
+            ctx.fillRect(x1, Math.min(entryY, lossY), x2 - x1, Math.abs(entryY - lossY));
+
+            // === borders ===
+            const drawLine = (
+              active: boolean,
+              draw: () => void
+            ) => {
+              ctx.strokeStyle = active ? "rgba(46, 111, 107,0.9)" : "rgba(255, 255, 255, 0)";
+              ctx.lineWidth = active ? 3 : 1;
+              ctx.beginPath();
+              draw();
+              ctx.stroke();
+            };
+
+            drawLine(this.hoverEdge != null, () => {
+              ctx.moveTo(x1, profitY);
+              ctx.lineTo(x2, profitY);
+              ctx.moveTo(x1, lossY);
+              ctx.lineTo(x2, lossY);
+              ctx.moveTo(x1, profitY);
+              ctx.lineTo(x1, lossY);
+              ctx.moveTo(x2, profitY);
+              ctx.lineTo(x2, lossY);
+            });
+
 
             ctx.restore();
           });
@@ -147,19 +182,9 @@ interface OverlayChartCanvasProps {
   setupCandles: CandleData[];
   outcomesData: CandleData[][];
   chartType: "candle" | "line";
-  onTransactionBoxChange?: (params: {
-    takeProfit: number;
-    stopLoss: number;
-    timeHorizon: number;
-    position: "long" | "short";
-  } | null) => void;
+  onTransactionBoxChange?: (params: TransactionBoxModel | null) => void;
   onEditTransaction?: () => void;
-  initialTransactionBox?: {
-    takeProfit: number;
-    stopLoss: number;
-    timeHorizon: number;
-    position: "long" | "short";
-  } | null;
+  transactionBox?: TransactionBoxModel | null;
 }
 
 export const OverlayChartCanvas = ({
@@ -167,15 +192,15 @@ export const OverlayChartCanvas = ({
   outcomesData,
   chartType,
   onTransactionBoxChange,
-  onEditTransaction,
-  initialTransactionBox,
+  transactionBox
 }: OverlayChartCanvasProps) => {
-  const [transactionBox, setTransactionBox] = useState<TransactionBoxModel | null>(null);
-  const [drawMode, setDrawMode] = useState<"select" | "draw">("select");
   const chartRef = useRef<HTMLDivElement | null>(null);
   const chartApiRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);  
   const transactionPrimitiveRef = useRef<TransactionBoxPrimitive | null>(null);
+  const hoverEdgeRef = useRef<HoverEdge>(null);
+  const dragEdgeRef = useRef<HoverEdge>(null);
+  const isDraggingRef = useRef(false);
 
 useEffect(() => {
   if (!chartRef.current) return;
@@ -290,62 +315,275 @@ useEffect(() => {
   };
 }, []);
 
-// Transaction box
-const handleTransactionButton = () => {
-  if (drawMode === "select") {
-    const chart = chartApiRef.current;
-    const series = seriesRef.current;
-    if (!chart || !series) return;
+useEffect(() => {
+  const chart = chartApiRef.current;
+  const series = seriesRef.current;
+  if (!chart || !series) return;
 
-    setDrawMode("draw");
-
-    const model: TransactionBoxModel = {
-      entryPrice: 100,
-      profitSize: 3,
-      lossSize: 2,
-      startLogical: setupCandles.length as Logical,
-      width: 20,
-      position: "long",
-    };
-
-    setTransactionBox(model)
-
-    const primitive = new TransactionBoxPrimitive(chart, series, model);
+  if (transactionBox) {
+    const primitive = new TransactionBoxPrimitive(chart, series, transactionBox);
     transactionPrimitiveRef.current = primitive;
     series.attachPrimitive(primitive);
-
+    
     chart.applyOptions(chart.options()); // force first draw
   } else {
     const series = seriesRef.current;
+    if (!transactionPrimitiveRef.current) return;
+
     series.detachPrimitive(transactionPrimitiveRef.current);
     transactionPrimitiveRef.current = null;
-    setDrawMode("select");
+    chart.applyOptions(chart.options()); // force first draw
+  }
+}, [transactionBox])
+
+useEffect(() => {
+  // detecting hover
+  const chart = chartApiRef.current;
+  const series = seriesRef.current;
+  const container = chartRef.current;
+
+
+  if (!chart || !series || !container) return;
+
+  const onCrosshairMove = (param: MouseEventParams) => {
+    if (!param.point || !transactionPrimitiveRef.current) {
+      hoverEdgeRef.current = null;
+      container.style.cursor = "default";
+      return;
+    }
+
+    const model = transactionPrimitiveRef.current.getModel();
+
+    const edge = detectHoveredEdge(
+      param.point.y,
+      param.point.x,
+      model,
+      series,
+      chart
+    );
+
+    hoverEdgeRef.current = edge;
+
+    if (edge === "right") container.style.cursor = "ew-resize";
+    else if (edge) container.style.cursor = "ns-resize";
+    else container.style.cursor = "default";
+
+    transactionPrimitiveRef.current.setHover(edge);
+
+    chart.applyOptions({});
+  };
+
+  chart.subscribeCrosshairMove(onCrosshairMove);
+  return () => {
+    chart.unsubscribeCrosshairMove(onCrosshairMove);
+  };
+}, [transactionBox]);
+
+
+useEffect(() => {
+  // start editing
+  const chart = chartApiRef.current;
+  if (!chart) return;
+
+
+  const onClick = () => {
+    if (!hoverEdgeRef.current) return;
+    if (!dragEdgeRef.current) {
+
+
+      dragEdgeRef.current = hoverEdgeRef.current;
+      isDraggingRef.current = true;
+
+      // disable chart interaction
+      chart.applyOptions({
+        handleScroll: false,
+        handleScale: false,
+      });
+    } else {
+      dragEdgeRef.current = null;
+      isDraggingRef.current = false;
+      onTransactionBoxChange(transactionPrimitiveRef.current.getModel());
+      chart.applyOptions({
+        handleScroll: true,
+        handleScale: true,
+      });
+    }
+  };
+
+  chart.subscribeClick(onClick);
+  return () => chart.unsubscribeClick(onClick);
+}, [transactionBox]);
+
+
+useEffect(() => {
+  // update transaction box when moving cursor
+  const chart = chartApiRef.current;
+  const series = seriesRef.current;
+  const primitive = transactionPrimitiveRef.current;
+  if (!chart || !series || !primitive) return;
+
+  const HIT = 6;
+
+  const onMove = (param: MouseEventParams) => {
+    if (!param.point || !param.logical) return;
+
+    const { x, y } = param.point;
+    const model = primitive.getModel();
+
+    const entryY = series.priceToCoordinate(model.entryPrice);
+    if (entryY === null) return;
+
+    const profitY = series.priceToCoordinate(
+      model.entryPrice + model.profitSize
+       
+    );
+    const lossY = series.priceToCoordinate(
+     model.entryPrice + model.lossSize
+    );
+
+    const x1 = chart.timeScale().logicalToCoordinate(model.startLogical);
+    const x2 = chart.timeScale().logicalToCoordinate(
+      (model.startLogical + model.duration) as Logical
+    );
+
+    let hover: HoverEdge = null;
+
+    if (profitY !== null && Math.abs(y - profitY) < HIT) hover = "profit";
+    else if (lossY !== null && Math.abs(y - lossY) < HIT) hover = "loss";
+    else if (x1 !== null && Math.abs(x - x1) < HIT) hover = "left";
+    else if (x2 !== null && Math.abs(x - x2) < HIT) hover = "right";
+
+    primitive.setHover(hover);
+
+    if (isDraggingRef.current && dragEdgeRef.current) {
+      const primitive = transactionPrimitiveRef.current!;
+      const model = primitive.getModel();
+
+      if (dragEdgeRef.current === "right") {
+        const logical = chart.timeScale().coordinateToLogical(param.point.x);
+        if (logical !== null) {
+          primitive.update({
+            duration: Math.max(1, logical - model.startLogical),
+          });
+        }
+      }
+
+      if (dragEdgeRef.current === "profit") {
+        const price = series.coordinateToPrice(param.point.y);
+        if (price !== null) {
+          if (price > model.entryPrice) {
+            primitive.update({
+              profitSize: price - model.entryPrice,
+              lossSize: -Math.abs(model.lossSize),
+              position: "long"
+            });
+          } else {
+            primitive.update({
+              profitSize: price - model.entryPrice,
+              lossSize: Math.abs(model.lossSize),
+              position: "short"
+            });
+          }
+        }
+      }
+
+      if (dragEdgeRef.current === "loss") {
+        const price = series.coordinateToPrice(param.point.y);
+        if (price !== null) {
+          if (price < model.entryPrice) {
+            primitive.update({
+              profitSize: Math.abs(model.profitSize),
+              lossSize: price - model.entryPrice,
+              position: "long"
+            });
+          } else {
+            primitive.update({
+              profitSize: -Math.abs(model.profitSize),
+              lossSize: price - model.entryPrice,
+              position: "short"
+            });
+          }
+        }
+      }
+  }
+
+    chart.applyOptions({});
+  };
+
+  chart.subscribeCrosshairMove(onMove);
+
+  return () => chart.unsubscribeCrosshairMove(onMove);
+}, [transactionBox]);
+
+
+// Transaction box
+const handleTransactionButton = () => {
+  if (!transactionBox) {
+    const duration = 20;
+    const profitSize = 100 * Math.max(...outcomesData.map(outcome =>  Math.max(...outcome.slice(0, duration).map(outcomeCandle => outcomeCandle.high)))) / outcomesData[0][0].open - 100;
+    
+    const model: TransactionBoxModel = transactionBox || {
+      entryPrice: 100,
+      profitSize: profitSize,
+      lossSize: -profitSize/2,
+      startLogical: setupCandles.length as Logical,
+      duration: duration,
+      position: "long",
+    };
+    onTransactionBoxChange(model);
+  } else {
+    onTransactionBoxChange(null);
   }
 };
 
-const handleDeleteBox = () => {
-
-}
-
-
   return (
     <div className="space-y-4">
+   
       <div className="flex gap-2">
+        {!transactionBox &&
         <Button
-          variant={drawMode === "draw" ? "default" : "outline"}
+          variant={transactionBox ? "default" : "outline"}
           size="sm"
           onClick={handleTransactionButton}
           className="gap-2"
         >
-          {drawMode === "select" ?
-          <ChartCandlestick className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />
-          }
-          {drawMode === "select" ?"Draw Transaction Box" : "Delete Box"}
+          <ChartCandlestick className="w-4 h-4" /> 
+          Simulate trade
         </Button>
+        }
+        {transactionBox &&
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Button
+          variant={transactionBox ? "default" : "outline"}
+          size="sm"
+          onClick={handleTransactionButton}
+          className="gap-2"
+        >
+          <Trash2 className="w-4 h-4" />
+          Remove trade
+        </Button>
+                <div>
+                  <p className="text-sm text-muted-foreground">Position</p>
+                  <p className="text-lg font-semibold capitalize">{transactionBox.position}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Take Profit</p>
+                  <p className="text-lg font-semibold text-bullish">{Math.abs(transactionBox.profitSize).toFixed(2)}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Stop Loss</p>
+                  <p className="text-lg font-semibold text-bearish">{Math.abs(transactionBox.lossSize).toFixed(2)}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Time Horizon</p>
+                  <p className="text-lg font-semibold">{transactionBox.duration} candles</p>
+                </div>
+              </div>
+        }
       </div>
        <div
         ref={chartRef}
-        className="w-full h-[600px]" // or h-full inside a flex container
+        className="w-full h-[600px]"
       />
     </div>
   );
