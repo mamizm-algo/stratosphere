@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface CandleData {
-  x: number;
   open: number;
   close: number;
   high: number;
@@ -145,7 +144,6 @@ export const generateMockCandles = (count: number, basePrice: number = 100, tren
     const low = Math.min(open, close) * (1 - Math.random() * 0.01);
 
     candles.push({
-      x: i,
       open,
       close,
       high,

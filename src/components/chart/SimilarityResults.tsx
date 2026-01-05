@@ -141,12 +141,12 @@ export const SimilarityResults = ({
         } else {
           if (candle.low / outcome[0].open * 100  <= takeProfitPrice) {
             result = "win";
-            profit = transactionParams.profitSize / 100;
+            profit = -transactionParams.profitSize / 100;
             duration = i + 1;
             break;
           } else if (candle.high / outcome[0].open * 100 >= stopLossPrice) {
             result = "loss";
-            profit = -transactionParams.lossSize / 100;
+            profit = transactionParams.lossSize / 100;
             duration = i + 1;
             break;
           }
@@ -157,37 +157,39 @@ export const SimilarityResults = ({
         const lastCandle = outcome[Math.min(outcome.length - 1, transactionParams.duration - 1)];
         profit = isLong 
           ? ((lastCandle.close / outcome[0].open * 100 - entryPrice) / entryPrice) * 100
-          : ((entryPrice / outcome[0].open * 100 - lastCandle.close) / entryPrice) * 100;
+          : ((entryPrice - lastCandle.close/ outcome[0].open * 100) / entryPrice) * 100;
       }
 
       return { result, profit, duration };
     }).filter(t => t !== null);
 
     const wins = trades.filter(t => t!.result === "win").length;
+    const tradesTimedOut = trades.filter(t => t!.result === "timeout").length;
     const avgProfit = trades.reduce((acc, t) => acc + t!.profit, 0) / trades.length;
     const avgDuration = trades.reduce((acc, t) => acc + t!.duration, 0) / trades.length;
+    const totalProfit = trades.reduce((acc, t) => acc + t!.profit, 0);
 
     return {
+      tradesWon: wins,
+      tradesLost: trades.length - wins - tradesTimedOut,
       winRate: (wins / trades.length) * 100,
       avgProfit,
+      totalProfit,
       totalTrades: trades.length,
       avgDuration,
+      tradesTimedOut,
     };
   };
 
   const getIndividualStats = (pattern: SimilarPattern): IndividualTradeStats | undefined => {
     if (!transactionParams) return undefined;
 
-    const outcomeCandles = pattern.outcomeCandles || generateMockCandles(
-      15,
-      setupCandles?.[setupCandles.length - 1]?.close || 100,
-      pattern.outcome === "bullish" ? "up" : pattern.outcome === "bearish" ? "down" : "sideways"
-    );
+    const outcomeCandles = pattern.outcomeCandles;
 
     const entryPrice = outcomeCandles[0].open;
     const isLong = transactionParams.position === "long";
-    const takeProfitPrice = entryPrice * (1 + transactionParams.profitSize / 100 * (isLong ? 1 : -1));
-    const stopLossPrice = entryPrice * (1 - transactionParams.lossSize / 100 * (isLong ? 1 : -1));
+    const takeProfitPrice = entryPrice * (1 + transactionParams.profitSize / 100);
+    const stopLossPrice = entryPrice * (1 + transactionParams.lossSize / 100);
 
     let result: "win" | "loss" | "timeout" = "timeout";
     let profit = 0;
@@ -203,7 +205,7 @@ export const SimilarityResults = ({
           break;
         } else if (candle.low <= stopLossPrice) {
           result = "loss";
-          profit = -transactionParams.lossSize;
+          profit = transactionParams.lossSize;
           duration = i + 1;
           break;
         }
@@ -215,7 +217,7 @@ export const SimilarityResults = ({
           break;
         } else if (candle.high >= stopLossPrice) {
           result = "loss";
-          profit = -transactionParams.lossSize;
+          profit = transactionParams.lossSize;
           duration = i + 1;
           break;
         }

@@ -18,7 +18,6 @@ console.log(candleData.length);
 // Replace this with imported JSON data when ready
 export const CANDLE_DATA: Record<string, CandleData[]> = {"GOLD_1m": candleData.map((candle_json) => {
   return {
-    x: 1,
     open: candle_json.open,
     close: candle_json.open + candle_json.close,
     high: candle_json.open + candle_json.high,

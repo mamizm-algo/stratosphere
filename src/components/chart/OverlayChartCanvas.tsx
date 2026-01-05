@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { CandleData } from "./MockChartDisplay";
 import { Button } from "../ui/button";
-import { ChartCandlestick, Trash2 } from "lucide-react";
+import { ChartCandlestick, MessageCircleQuestion, Trash2 } from "lucide-react";
 import { ISeriesPrimitive, Time, Logical, IChartApi, IPrimitivePaneView, CandlestickSeries, createChart, CrosshairMode, ISeriesApi, MouseEventParams } from "lightweight-charts";
 import { TransactionBoxModel } from "./SimilarityResults";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 const EDGE_TOLERANCE = 6;
 
@@ -541,18 +542,35 @@ const handleTransactionButton = () => {
    
       <div className="flex gap-2">
         {!transactionBox &&
-        <Button
-          variant={transactionBox ? "default" : "outline"}
-          size="sm"
-          onClick={handleTransactionButton}
-          className="gap-2"
-        >
-          <ChartCandlestick className="w-4 h-4" /> 
-          Simulate trade
-        </Button>
+        <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                   <Button
+                    variant={transactionBox ? "default" : "outline"}
+                    size="sm"
+                    onClick={handleTransactionButton}
+                    className="gap-2"
+                  >
+                    <ChartCandlestick className="w-4 h-4" /> 
+                    Simulate trade
+                    <MessageCircleQuestion className="w-3 h-3" />
+                  </Button>
+                </TooltipTrigger>
+
+                <TooltipContent>
+                  <p>
+                    Creates a default simulated trade by drawing a transaction box on the chart.
+                  </p>
+                  <p>
+                    Trading statistics will be shown.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+          </TooltipProvider>
+       
         }
         {transactionBox &&
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           <Button
           variant={transactionBox ? "default" : "outline"}
           size="sm"
@@ -563,19 +581,66 @@ const handleTransactionButton = () => {
           Remove trade
         </Button>
                 <div>
-                  <p className="text-sm text-muted-foreground">Position</p>
+                   <div className="flex items-center gap-2 ">
+                    <p className="text-sm text-muted-foreground">Position</p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                            <MessageCircleQuestion className="w-3 h-3" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            Click and move the Take Profit or Stop Loss level to the other side of the opening price to change to {transactionBox.position == "long" ? "Short" : "Long"}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                  </TooltipProvider>
+                  </div>
+                 
                   <p className="text-lg font-semibold capitalize">{transactionBox.position}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Take Profit</p>
+                   <div className="flex items-center gap-2 ">
+                    <p className="text-sm text-muted-foreground">Take Profit</p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                            <MessageCircleQuestion className="w-3 h-3" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            Click and move the Take Profit level on the transaction box to adjust
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                  </TooltipProvider>
+                  </div>
                   <p className="text-lg font-semibold text-bullish">{Math.abs(transactionBox.profitSize).toFixed(2)}%</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Stop Loss</p>
+                  <div className="flex items-center gap-2 ">
+                    <p className="text-sm text-muted-foreground">Stop Loss</p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                            <MessageCircleQuestion className="w-3 h-3" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            Click and move the Stop Loss level on the transaction box to adjust
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                  </TooltipProvider>
+                  </div>
                   <p className="text-lg font-semibold text-bearish">{Math.abs(transactionBox.lossSize).toFixed(2)}%</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Time Horizon</p>
+                  <p className="text-sm text-muted-foreground">Risk:Reward</p>
+                  <p className="text-lg font-semibold">{Math.abs(transactionBox.profitSize/transactionBox.lossSize).toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Trade duration</p>
                   <p className="text-lg font-semibold">{transactionBox.duration} candles</p>
                 </div>
               </div>
