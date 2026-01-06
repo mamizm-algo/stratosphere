@@ -203,40 +203,40 @@ export const OverlayChartCanvas = ({
   const dragEdgeRef = useRef<HoverEdge>(null);
   const isDraggingRef = useRef(false);
 
-useEffect(() => {
-  if (!chartRef.current) return;
+  useEffect(() => {
+    if (!chartRef.current) return;
 
-  const chart = createChart(chartRef.current, {
-  layout: {
-    background: { color: "hsl(220, 25%, 8%)" },
-    textColor: "hsl(215, 20%, 65%)",
-  },
-  grid: {
-    vertLines: { color: "hsl(240 3.7% 15.9%)" },
-    horzLines: { color: "hsl(240 3.7% 15.9%)" },
-  },
-  crosshair: {
-    mode: CrosshairMode.Normal,
-  },
-  timeScale: {
-    borderColor: "hsl(240 3.7% 15.9%)",
-  },
-  // ✅ make chart responsive
-  rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
-  leftPriceScale: { visible: false },
-  handleScroll: true,
-  handleScale: true,
-  // this tells lightweight-charts to fill the container
-  width: chartRef.current.clientWidth,
-  height: chartRef.current.clientHeight,
-});
+    const chart = createChart(chartRef.current, {
+    layout: {
+      background: { color: "hsl(220, 25%, 8%)" },
+      textColor: "hsl(215, 20%, 65%)",
+    },
+    grid: {
+      vertLines: { color: "hsl(240 3.7% 15.9%)" },
+      horzLines: { color: "hsl(240 3.7% 15.9%)" },
+    },
+    crosshair: {
+      mode: CrosshairMode.Normal,
+    },
+    timeScale: {
+      borderColor: "hsl(240 3.7% 15.9%)",
+    },
+    // ✅ make chart responsive
+    rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
+    leftPriceScale: { visible: false },
+    handleScroll: true,
+    handleScale: true,
+    // this tells lightweight-charts to fill the container
+    width: chartRef.current.clientWidth,
+    height: chartRef.current.clientHeight,
+  });
 
-  const series = chart.addSeries(CandlestickSeries, {
-    lastValueVisible: false,
-    priceLineVisible: false,
-});
-const upColor = '#26a6992f';
-const downColor = '#ef53502a';
+    const series = chart.addSeries(CandlestickSeries, {
+      lastValueVisible: false,
+      priceLineVisible: false,
+  });
+  const upColor = '#26a6992f';
+  const downColor = '#ef53502a';
   const outcomeSeries = outcomesData.map(outcome => chart.addSeries(CandlestickSeries, {
     upColor: upColor,
     downColor: downColor,
@@ -570,7 +570,7 @@ const handleTransactionButton = () => {
        
         }
         {transactionBox &&
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 ">
           <Button
           variant={transactionBox ? "default" : "outline"}
           size="sm"
@@ -581,7 +581,7 @@ const handleTransactionButton = () => {
           Remove trade
         </Button>
                 <div>
-                   <div className="flex items-center gap-2 ">
+                   <div className="flex items-center gap-2">
                     <p className="text-sm text-muted-foreground">Position</p>
                     <TooltipProvider>
                       <Tooltip>

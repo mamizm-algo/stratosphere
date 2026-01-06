@@ -1,8 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CandleData } from "./MockChartDisplay";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import {  CandlestickSeries, createChart, CrosshairMode, IChartApi, IPrimitivePaneView, ISeriesApi, ISeriesPrimitive, Logical, Time } from "lightweight-charts";
+import {  CandlestickData, CandlestickSeries, createChart, CrosshairMode, IChartApi, IPrimitivePaneView, ISeriesApi, ISeriesPrimitive, Logical, Time } from "lightweight-charts";
 import { TransactionBoxModel } from "./SimilarityResults";
+import { Checkbox } from "../ui/checkbox";
+import { Switch } from "@/components/ui/switch"
+import { cn } from "@/lib/utils";
+
 
 
 class SetupOutcomeDividerPrimitive implements ISeriesPrimitive<Time> {
@@ -144,6 +148,7 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
 
 
 interface DetailChartCanvasProps {
+  baseChart: CandleData[]; 
   setupCandles: CandleData[];
   outcomeCandles: CandleData[];
   chartType: "candle" | "line";
@@ -152,6 +157,7 @@ interface DetailChartCanvasProps {
 }
 
 export const DetailChartCanvas = ({
+  baseChart,
   setupCandles,
   outcomeCandles,
   chartType,
@@ -161,15 +167,17 @@ export const DetailChartCanvas = ({
 const chartRef = useRef<HTMLDivElement | null>(null);
 const chartApiRef = useRef<IChartApi | null>(null);
 const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+const baseChartSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 const selectionPrimitiveRef = useRef<SetupOutcomeDividerPrimitive | null>(null);
-  const transactionPrimitiveRef = useRef<TransactionBoxPrimitive | null>(null);
-  
+const transactionPrimitiveRef = useRef<TransactionBoxPrimitive | null>(null);
+const [showBaseChart, setShowBaseChart] = useState<boolean>(true);
+const [baseGhostChart, setBaseGhostChart] = useState<CandlestickData<Time> [] | null>(null);
+
+
 useEffect(() => {
   if (!chartRef.current) return;
 
   const chart = createChart(chartRef.current, {
-  // width: 900,
-  // height: 500,
   layout: {
     background: { color: "hsl(220, 25%, 8%)" },
     textColor: "hsl(215, 20%, 65%)",
@@ -184,7 +192,7 @@ useEffect(() => {
   timeScale: {
     borderColor: "hsl(240 3.7% 15.9%)",
   },
-  // ✅ make chart responsive
+  // make chart responsive
   rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
   leftPriceScale: { visible: false },
   handleScroll: true,
@@ -195,9 +203,22 @@ useEffect(() => {
 });
 
   const series = chart.addSeries(CandlestickSeries);
+  
+  const upColor = '#26a69952';
+  const downColor = '#ef535054';
+  const baseChartSeries = chart.addSeries(CandlestickSeries, {
+    upColor: upColor,
+    downColor: downColor,
+    borderVisible: false,
+    wickUpColor: upColor,
+    wickDownColor: downColor,
+    lastValueVisible: false,
+    priceLineVisible: false,
+});
 
   chartApiRef.current = chart;
   seriesRef.current = series;
+  baseChartSeriesRef.current = baseChartSeries;
 
   return () => chart.remove();
 }, []);
@@ -251,6 +272,42 @@ useEffect(() => {
   selectionPrimitiveRef.current = primitive;
 }, [setupCandles, outcomeCandles]);
 
+  // ghost base chart
+  useEffect(() => {
+    if (!baseChartSeriesRef.current || !chartApiRef.current) return;
+
+    // align to outcome open
+    const seriesData = [];
+    const baseReferenceCandleClose = baseChart[baseChart.length - 1].close;
+    const setupReferenceCandleClose = setupCandles[setupCandles.length - 1].close;
+    for (let i = 1; i <= baseChart.length; i++) {
+      const baseCandle = baseChart[baseChart.length - i];
+      const setupCandle = setupCandles[setupCandles.length - i];
+      seriesData.push({
+        time: new Date(setupCandle.ctm).getTime(),
+        open: baseCandle.open / baseReferenceCandleClose * setupReferenceCandleClose,
+        high: baseCandle.high / baseReferenceCandleClose * setupReferenceCandleClose,
+        low: baseCandle.low / baseReferenceCandleClose * setupReferenceCandleClose,
+        close: baseCandle.close / baseReferenceCandleClose * setupReferenceCandleClose,
+      })
+    }
+    setBaseGhostChart(seriesData.reverse());
+    if (showBaseChart) {
+      baseChartSeriesRef.current.setData(seriesData);
+    }
+  }, [setupCandles, outcomeCandles]);
+
+  // ghost base chart
+  useEffect(() => {
+    if (!baseChartSeriesRef.current || !chartApiRef.current) return;
+
+    if (showBaseChart && baseGhostChart) {
+      baseChartSeriesRef.current.setData(baseGhostChart);
+    } else {
+      baseChartSeriesRef.current.setData([]);
+    }
+  }, [showBaseChart, baseGhostChart]);
+
 // transaction box
 useEffect(() => {
   const chart = chartApiRef.current;
@@ -303,15 +360,56 @@ useEffect(() => {
       {onChartTypeChange && (
         <div className="flex items-center justify-between">
           <h4 className="text-lg font-semibold text-foreground">Setup + Outcome Chart</h4>
-          <Select value={chartType} onValueChange={(v) => onChartTypeChange(v as "candle" | "line")}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="candle">Candles</SelectItem>
-              <SelectItem value="line">Line</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            {/* <div
+              key="showGhostBaseChart"
+              className="flex items-center space-x-2 p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors"
+            >
+              <label
+                htmlFor="showGhostBaseChart"
+                className="text-sm font-medium leading-none cursor-pointer flex-1"
+              >
+                Show base chart
+              </label>
+              <Checkbox
+                id="showGhostBaseChart"
+                checked={showBaseChart}
+                onCheckedChange={() => {setShowBaseChart(!showBaseChart)}} 
+              />
+            </div> */}
+            <div
+              className={cn(
+                "flex items-center space-x-2 p-y-1 px-3 rounded-lg border transition-colors",
+                showBaseChart
+                  ? "bg-secondary/40 border-primary/40"
+                  : "border-border hover:bg-secondary/50"
+              )}
+            >
+              <label
+                htmlFor="showGhostBaseChart"
+                className="text-sm font-medium leading-none cursor-pointer flex-1"
+              >
+                Show base chart
+              </label>
+
+              <Switch
+                id="showGhostBaseChart"
+                checked={showBaseChart}
+                onCheckedChange={setShowBaseChart}
+              />
+            </div>
+
+            
+            <Select value={chartType} onValueChange={(v) => onChartTypeChange(v as "candle" | "line")}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="candle">Candles</SelectItem>
+                <SelectItem value="line">Line</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       )}
       <div

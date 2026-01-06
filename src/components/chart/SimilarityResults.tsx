@@ -338,7 +338,7 @@ export const SimilarityResults = ({
             <ScrollArea className="h-full">
               <div className="pb-6">
                 <BaseChartCanvas
-                  candles={setupCandles || generateMockCandles(20, 100, "sideways")}
+                  candles={setupCandles}
                   chartType={baseChartType}
                   onChartTypeChange={setBaseChartType}
                 />
@@ -367,6 +367,7 @@ export const SimilarityResults = ({
             <ScrollArea className="h-full">
               <div className="flex flex-col">
                 <PatternDetailView
+                  baseChart={setupCandles}
                   pattern={filteredPatterns[currentIndex]}
                   onSave={() => handleSavePattern(filteredPatterns[currentIndex])}
                   individualStats={getIndividualStats(filteredPatterns[currentIndex])}
@@ -468,6 +469,7 @@ const PatternCard = ({
 };
 
 interface PatternDetailViewProps {
+  baseChart: CandleData[];
   pattern: SimilarPattern;
   onSave: () => void;
   individualStats?: IndividualTradeStats;
@@ -475,6 +477,7 @@ interface PatternDetailViewProps {
 }
 
 const PatternDetailView = ({
+  baseChart,
   pattern,
   onSave,
   individualStats,
@@ -502,6 +505,7 @@ const PatternDetailView = ({
 
       <div className="flex-1">
         <DetailChartCanvas
+          baseChart = {baseChart}
           setupCandles={setupCandles}
           outcomeCandles={outcomeCandles}
           chartType={chartType}
