@@ -3,6 +3,7 @@ import { Canvas as FabricCanvas, Rect, Line, Group, FabricObject } from "fabric"
 import { DrawMode, Volatility } from "@/pages/Chart";
 import { toast } from "sonner";
 import { CandleData } from "./MockChartDisplay";
+import { createChart, CrosshairMode, CandlestickSeries, IChartApi, ISeriesApi, CandlestickData, ISeriesPrimitive, IPrimitivePaneView, Time, Logical, LineSeries } from "lightweight-charts";
 
 interface ChartCanvasProps {
   drawMode: DrawMode;
@@ -12,15 +13,22 @@ interface ChartCanvasProps {
   setSearchInputCandles: (candles: CandleData[]) => void
 }
 
-export const ChartCanvas = ({ drawMode, volatility, onCandleCountChange, onClear, setSearchInputCandles }: ChartCanvasProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fabricCanvasRef = useRef<FabricCanvas | null>(null);
+export const ChartCanvas = ({drawMode, volatility, onCandleCountChange, onClear, setSearchInputCandles }: ChartCanvasProps) => {
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [openPrice, setOpenPrice] = useState<number | null>(null);
   const [previewLine, setPreviewLine] = useState<Line | null>(null);
+  const chartRef = useRef<HTMLDivElement | null>(null);
+  const chartApiRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const helperSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const clickHandlerRef = useRef<((param: any) => void) | null>(null);
+  const crosshairHandlerRef = useRef<((param: any) => void) | null>(null);
+  const [isSelecting, setIsSelecting] = useState(false);
+  const drawingCandleRef = useRef<CandleData | null>(null);
+  const rafPendingRef = useRef(false);
 
-  console.log(candles);
+  const timestamp = useRef<number>(1);
 
   const volatilityMultiplier = {
     low: 0.25,
@@ -28,334 +36,257 @@ export const ChartCanvas = ({ drawMode, volatility, onCandleCountChange, onClear
     high: 1.0,
   };
 
-  // Initialize Fabric canvas
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!onClear) return;
+    const clearHandler = () => {
+      setCandles([]);
+      seriesRef.current.setData([]);
+      toast.success("Chart cleared");
+    } 
+    onClear(clearHandler);
 
-    const canvas = new FabricCanvas(canvasRef.current, {
-      width: canvasRef.current.offsetWidth,
-      height: canvasRef.current.offsetHeight,
-      backgroundColor: "hsl(220, 25%, 8%)",
-      selection: drawMode === "select",
+  }, [onClear]);
+
+  useEffect(() => {
+    if (!chartRef.current) return;
+
+    const chart = createChart(chartRef.current, {
+    layout: {
+      background: { color: "hsl(220, 25%, 8%)" },
+      textColor: "hsl(215, 20%, 65%)",
+    },
+    grid: {
+      vertLines: { color: "hsl(240 3.7% 15.9%)" },
+      horzLines: { color: "hsl(240 3.7% 15.9%)" },
+    },
+    crosshair: {
+      mode: CrosshairMode.Normal,
+    },
+    timeScale: {
+      borderColor: "hsl(240 3.7% 15.9%)",
+      barSpacing: 30,
+    },
+    // make chart responsive
+    rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
+    leftPriceScale: { visible: false },
+    handleScroll: true,
+    handleScale: true,
+    // this tells lightweight-charts to fill the container
+    width: chartRef.current.clientWidth,
+    height: chartRef.current.clientHeight,
+  });
+
+  const PRICE_RANGE = { from: 99, to: 101 };
+
+  chart.priceScale("right").setVisibleRange(PRICE_RANGE);
+
+  // helper series to adjust price scale
+  const helperSeries = chart.addSeries(LineSeries, {
+    color: 'rgba(0,0,0,0)',   // invisible but still contributes
+    lastValueVisible: false,
+    priceLineVisible: false,
+  });
+
+  helperSeries.setData([
+    { time: 0 as Time, value: 99 },
+    { time: 1 as Time, value: 101 },
+  ]);
+  helperSeriesRef.current = helperSeries;
+
+  const series = chart.addSeries(CandlestickSeries);
+
+  chartApiRef.current = chart;
+  seriesRef.current = series;
+
+
+  return () => chart.remove();
+}, []);
+
+
+  useEffect(() => {
+    const chart = chartApiRef.current;
+    if (!chart) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (chartRef.current) {
+        chart.resize(
+          chartRef.current.clientWidth,
+          chartRef.current.clientHeight
+        );
+      }
     });
 
-    fabricCanvasRef.current = canvas;
-    drawGrid(canvas);
+    resizeObserver.observe(chartRef.current);
 
     return () => {
-      canvas.dispose();
+      resizeObserver.disconnect();
     };
   }, []);
 
-  // Update canvas interaction mode
-  useEffect(() => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
+useEffect(() => {
+  const chart = chartApiRef.current;
+  const helperSeries = helperSeriesRef.current;
 
-    canvas.selection = drawMode === "select";
-    canvas.isDrawingMode = false;
+  if (!chart || !helperSeries) return;
 
-    // Enable/disable object selection based on draw mode
-    canvas.forEachObject((obj) => {
-      obj.selectable = drawMode === "select";
-      obj.evented = drawMode === "select";
-    });
+  if (drawMode == "candle") {
+    const handleClick = (param: any) => {
+          
+        if (!param.point || param.point.y === undefined) return;
 
-    canvas.renderAll();
-  }, [drawMode]);
+        const price = helperSeries.coordinateToPrice(param.point.y);
+        if (price == null) return;
 
-  const drawGrid = (canvas: FabricCanvas) => {
-    const width = canvas.width || 800;
-    const height = canvas.height || 600;
+        if (!drawingCandleRef.current) {
+          const candle: CandleData = {
+            open: price,
+            close: price,
+            high: price,
+            low: price,
+            ctm: timestamp.current++,
+          };
 
-    // Vertical lines
-    for (let x = 0; x < width; x += 50) {
-      const line = new Line([x, 0, x, height], {
-        stroke: "hsl(220, 20%, 15%)",
-        strokeWidth: 1,
-        selectable: false,
-        evented: false,
-      });
-      canvas.add(line);
-    }
+          drawingCandleRef.current = candle;
 
-    // Horizontal lines
-    for (let y = 0; y < height; y += 50) {
-      const line = new Line([0, y, width, y], {
-        stroke: "hsl(220, 20%, 15%)",
-        strokeWidth: 1,
-        selectable: false,
-        evented: false,
-      });
-      canvas.add(line);
-    }
-  };
+          // preview immediately
+          seriesRef.current?.update({
+            time: candle.ctm,
+            open: candle.open,
+            high: candle.high,
+            low: candle.low,
+            close: candle.close,
+          });
 
-  const createCandleGroup = (candle: CandleData): Group => {
-    const candleWidth = 30;
-    const isBullish = candle.close < candle.open; // Note: inverted because canvas Y is top-down
-    const color = isBullish ? "hsl(142, 76%, 36%)" : "hsl(0, 72%, 51%)";
-
-    // Wick line
-    const wick = new Line([candle.x, candle.high, candle.x, candle.low], {
-      stroke: color,
-      strokeWidth: 2,
-    });
-
-    // Body rectangle
-    const bodyHeight = Math.abs(candle.close - candle.open);
-    const bodyTop = Math.min(candle.open, candle.close);
-    const body = new Rect({
-      left: candle.x - candleWidth / 2,
-      top: bodyTop,
-      width: candleWidth,
-      height: Math.max(bodyHeight, 1),
-      fill: color,
-      stroke: color,
-      strokeWidth: 1,
-    });
-
-    // Create group
-    const group = new Group([wick, body], {
-      selectable: true,
-      hasControls: false,
-      lockRotation: true,
-      lockScalingX: true,
-      lockScalingY: true,
-      lockMovementY: true, // Prevent vertical floating
-    });
-
-    // Store candle data
-    (group as any).candleData = candle;
-
-    // Handle horizontal dragging on the group (order change only)
-    group.on("moving", (e) => {
-      const obj = e.transform?.target as Group;
-      const candleData = (obj as any).candleData as CandleData;
-      
-      // Update only X position (horizontal movement for order change)
-      candleData.x = obj.left || candle.x;
-    });
-
-    // Add individual wick control points
-    const topWickControl = new Rect({
-      left: candle.x - 5,
-      top: candle.high - 5,
-      width: 10,
-      height: 10,
-      fill: "hsl(217, 91%, 60%)",
-      opacity: 0,
-      hasControls: false,
-      lockRotation: true,
-    });
-
-    const bottomWickControl = new Rect({
-      left: candle.x - 5,
-      top: candle.low - 5,
-      width: 10,
-      height: 10,
-      fill: "hsl(217, 91%, 60%)",
-      opacity: 0,
-      hasControls: false,
-      lockRotation: true,
-    });
-
-    (topWickControl as any).wickType = "high";
-    (topWickControl as any).candleId = candle.x;
-    (bottomWickControl as any).wickType = "low";
-    (bottomWickControl as any).candleId = candle.x;
-
-    topWickControl.on("mouseover", () => {
-      topWickControl.set({ opacity: 0.7 });
-      fabricCanvasRef.current?.renderAll();
-    });
-
-    topWickControl.on("mouseout", () => {
-      topWickControl.set({ opacity: 0 });
-      fabricCanvasRef.current?.renderAll();
-    });
-
-    bottomWickControl.on("mouseover", () => {
-      bottomWickControl.set({ opacity: 0.7 });
-      fabricCanvasRef.current?.renderAll();
-    });
-
-    bottomWickControl.on("mouseout", () => {
-      bottomWickControl.set({ opacity: 0 });
-      fabricCanvasRef.current?.renderAll();
-    });
-
-    topWickControl.on("moving", (e) => {
-      const obj = e.transform?.target as Rect;
-      const candleId = (obj as any).candleId;
-      
-      setCandles((prev) =>
-        prev.map((c) => {
-          if (c.x === candleId) {
-            const newHigh = obj.top! + 5;
-            return { ...c, high: Math.min(newHigh, Math.min(c.open, c.close)) };
-          }
-          return c;
-        })
-      );
-    });
-
-    bottomWickControl.on("moving", (e) => {
-      const obj = e.transform?.target as Rect;
-      const candleId = (obj as any).candleId;
-      
-      setCandles((prev) =>
-        prev.map((c) => {
-          if (c.x === candleId) {
-            const newLow = obj.top! + 5;
-            return { ...c, low: Math.max(newLow, Math.max(c.open, c.close)) };
-          }
-          return c;
-        })
-      );
-    });
-
-    return group;
-  };
-
-  // Redraw candles when they change
-  useEffect(() => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
-
-    // Remove old candle groups
-    const objectsToRemove: FabricObject[] = [];
-    canvas.forEachObject((obj) => {
-      if ((obj as any).candleData) {
-        objectsToRemove.push(obj);
-      }
-    });
-    objectsToRemove.forEach((obj) => canvas.remove(obj));
-
-    // Add new candle groups
-    candles.forEach((candle) => {
-      const group = createCandleGroup(candle);
-      canvas.add(group);
-    });
-
-    canvas.renderAll();
-  }, [candles]);
-
-  const handleCanvasClick = (e: any) => {
-    if (drawMode !== "candle") return;
-
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
-
-    const pointer = canvas.getPointer(e.e);
-    const y = pointer.y;
-
-    if (!isDrawing) {
-      // First click - set OPEN price
-      setOpenPrice(y);
-      setIsDrawing(true);
-
-      // Show preview line
-      const line = new Line([0, y, canvas.width || 800, y], {
-        stroke: "hsl(217, 91%, 60%)",
-        strokeWidth: 1,
-        strokeDashArray: [5, 5],
-        selectable: false,
-        evented: false,
-      });
-      canvas.add(line);
-      setPreviewLine(line);
-
-      toast.info("Click again to set CLOSING price");
-    } else {
-      // Second click - set CLOSE price and create candle
-      const open = openPrice!;
-      const close = y;
-      setOpenPrice(y);
-      const x = 50 + candles.length * 50;
-
-      const candleHeight = Math.abs(close - open);
-      const wickHeight = candleHeight * volatilityMultiplier[volatility];
-
-      const newCandle: CandleData = {
-        x,
-        open,
-        close,
-        high: Math.max(open, close) + wickHeight,
-        low: Math.min(open, close) - wickHeight,
+        } else {
+          setCandles(prev => [...prev, drawingCandleRef.current!]);
+          const candle: CandleData = {
+            open: price,
+            close: price,
+            high: price,
+            low: price,
+            ctm: timestamp.current++,
+          };
+          drawingCandleRef.current = candle;
+          seriesRef.current?.update({
+            time: candle.ctm,
+            open: candle.open,
+            high: candle.high,
+            low: candle.low,
+            close: candle.close,
+          });
+        }
       };
 
-      const updatedCandles = [...candles, newCandle];
-      setSearchInputCandles(updatedCandles);
-      setCandles(updatedCandles);
-      // setIsDrawing(false);
-      setOpenPrice(close); // Next candle opens at this closing price
-      
-      // Notify parent of candle count change
-      onCandleCountChange?.(updatedCandles.length);
+      const handleMove = (param: any) => {
+        const candle = drawingCandleRef.current;
+        const series = seriesRef.current;
+        const helperSeries = helperSeriesRef.current;
 
-      // Remove preview line
-      if (previewLine) {
-        canvas.remove(previewLine);
-        setPreviewLine(null);
-      }
+        if (
+          !param.point ||
+          param.point.y === undefined ||
+          !candle ||
+          !series ||
+          !helperSeries
+        ) {
+          return;
+        }
 
-      toast.success("Candle created! Drag wicks to adjust.");
-    }
-  };
+        if (rafPendingRef.current) return;
 
-  useEffect(() => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas) return;
+        const price = helperSeries.coordinateToPrice(param.point.y);
+        if (price == null) return;
 
-    canvas.on("mouse:down", handleCanvasClick);
+        rafPendingRef.current = true;
 
-    return () => {
-      canvas.off("mouse:down", handleCanvasClick);
-    };
-  }, [drawMode, isDrawing, openPrice, candles, volatility]);
+        requestAnimationFrame(() => {
+          candle.close = price;
+          const candleHeight = Math.abs(candle.close - candle.open);
+          const wickUpHeight = candleHeight * Math.random() * volatilityMultiplier[volatility];
+          const wickDownHeight = candleHeight * Math.random() * volatilityMultiplier[volatility];
 
-  // Clear functionality - pass clear handler to parent
-  useEffect(() => {
-    if (!onClear) return;
+          candle.high = Math.max(candle.open, candle.close) + wickUpHeight;
+          candle.low = Math.min(candle.open, candle.close) - wickDownHeight;
+
+          series.update({
+            time: candle.ctm,
+            open: candle.open,
+            high: candle.high,
+            low: candle.low,
+            close: candle.close,
+          });
+
+          rafPendingRef.current = false;
+          });
+        };
     
-    const clearHandler = () => {
-      const canvas = fabricCanvasRef.current;
-      if (!canvas) return;
-      
-      // Clear all candles
-      setSearchInputCandles([]);
-      setCandles([]);
-      setIsDrawing(false);
-      setOpenPrice(null);
-      
-      // Remove preview line if exists
-      if (previewLine) {
-        canvas.remove(previewLine);
-        setPreviewLine(null);
+
+        chart.subscribeClick(handleClick);
+        chart.subscribeCrosshairMove(handleMove);
+
+        return () => {
+          chart.unsubscribeClick(handleClick);
+          chart.unsubscribeCrosshairMove(handleMove);
+        };
+      } else {
+        drawingCandleRef.current = null;
+        candles.pop();
+        seriesRef.current.pop(1);
+        cleanupSelectionListeners();
       }
-      
-      // Notify parent
-      onCandleCountChange?.(0);
-      
-      toast.success("Chart cleared");
-    };
-    
-    // Pass clear handler to parent
-    onClear(clearHandler);
-  }, [onClear, previewLine, onCandleCountChange]);
+  }, [drawMode]);
+
+
+useEffect(() => {
+  onCandleCountChange(candles.length);
+  setSearchInputCandles(candles);
+}, [candles.length]);
+
+
+
+const cleanupSelectionListeners = () => {
+  const chart = chartApiRef.current;
+  if (!chart) return;
+
+  if (clickHandlerRef.current) {
+    chart.unsubscribeClick(clickHandlerRef.current);
+    clickHandlerRef.current = null;
+  }
+
+  if (crosshairHandlerRef.current) {
+    chart.unsubscribeCrosshairMove(crosshairHandlerRef.current);
+    crosshairHandlerRef.current = null;
+  }
+};
+
+const finalizeSelection = (endLogical: number) => {
+  // const primitive = selectionPrimitiveRef.current;
+  // if (!primitive) return;
+
+  // primitive.updateEndLogical(endLogical);
+
+  // const start = Math.min(
+  //   primitive["startLogical"],
+  //   endLogical
+  // );
+  // const end = Math.max(
+  //   primitive["startLogical"],
+  //   endLogical
+  // );
+
+
+  // setIsSelecting(false);
+  // cleanupSelectionListeners();
+};
+
+
 
   return (
     <div className="w-full h-full rounded-lg border border-border overflow-hidden shadow-card bg-chart-bg relative">
-      <canvas ref={canvasRef} className="w-full h-full" style={{ cursor: drawMode === "candle" ? "crosshair" : "default" }} />
-      {candles.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center space-y-2">
-            <p className="text-muted-foreground text-lg">First click sets OPEN, second click sets CLOSE</p>
-            <p className="text-muted-foreground/60 text-sm">Draw at least 2 candles to search similar patterns</p>
-          </div>
-        </div>
-      )}
+      <div
+           ref={chartRef}
+           className="w-full h-full"
+         />
     </div>
   );
 };

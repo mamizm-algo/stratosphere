@@ -43,7 +43,7 @@ export const TradeStatistics = ({ stats, individualStats }: TradeStatisticsProps
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                  <MessageCircleQuestion className="w-3 h-3" />
+                  <MessageCircleQuestion className="w-4 h-4" />
               </TooltipTrigger>
 
               <TooltipContent >
@@ -88,7 +88,7 @@ export const TradeStatistics = ({ stats, individualStats }: TradeStatisticsProps
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                    <MessageCircleQuestion className="w-3 h-3" />
+                    <MessageCircleQuestion className="w-4 h-4" />
                 </TooltipTrigger>
 
                 <TooltipContent>
@@ -116,7 +116,7 @@ export const TradeStatistics = ({ stats, individualStats }: TradeStatisticsProps
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                    <MessageCircleQuestion className="w-3 h-3" />
+                    <MessageCircleQuestion className="w-4 h-4" />
                 </TooltipTrigger>
 
                 <TooltipContent>
@@ -141,7 +141,7 @@ export const TradeStatistics = ({ stats, individualStats }: TradeStatisticsProps
               <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                    <MessageCircleQuestion className="w-3 h-3" />
+                    <MessageCircleQuestion className="w-4 h-4" />
                 </TooltipTrigger>
 
                 <TooltipContent>
@@ -163,7 +163,7 @@ export const TradeStatistics = ({ stats, individualStats }: TradeStatisticsProps
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                    <MessageCircleQuestion className="w-3 h-3" />
+                    <MessageCircleQuestion className="w-4 h-4" />
                 </TooltipTrigger>
 
                 <TooltipContent>

@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collection } from "@/types/collection";
 import { CandleData } from "@/components/chart/MockChartDisplay";
 import { FolderOpen, TrendingUp } from "lucide-react";
+import { calculateSimilarityScore } from "@/lib/similarityCalculator";
 
 interface CompareToCollectionDialogProps {
   open: boolean;
@@ -31,10 +32,12 @@ export const CompareToCollectionDialog = ({
   const [similarityScore, setSimilarityScore] = useState<number | null>(null);
 
   const calculateSimilarity = (collection: Collection) => {
-    // Mock similarity calculation - random score between 60-95%
-    const score = Math.floor(Math.random() * 35) + 60;
-    return score;
-  };
+      const score = calculateSimilarityScore({
+        referencePattern: collection.representativeChart,
+        candidatePattern: chartData
+      });
+      return score;
+    };
 
   const handleSelectCollection = (collection: Collection) => {
     setSelectedCollection(collection);

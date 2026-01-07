@@ -4,7 +4,10 @@ import {
   TrendingUp, 
   Trash2,
   Search,
-  FolderPlus
+  FolderPlus,
+  Pencil,
+  X,
+  MessageCircleQuestion
 } from "lucide-react";
 import { DrawMode, Volatility } from "@/pages/Chart";
 import {
@@ -14,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 interface ToolbarProps {
   drawMode: DrawMode;
@@ -27,40 +31,74 @@ interface ToolbarProps {
 }
 
 export const Toolbar = ({ drawMode, setDrawMode, volatility, setVolatility, onSearchSimilar, onCompareToCollection, onClear, candleCount }: ToolbarProps) => {
-  const tools = [
-    // { id: "select" as DrawMode, icon: MousePointer2, label: "Select" },
-    { id: "candle" as DrawMode, icon: TrendingUp, label: "Draw Candles" },
-  ];
 
   return (
     <div className="border-b border-border bg-card/30 backdrop-blur-sm">
       <div className="container mx-auto px-6 py-3">
         <div className="flex items-center gap-4 flex-wrap">
           {/* Drawing tools */}
-          <div className="flex items-center gap-2">
-            {tools.map((tool) => {
-              const Icon = tool.icon;
-              return (
-                <Button
-                  key={tool.id}
-                  variant={drawMode === tool.id ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setDrawMode(tool.id)}
-                  className="gap-2"
-                  title={tool.label}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{tool.label}</span>
-                </Button>
-              );
-            })}
-          </div>
+          {drawMode == "candle" ?
+            <div className="flex items-center gap-2">
+              <Button
+                key="candle"
+                variant="default"
+                size="sm"
+                onClick={() => setDrawMode("select")}
+                className="gap-2"
+                title="Stop drawing"
+              >
+                <X className="w-4 h-4" />
+                <span className="hidden sm:inline">Stop drawing</span>
+              </Button>
+            </div>
+            :
+            <div className="flex items-center gap-2">
+              <Button
+                key="candle"
+                variant="default"
+                size="sm"
+                onClick={() => setDrawMode("candle")}
+                className="gap-2"
+                title="Draw Candles"
+              >
+                <Pencil className="w-4 h-4" />
+                <span className="hidden sm:inline">Draw Candles</span>
+              </Button>
+            </div>
+            }
+          
+          {/* Clear button */}
+          {candleCount > 0 &&
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="gap-2 text-destructive hover:text-destructive"
+              onClick={onClear}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Clear</span>
+            </Button>
+          }
+         
 
           <div className="h-6 w-px bg-border" />
 
           {/* Volatility selector */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Volatility:</span>
+            <span className="text-sm text-muted-foreground">Volatility</span>
+            <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                  <MessageCircleQuestion className="w-4 h-4" />
+              </TooltipTrigger>
+
+              <TooltipContent>
+                <p>
+                  Defines the generated length of candle wicks.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
             <Select value={volatility} onValueChange={(v) => setVolatility(v as Volatility)}>
               <SelectTrigger className="w-32 bg-secondary">
                 <SelectValue />
@@ -104,16 +142,7 @@ export const Toolbar = ({ drawMode, setDrawMode, volatility, setVolatility, onSe
             </>
           )}
 
-          {/* Clear button */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="gap-2 text-destructive hover:text-destructive"
-            onClick={onClear}
-          >
-            <Trash2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Clear</span>
-          </Button>
+          
         </div>
       </div>
     </div>

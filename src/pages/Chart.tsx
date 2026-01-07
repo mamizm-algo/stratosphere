@@ -13,7 +13,7 @@ import { CANDLE_DATA } from "@/data/candles";
 import { storeSearchResults } from "./Results";
 import { HomeHeader } from "@/components/HomeHeader";
 
-export type DrawMode = "candle" | "line" | "horizontal" | "vertical" | "angled" | "select";
+export type DrawMode = "candle" | "line" | "select";
 export type Volatility = "low" | "medium" | "high";
 
 const Chart = () => {
@@ -25,11 +25,11 @@ const Chart = () => {
   const [searchInputCandles, setSearchInputCandles] = useState<any[]>([]);
   const [compareToCollectionOpen, setCompareToCollectionOpen] = useState(false);
   const [currentChartData, setCurrentChartData] = useState<any[]>([]);
-  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [candleCount, setCandleCount] = useState(0);
   const handleClearRef = useRef<any>(null);
 
   const handleSearch = (config: SearchConfig) => {
+    setDrawMode("select");
     const searchResults = searchSimilarPatterns(
       searchInputCandles,
       CANDLE_DATA,
@@ -42,10 +42,8 @@ const Chart = () => {
   };
 
   const handleCompareToCollection = () => {
-    // Get the current drawn candles from the search input or generate mock data
-    const drawnCandles = searchInputCandles.length > 0 ? searchInputCandles : generateMockCandles(20, 100, "sideways");
-    if (drawnCandles && drawnCandles.length > 0) {
-      setCurrentChartData(drawnCandles);
+    if (searchInputCandles && searchInputCandles.length > 0) {
+      setCurrentChartData(searchInputCandles);
       setCompareToCollectionOpen(true);
     } else {
       toast.error("Please draw at least 2 candles first");
@@ -53,16 +51,16 @@ const Chart = () => {
   };
 
   const handleClear = () => {
-    // Call the clear handler if available
     if (handleClearRef.current) {
       handleClearRef.current();
     }
+    setDrawMode("select");
   };
 
-  const handleVirtualTransaction = (params: VirtualTransactionParams) => {
-    console.log("Virtual transaction:", params);
-    toast.success("Virtual transaction executed");
-  };
+  const handleSearchSimilarButton = () => {
+    setSearchDialogOpen(true);
+    setDrawMode("select");
+  }
 
   return (
     <>
@@ -74,7 +72,7 @@ const Chart = () => {
             setDrawMode={setDrawMode}
             volatility={volatility}
             setVolatility={setVolatility}
-            onSearchSimilar={() => setSearchDialogOpen(true)}
+            onSearchSimilar={handleSearchSimilarButton}
             onCompareToCollection={handleCompareToCollection}
             onClear={handleClear}
             candleCount={candleCount}
@@ -102,12 +100,6 @@ const Chart = () => {
         onOpenChange={setCompareToCollectionOpen}
         collections={collections}
         chartData={currentChartData}
-      />
-
-      <VirtualTransactionDialog
-        open={transactionDialogOpen}
-        onOpenChange={setTransactionDialogOpen}
-        onApply={handleVirtualTransaction}
       />
     </>
   );
