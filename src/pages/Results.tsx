@@ -79,7 +79,7 @@ export const clearSearchResults = () => {
 
 const Results = () => {
   const navigate = useNavigate();
-  const { addCollection } = useCollections();
+  const { collections, addCollection } = useCollections();
   const [patterns, setPatterns] = useState<SimilarPattern[]>([]);
   const [setupCandles, setSetupCandles] = useState<CandleData[]>([]);
   const [isSaved, setIsSaved] = useState(false);
@@ -530,6 +530,7 @@ const Results = () => {
         open={saveDialogOpen}
         onOpenChange={setSaveDialogOpen}
         onSave={handleSaveToLibrary}
+        collectionNames={collections.map(collection => collection.name)}
       />
  
       {/* Leave Warning Dialog */}
