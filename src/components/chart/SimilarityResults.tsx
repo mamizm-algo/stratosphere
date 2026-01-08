@@ -12,6 +12,14 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   LayoutGrid,
   ChevronLeft,
   ChevronRight,
@@ -22,6 +30,8 @@ import {
   TrendingDown,
   Settings,
   Save,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { MockChartDisplay, generateMockCandles, CandleData } from "./MockChartDisplay";
@@ -56,6 +66,7 @@ interface SimilarityResultsProps {
   onSaveToLibrary: (pattern: SimilarPattern) => void;
   setupCandles?: CandleData[];
   onSaveAsCollection?: (name: string) => void;
+  onRemovePattern?: (patternId: string) => void;
 }
 
 export interface TransactionBoxModel {
@@ -73,6 +84,7 @@ export const SimilarityResults = ({
   onSaveToLibrary,
   setupCandles,
   onSaveAsCollection,
+  onRemovePattern,
 }: SimilarityResultsProps) => {
   const { collections, addCollection } = useCollections();
   const [viewMode, setViewMode] = useState<"base" | "grid" | "detail" | "overlay">("grid");
@@ -82,6 +94,7 @@ export const SimilarityResults = ({
   const [outcomeChartType, setOutcomeChartType] = useState<"candle" | "line">("candle");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [baseChartType, setBaseChartType] = useState<"candle" | "line">("candle");
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const transactionParams = useRef<TransactionBoxModel | null>(null);
   
   const setTransactionParams = (newTransactionParams: TransactionBoxModel) => {
@@ -122,6 +135,19 @@ export const SimilarityResults = ({
   const handleSaveToLibrary = (name: string) => {
     addCollection(name, setupCandles, patterns);
     toast.success(`Collection "${name}" saved to library`);
+  };
+
+  const handleRemovePattern = () => {
+    const patternToRemove = filteredPatterns[currentIndex];
+    if (patternToRemove && onRemovePattern) {
+      onRemovePattern(patternToRemove.id);
+      // Adjust index if we removed the last item
+      if (currentIndex >= filteredPatterns.length - 1 && currentIndex > 0) {
+        setCurrentIndex(currentIndex - 1);
+      }
+    }
+    setRemoveDialogOpen(false);
+    toast.success("Pattern removed from results");
   };
 
   return (
@@ -248,6 +274,7 @@ export const SimilarityResults = ({
                   baseChart={setupCandles}
                   pattern={filteredPatterns[currentIndex]}
                   onSave={() => handleSavePattern(filteredPatterns[currentIndex])}
+                  onRemove={onRemovePattern ? () => setRemoveDialogOpen(true) : undefined}
                   registerTransactionChange={registerTransactionChangester}
                   transactionParams={transactionParams.current}
                 />
@@ -303,6 +330,39 @@ export const SimilarityResults = ({
         onSave={handleSaveToLibrary}
         collectionNames={collections.map(collection => collection.name)}
       />
+
+      {/* Remove Pattern Confirmation Dialog */}
+      <Dialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <DialogTitle>Remove Pattern</DialogTitle>
+            </div>
+            <DialogDescription className="pt-3 text-left">
+              Removing this pattern will affect the overall statistics calculated for these results. 
+              Only remove patterns that don't meet your strategy criteria beyond similarity score.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-border bg-card/50 p-4 mt-2">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Tip:</span> Remove patterns where the market context 
+              (news events, unusual volatility, etc.) doesn't align with your trading strategy.
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <Button variant="outline" onClick={() => setRemoveDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleRemovePattern} className="gap-2">
+              <Trash2 className="h-4 w-4" />
+              Remove Pattern
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -351,6 +411,7 @@ interface PatternDetailViewProps {
   baseChart: CandleData[];
   pattern: SimilarPattern;
   onSave: () => void;
+  onRemove?: () => void;
   registerTransactionChange: (fn: (v: TransactionBoxModel) => void) => void;
   transactionParams: TransactionBoxModel;
 }
@@ -359,17 +420,13 @@ const PatternDetailView = ({
   baseChart,
   pattern,
   onSave,
+  onRemove,
   registerTransactionChange,
   transactionParams
 }: PatternDetailViewProps) => {
   const [chartType, setChartType] = useState<"candle" | "line">("candle");
   const setupCandles = pattern.setupCandles;
   const outcomeCandles = pattern.outcomeCandles;
-
-  // const [transactionParams, setTransactionParams] = useState<TransactionBoxModel | null>(null);
-  //  useEffect(() => {
-  //     registerTransactionChange(setTransactionParams);
-  //   }, [registerTransactionChange]);
 
   return (
     <div className="flex-1 flex flex-col gap-6">
@@ -380,9 +437,22 @@ const PatternDetailView = ({
             {pattern.date} • {pattern.timeframe}
           </p>
         </div>
-        <Badge variant="secondary" className="bg-primary/10 text-primary text-lg px-4 py-2">
-          {pattern.similarity}% Match
-        </Badge>
+        <div className="flex items-center gap-3">
+          {onRemove && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onRemove}
+              className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+            >
+              <Trash2 className="h-4 w-4" />
+              Remove
+            </Button>
+          )}
+          <Badge variant="secondary" className="bg-primary/10 text-primary text-lg px-4 py-2">
+            {pattern.similarity}% Match
+          </Badge>
+        </div>
       </div>
 
       <IndividualTradeStatistics 

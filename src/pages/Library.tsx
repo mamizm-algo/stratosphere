@@ -70,6 +70,17 @@ const Library = () => {
     updateCollection(name, {name: newName});
   }
 
+  const handleUpdateCollectionResults = (updatedResults: any[]) => {
+    if (selectedCollection) {
+      updateCollection(selectedCollection.name, { results: updatedResults });
+      // Update local state as well
+      setSelectedCollection({
+        ...selectedCollection,
+        results: updatedResults,
+      });
+    }
+  };
+
   if (selectedCollection) {
     return (
       <div className="flex flex-col h-screen bg-background">
@@ -78,6 +89,7 @@ const Library = () => {
           <CollectionDetail
             collection={selectedCollection}
             onBack={() => setSelectedCollection(null)}
+            onUpdateCollection={handleUpdateCollectionResults}
           />
         </div>
       </div>
