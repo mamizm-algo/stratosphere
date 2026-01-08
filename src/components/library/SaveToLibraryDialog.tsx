@@ -18,6 +18,7 @@ interface SaveToLibraryDialogProps {
   onSave?: (name: string) => void;
   onEdit?: (name: string, newName: string) => void;
   name?: string;
+  collectionNames: string [];
 }
 
 export const SaveToLibraryDialog = ({
@@ -25,7 +26,8 @@ export const SaveToLibraryDialog = ({
   onOpenChange,
   onSave,
   onEdit,
-  name
+  name,
+  collectionNames
 }: SaveToLibraryDialogProps) => {
   const defaultName = `Collection ${new Date().toLocaleString()}`;
   const [collectionName, setCollectionName] = useState(name ?? defaultName);
@@ -33,6 +35,11 @@ export const SaveToLibraryDialog = ({
   const handleSave = () => {
     if (!collectionName.trim()) {
       toast.error("Please enter a collection name");
+      return;
+    }
+
+    if (collectionNames.includes(collectionName)) {
+      toast.error("Collection with that name already exists!");
       return;
     }
 

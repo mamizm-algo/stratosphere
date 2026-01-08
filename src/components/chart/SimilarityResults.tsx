@@ -74,7 +74,7 @@ export const SimilarityResults = ({
   setupCandles,
   onSaveAsCollection,
 }: SimilarityResultsProps) => {
-  const { addCollection } = useCollections();
+  const { collections, addCollection } = useCollections();
   const [viewMode, setViewMode] = useState<"base" | "grid" | "detail" | "overlay">("grid");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sortBy, setSortBy] = useState<"similarity" | "date">("similarity");
@@ -301,6 +301,7 @@ export const SimilarityResults = ({
         open={saveDialogOpen}
         onOpenChange={setSaveDialogOpen}
         onSave={handleSaveToLibrary}
+        collectionNames={collections.map(collection => collection.name)}
       />
     </div>
   );

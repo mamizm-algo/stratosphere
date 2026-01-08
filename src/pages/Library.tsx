@@ -163,6 +163,7 @@ const Library = () => {
                   onOpenChange={() => setCollectionToEdit(null)}
                   onEdit={handleEdit}
                   name={collection.name}
+                  collectionNames={collections.map(collection => collection.name)}
                 />
               </div>
               ))}
