@@ -49,6 +49,10 @@ class RangeSelectionPrimitive implements ISeriesPrimitive<Time> {
     this.endLogical = logical;
   }
 
+  getRangeWidth() {
+    return Math.abs(this.endLogical - this.startLogical);
+  }
+
   paneViews(): IPrimitivePaneView[] {
     return [
       {
@@ -87,9 +91,16 @@ class RangeSelectionPrimitive implements ISeriesPrimitive<Time> {
                 const left = Math.min(startX, endX);
                 const width = Math.abs(endX - startX);
 
-                ctx.fillStyle = "rgba(80,160,255,0.2)";
-                ctx.strokeStyle = "rgba(80,160,255,0.9)";
-                ctx.lineWidth = 2;
+                const candlesNumber = Math.abs(this.endLogical - this.startLogical);
+                if (candlesNumber < 2 || candlesNumber > 100) {
+                  ctx.fillStyle = "rgba(255, 80, 160, 0.2)";
+                  ctx.strokeStyle = "rgba(255, 80, 160, 0.9)";
+                  ctx.lineWidth = 2;
+                } else {
+                  ctx.fillStyle = "rgba(80,160,255,0.2)";
+                  ctx.strokeStyle = "rgba(80,160,255,0.9)";
+                  ctx.lineWidth = 2;
+                }
 
                 ctx.fillRect(left, 0, width, height);
                 ctx.strokeRect(left, 0, width, height);
@@ -222,7 +233,13 @@ const startSelection = () => {
       selectionPrimitiveRef.current = primitive;
       series.attachPrimitive(primitive);
     } else {
-      finalizeSelection(param.logical as Logical);
+      const primitive = selectionPrimitiveRef.current;
+      const rangeWidth = primitive.getRangeWidth();
+      if (rangeWidth < 2 || rangeWidth > 100) {
+        toast.error("Select between 2 and 100 candles");
+      } else {
+        finalizeSelection(param.logical as Logical);
+      }
     }
   };
 
