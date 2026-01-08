@@ -30,7 +30,6 @@ export const useCollections = () => {
     results: SimilarPattern[]
   ) => {
     const newCollection: Collection = {
-      id: Date.now().toString(),
       name,
       representativeChart,
       results,
@@ -41,23 +40,23 @@ export const useCollections = () => {
     return newCollection;
   };
 
-  const updateCollection = (id: string, updates: Partial<Collection>) => {
+  const updateCollection = (name: string, updates: Partial<Collection>) => {
     const updated = collections.map((c) =>
-      c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c
+      c.name === name ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c
     );
     saveCollections(updated);
   };
 
-  const deleteCollection = (id: string) => {
-    saveCollections(collections.filter((c) => c.id !== id));
+  const deleteCollection = (name: string) => {
+    saveCollections(collections.filter((c) => c.name !== name));
   };
 
-  const addResultToCollection = (collectionId: string, result: SimilarPattern) => {
-    const collection = collections.find((c) => c.id === collectionId);
+  const addResultToCollection = (collectionName: string, result: SimilarPattern) => {
+    const collection = collections.find((c) => c.name === collectionName);
     if (!collection) return;
 
     const updatedResults = [...collection.results, result];
-    updateCollection(collectionId, { results: updatedResults });
+    updateCollection(collectionName, { results: updatedResults });
   };
 
   return {

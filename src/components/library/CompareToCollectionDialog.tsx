@@ -73,9 +73,9 @@ export const CompareToCollectionDialog = ({
             <div className="space-y-3">
               {collections.map((collection) => (
                 <Card
-                  key={collection.id}
+                  key={collection.name}
                   className={`p-4 cursor-pointer transition-all hover:shadow-md ${
-                    selectedCollection?.id === collection.id
+                    selectedCollection?.name === collection.name
                       ? "ring-2 ring-primary"
                       : ""
                   }`}
@@ -95,7 +95,7 @@ export const CompareToCollectionDialog = ({
                     </Badge>
                   </div>
 
-                  {selectedCollection?.id === collection.id && similarityScore !== null && (
+                  {selectedCollection?.name === collection.name && similarityScore !== null && (
                     <div className="mt-4 pt-4 border-t border-border">
                       <div className="flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-primary" />

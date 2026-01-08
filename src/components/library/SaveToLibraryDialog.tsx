@@ -15,16 +15,20 @@ import { toast } from "sonner";
 interface SaveToLibraryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (name: string) => void;
+  onSave?: (name: string) => void;
+  onEdit?: (name: string, newName: string) => void;
+  name?: string;
 }
 
 export const SaveToLibraryDialog = ({
   open,
   onOpenChange,
   onSave,
+  onEdit,
+  name
 }: SaveToLibraryDialogProps) => {
   const defaultName = `Collection ${new Date().toLocaleString()}`;
-  const [collectionName, setCollectionName] = useState(defaultName);
+  const [collectionName, setCollectionName] = useState(name ?? defaultName);
 
   const handleSave = () => {
     if (!collectionName.trim()) {
@@ -32,9 +36,13 @@ export const SaveToLibraryDialog = ({
       return;
     }
 
-    onSave(collectionName.trim());
+    if (name) {
+      onEdit(name, collectionName);
+    } else {
+      onSave(collectionName.trim());
+    }
     onOpenChange(false);
-    setCollectionName(defaultName);
+    setCollectionName(collectionName);
   };
 
   const handleClose = () => {
@@ -80,7 +88,7 @@ export const SaveToLibraryDialog = ({
             className="gap-2"
           >
             <Save className="w-4 h-4" />
-            Save Collection
+            {name ? "Confirm" : "Save Collection"}
           </Button>
         </div>
       </DialogContent>

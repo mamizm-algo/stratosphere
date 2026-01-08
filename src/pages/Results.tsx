@@ -531,7 +531,7 @@ const Results = () => {
         onOpenChange={setSaveDialogOpen}
         onSave={handleSaveToLibrary}
       />
-
+ 
       {/* Leave Warning Dialog */}
       <AlertDialog open={showLeaveWarning} onOpenChange={setShowLeaveWarning}>
         <AlertDialogContent>

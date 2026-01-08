@@ -19,12 +19,16 @@ import { CollectionCard } from "@/components/library/CollectionCard";
 import { CollectionDetail } from "@/components/library/CollectionDetail";
 import { Collection } from "@/types/collection";
 import { HomeHeader } from "@/components/HomeHeader";
+import { SaveToLibraryDialog } from "@/components/library/SaveToLibraryDialog";
 
 const Library = () => {
-  const { collections, deleteCollection } = useCollections();
+  const { collections, deleteCollection, updateCollection } = useCollections();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "date-newest" | "date-oldest">("date-newest");
+  const [collectionToEdit, setCollectionToEdit] = useState<string | null>(null);
+
+  
 
   const filteredAndSortedCollections = useMemo(() => {
     let filtered = collections.filter((collection) => {
@@ -53,14 +57,18 @@ const Library = () => {
     return sorted;
   }, [collections, searchQuery, sortBy]);
 
-  const handleDelete = (id: string) => {
-    deleteCollection(id);
+  const handleDelete = (name: string) => {
+    deleteCollection(name);
     toast.success("Collection removed from library");
   };
 
   const handleOpenCollection = (collection: Collection) => {
     setSelectedCollection(collection);
   };
+
+  const handleEdit = (name: string, newName: string) => {
+    updateCollection(name, {name: newName});
+  }
 
   if (selectedCollection) {
     return (
@@ -143,12 +151,20 @@ const Library = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredAndSortedCollections.map((collection) => (
+                <div key={collection.name} >
                 <CollectionCard
-                  key={collection.id}
                   collection={collection}
                   onOpen={handleOpenCollection}
                   onDelete={handleDelete}
+                  onOpenEdit={() => setCollectionToEdit(collection.name)}
                 />
+                <SaveToLibraryDialog
+                  open={collectionToEdit == collection.name}
+                  onOpenChange={() => setCollectionToEdit(null)}
+                  onEdit={handleEdit}
+                  name={collection.name}
+                />
+              </div>
               ))}
             </div>
           )}

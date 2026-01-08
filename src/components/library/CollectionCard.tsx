@@ -8,13 +8,15 @@ import { MockChartDisplay } from "@/components/chart/MockChartDisplay";
 interface CollectionCardProps {
   collection: Collection;
   onOpen: (collection: Collection) => void;
-  onDelete: (id: string) => void;
+  onDelete: (name: string) => void;
+  onOpenEdit: (name: string) => void;
 }
 
 export const CollectionCard = ({
   collection,
   onOpen,
   onDelete,
+  onOpenEdit,
 }: CollectionCardProps) => {
   const averageSimilarity =
     collection.results.length > 0
@@ -23,11 +25,6 @@ export const CollectionCard = ({
             collection.results.length
         )
       : 0;
-
-  const editName = (name: string) => {
-    collection.name = name;
-    // TODO move to library to verify uniqueness and open editing modal
-  }
 
   return (
     <Card className="p-5 hover:shadow-glow transition-all group cursor-pointer">
@@ -73,7 +70,7 @@ export const CollectionCard = ({
           size="sm"
           variant="outline"
           className="flex-1 gap-2"
-          onClick={() => editName("new name")}
+          onClick={() => onOpenEdit(collection.name)}
         >
           <SquarePen className="w-4 h-4" />
           Edit
@@ -84,7 +81,7 @@ export const CollectionCard = ({
           className="text-destructive hover:text-destructive gap-2"
           onClick={(e) => {
             e.stopPropagation();
-            onDelete(collection.id);
+            onDelete(collection.name);
           }}
         >
           <Trash2 className="w-4 h-4" />
