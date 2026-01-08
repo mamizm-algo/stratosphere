@@ -7,14 +7,42 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Clock, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { AssetSearchInput } from "@/components/chart/AssetSearchInput";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+
+const TIMEZONES = [
+  { id: "UTC", name: "UTC", offset: "+00:00" },
+  { id: "America/New_York", name: "New York", offset: "-05:00" },
+  { id: "America/Chicago", name: "Chicago", offset: "-06:00" },
+  { id: "America/Los_Angeles", name: "Los Angeles", offset: "-08:00" },
+  { id: "Europe/London", name: "London", offset: "+00:00" },
+  { id: "Europe/Paris", name: "Paris", offset: "+01:00" },
+  { id: "Europe/Berlin", name: "Berlin", offset: "+01:00" },
+  { id: "Asia/Tokyo", name: "Tokyo", offset: "+09:00" },
+  { id: "Asia/Shanghai", name: "Shanghai", offset: "+08:00" },
+  { id: "Asia/Singapore", name: "Singapore", offset: "+08:00" },
+  { id: "Australia/Sydney", name: "Sydney", offset: "+11:00" },
+];
+
+const TIME_PRESETS = [
+  { id: "market-open-us", label: "US Market Open", time: "09:30", icon: "🇺🇸" },
+  { id: "market-close-us", label: "US Market Close", time: "16:00", icon: "🇺🇸" },
+  { id: "london-open", label: "London Open", time: "08:00", icon: "🇬🇧" },
+  { id: "asian-session", label: "Asian Session", time: "00:00", icon: "🌏" },
+];
 
 interface SimilaritySearchDialogProps {
   open: boolean;
@@ -28,6 +56,7 @@ export interface SearchConfig {
   dateFrom: string;
   dateTo: string;
   timeOfDay: string;
+  timezone: string;
   similarityThreshold: number;
 }
 
@@ -55,8 +84,13 @@ export const SimilaritySearchDialog = ({
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [timeOfDay, setTimeOfDay] = useState("");
+  const [timezone, setTimezone] = useState("UTC");
   const [similarityThreshold, setSimilarityThreshold] = useState([70]);
   const [isSearching, setIsSearching] = useState(false);
+
+  const handlePresetClick = (time: string) => {
+    setTimeOfDay(timeOfDay === time ? "" : time);
+  };
 
   const handleAssetSelect = (assetId: string) => {
     if (!selectedAssets.includes(assetId)) {
@@ -94,6 +128,7 @@ export const SimilaritySearchDialog = ({
       dateFrom,
       dateTo,
       timeOfDay,
+      timezone,
       similarityThreshold: similarityThreshold[0],
     };
 
@@ -188,18 +223,77 @@ export const SimilaritySearchDialog = ({
             </div>
 
             {/* Time of Day */}
-            <div className="space-y-2">
-              <Label htmlFor="timeOfDay">Time of Day (Optional)</Label>
-              <Input
-                id="timeOfDay"
-                type="time"
-                value={timeOfDay}
-                onChange={(e) => setTimeOfDay(e.target.value)}
-                placeholder="HH:MM"
-              />
-              <p className="text-xs text-muted-foreground">
-                Specific hour to search for patterns
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
+                <Label className="text-base font-semibold">Time of Day (Optional)</Label>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Filter patterns by specific trading session or time
               </p>
+              
+              {/* Time Presets */}
+              <div className="grid grid-cols-2 gap-2">
+                {TIME_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => handlePresetClick(preset.time)}
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 text-left ${
+                      timeOfDay === preset.time
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border hover:bg-secondary/50 hover:border-primary/50"
+                    }`}
+                  >
+                    <span className="text-lg">{preset.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{preset.label}</div>
+                      <div className="text-xs text-muted-foreground">{preset.time}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Time Input */}
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-secondary/30">
+                <div className="flex-1">
+                  <Label htmlFor="customTime" className="text-xs text-muted-foreground mb-1 block">
+                    Or enter custom time
+                  </Label>
+                  <Input
+                    id="customTime"
+                    type="time"
+                    value={timeOfDay}
+                    onChange={(e) => setTimeOfDay(e.target.value)}
+                    className="h-8 bg-background"
+                  />
+                </div>
+              </div>
+
+              {/* Timezone Selector */}
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-secondary/30">
+                <Globe className="w-4 h-4 text-muted-foreground" />
+                <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground mb-1 block">
+                    Timezone
+                  </Label>
+                  <Select value={timezone} onValueChange={setTimezone}>
+                    <SelectTrigger className="h-8 bg-background">
+                      <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background z-50">
+                      {TIMEZONES.map((tz) => (
+                        <SelectItem key={tz.id} value={tz.id}>
+                          <span className="flex items-center gap-2">
+                            <span>{tz.name}</span>
+                            <span className="text-xs text-muted-foreground">({tz.offset})</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
             {/* Similarity Threshold */}
