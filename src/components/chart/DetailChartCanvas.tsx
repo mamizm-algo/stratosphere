@@ -27,9 +27,14 @@ class SetupOutcomeDividerPrimitive implements ISeriesPrimitive<Time> {
               const ctx = scope.context;
               const height = scope.mediaSize.height;
 
-              const dividerX = this.chart.timeScale().logicalToCoordinate(
+              const dividerXRight = this.chart.timeScale().logicalToCoordinate(
                 this.dividerLogical
               );
+              const dividerXLeft = this.chart.timeScale().logicalToCoordinate(
+                this.dividerLogical-1 as Logical
+              );
+
+              const dividerX = (dividerXLeft + dividerXRight) / 2;
 
               if (dividerX === null) return;
 

@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { CandleData } from "./MockChartDisplay";
 import { Button } from "../ui/button";
-import { ChartCandlestick, MessageCircleQuestion, Trash2 } from "lucide-react";
+import { Boxes, ChartCandlestick, MessageCircleQuestion, Trash2 } from "lucide-react";
 import { ISeriesPrimitive, Time, Logical, IChartApi, IPrimitivePaneView, CandlestickSeries, createChart, CrosshairMode, ISeriesApi, MouseEventParams } from "lightweight-charts";
 import { TransactionBoxModel } from "./SimilarityResults";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
@@ -14,7 +14,7 @@ function detectHoveredEdge(
   model: TransactionBoxModel,
   series: ISeriesApi<"Candlestick">,
   chart: IChartApi
-): HoverEdge {
+): "profit" | "loss" | "width" | null { 
   const entryY = series.priceToCoordinate(model.entryPrice);
   if (entryY === null) return null;
 
@@ -27,12 +27,20 @@ function detectHoveredEdge(
   if (profitY === null || lossY === null) return null;
  
   const timeScale = chart.timeScale();
-  const x2 = timeScale.logicalToCoordinate(
+  const right = timeScale.logicalToCoordinate(
     (model.startLogical + model.duration) as Logical
   );
 
-  if (x2 !== null && Math.abs(x - x2) < EDGE_TOLERANCE) {
-    return "right";
+  const left = timeScale.logicalToCoordinate(model.startLogical) - EDGE_TOLERANCE;
+  const top = Math.max(profitY, lossY) + EDGE_TOLERANCE;
+  const bottom = Math.min(profitY, lossY) - EDGE_TOLERANCE;
+
+  if (x < left || x > right + EDGE_TOLERANCE || y < bottom || y > top) {
+    return null;
+  }
+
+  if (right !== null && Math.abs(x - right) < EDGE_TOLERANCE ) {
+    return "width";
   }
 
   if (Math.abs(y - profitY) < EDGE_TOLERANCE) return "profit";
@@ -60,10 +68,17 @@ class SetupOutcomeDividerPrimitive implements ISeriesPrimitive<Time> {
             target.useMediaCoordinateSpace((scope) => {
               const ctx = scope.context;
               const height = scope.mediaSize.height;
+              const timeScale = this.chart.timeScale();
 
-              const dividerX = this.chart.timeScale().logicalToCoordinate(
+
+              const dividerXRight = timeScale.logicalToCoordinate(
                 this.dividerLogical
               );
+              const dividerXLeft = timeScale.logicalToCoordinate(
+                this.dividerLogical-1 as Logical
+              );
+
+              const dividerX = (dividerXLeft + dividerXRight) / 2;
 
               if (dividerX === null) return;
 
@@ -83,13 +98,15 @@ class SetupOutcomeDividerPrimitive implements ISeriesPrimitive<Time> {
   }
 }
 
-type HoverEdge = "profit" | "loss" | "left" | "right" | null;
+type HoverEdge = {
+  active: boolean;
+  edge: "profit" | "loss" | "width" | null;
+}
 
 class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
   private chart: IChartApi;
   private series: ISeriesApi<"Candlestick">;
   private model: TransactionBoxModel;
-  private hoverEdge: HoverEdge = null;
 
   constructor(
     chart: IChartApi,
@@ -101,17 +118,14 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
     this.model = model;
   }
 
-  setHover(edge: HoverEdge) {
-    this.hoverEdge = edge;
-  }
-
   getModel() {
     return this.model;
   }
 
   update(patch: Partial<TransactionBoxModel>) {
-    this.model = { ...this.model, ...patch };
+    Object.assign(this.model, patch);
   }
+  
 
   paneViews(): IPrimitivePaneView[] {
     return [{
@@ -120,18 +134,15 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
           target.useMediaCoordinateSpace(scope => {
             const ctx = scope.context;
             const timeScale = this.chart.timeScale();
-
-            const x1 = timeScale.logicalToCoordinate(this.model.startLogical);
-            const x2 = timeScale.logicalToCoordinate(
-              (this.model.startLogical + this.model.duration) as Logical
-            );
-            if (x1 === null || x2 === null) return;
-
+            
+            const boxStart = timeScale.logicalToCoordinate(this.model.startLogical);
+            const boxEnd = timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration) as Logical);
+            
             const entryY = this.series.priceToCoordinate(this.model.entryPrice);
+
             if (entryY === null) return;
 
             const profitTop = this.model.entryPrice + this.model.profitSize;
-
             const lossBottom = this.model.entryPrice + this.model.lossSize;
 
             const profitY = this.series.priceToCoordinate(profitTop);
@@ -140,36 +151,22 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
 
             ctx.save();
 
-            // === zones ===
+            const left = boxStart;
+            const width = Math.abs(boxEnd - boxStart);
+            const profitHeight = profitY - entryY;
+            const lossHeight = lossY - entryY;
+
             ctx.fillStyle = "rgba(0, 200, 140, 0.25)";
-            ctx.fillRect(x1, Math.min(entryY, profitY), x2 - x1, Math.abs(entryY - profitY));
+            ctx.lineWidth = 1;
+
+            ctx.fillRect(left, entryY, width, profitHeight);
+            ctx.strokeRect(left, entryY, width, profitHeight);
 
             ctx.fillStyle = "rgba(200,0,0,0.25)";
-            ctx.fillRect(x1, Math.min(entryY, lossY), x2 - x1, Math.abs(entryY - lossY));
+            ctx.lineWidth = 1;
 
-            // === borders ===
-            const drawLine = (
-              active: boolean,
-              draw: () => void
-            ) => {
-              ctx.strokeStyle = active ? "rgba(46, 111, 107,0.9)" : "rgba(255, 255, 255, 0)";
-              ctx.lineWidth = active ? 3 : 1;
-              ctx.beginPath();
-              draw();
-              ctx.stroke();
-            };
-
-            drawLine(this.hoverEdge != null, () => {
-              ctx.moveTo(x1, profitY);
-              ctx.lineTo(x2, profitY);
-              ctx.moveTo(x1, lossY);
-              ctx.lineTo(x2, lossY);
-              ctx.moveTo(x1, profitY);
-              ctx.lineTo(x1, lossY);
-              ctx.moveTo(x2, profitY);
-              ctx.lineTo(x2, lossY);
-            });
-
+            ctx.fillRect(left, entryY, width, lossHeight);
+            ctx.strokeRect(left, entryY, width, lossHeight);
 
             ctx.restore();
           });
@@ -183,25 +180,25 @@ interface OverlayChartCanvasProps {
   setupCandles: CandleData[];
   outcomesData: CandleData[][];
   chartType: "candle" | "line";
+  initialTransactionParams: TransactionBoxModel;
   onTransactionBoxChange?: (params: TransactionBoxModel | null) => void;
-  onEditTransaction?: () => void;
-  transactionBox?: TransactionBoxModel | null;
 }
 
-export const OverlayChartCanvas = ({
+export const OverlayChartCanvas = ({ 
   setupCandles,
   outcomesData,
   chartType,
   onTransactionBoxChange,
-  transactionBox
+  initialTransactionParams
 }: OverlayChartCanvasProps) => {
   const chartRef = useRef<HTMLDivElement | null>(null);
   const chartApiRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);  
+  const outcomeSeriesRef = useRef<ISeriesApi<"Candlestick"> [] | null>(null);  
   const transactionPrimitiveRef = useRef<TransactionBoxPrimitive | null>(null);
-  const hoverEdgeRef = useRef<HoverEdge>(null);
-  const dragEdgeRef = useRef<HoverEdge>(null);
-  const isDraggingRef = useRef(false);
+  const dragEdgeRef = useRef<HoverEdge>({active: false, edge: null});
+  const [transactionBox, setTransactionBox] = useState<TransactionBoxModel | null>(initialTransactionParams);
+
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -249,6 +246,7 @@ export const OverlayChartCanvas = ({
 
   chartApiRef.current = chart;
   seriesRef.current = series;
+  outcomeSeriesRef.current = outcomeSeries;
 
   // setup candles
   const seriesData = [];
@@ -293,7 +291,7 @@ export const OverlayChartCanvas = ({
     outcomeSeries[i].setData(seriesData);
   }
   
-  return () => chart.remove();  // Combine both sets of candles
+  return () => chart.remove(); 
 }, [setupCandles, outcomesData]);
 
 useEffect(() => {
@@ -318,159 +316,83 @@ useEffect(() => {
 
 useEffect(() => {
   const chart = chartApiRef.current;
-  const series = seriesRef.current;
-  if (!chart || !series) return;
+  const outcomeSeries = outcomeSeriesRef.current[0];
+  if (!chart || !outcomeSeries) return;
 
-  if (transactionBox) {
-    const primitive = new TransactionBoxPrimitive(chart, series, transactionBox);
+  // CREATE
+  if (transactionBox && !transactionPrimitiveRef.current) {
+    const primitive = new TransactionBoxPrimitive(
+      chart,
+      outcomeSeries,
+      transactionBox
+    );
     transactionPrimitiveRef.current = primitive;
-    series.attachPrimitive(primitive);
-    
-    chart.applyOptions(chart.options()); // force first draw
-  } else {
-    const series = seriesRef.current;
-    if (!transactionPrimitiveRef.current) return;
-
-    series.detachPrimitive(transactionPrimitiveRef.current);
-    transactionPrimitiveRef.current = null;
-    chart.applyOptions(chart.options()); // force first draw
+    outcomeSeries.attachPrimitive(primitive);
+    outcomeSeries.applyOptions({});
   }
-}, [transactionBox])
+
+  // DESTROY
+  if (!transactionBox && transactionPrimitiveRef.current) {
+    outcomeSeries.detachPrimitive(transactionPrimitiveRef.current);
+    transactionPrimitiveRef.current = null;
+  }
+}, [transactionBox]);
+
 
 useEffect(() => {
-  // detecting hover
   const chart = chartApiRef.current;
-  const series = seriesRef.current;
   const container = chartRef.current;
+  const primitive = transactionPrimitiveRef.current;
+  const series = seriesRef.current;
 
+  if (!chart || !container || !primitive || !series) return;
 
-  if (!chart || !series || !container) return;
+  const model = primitive.getModel();
 
-  const onCrosshairMove = (param: MouseEventParams) => {
-    if (!param.point || !transactionPrimitiveRef.current) {
-      hoverEdgeRef.current = null;
-      container.style.cursor = "default";
+  const onPointerDown = (e: PointerEvent) => {
+    
+    const rect = container.getBoundingClientRect();
+
+    const param: MouseEventParams = {
+      point: {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      },
+    } as any;
+
+    const edge = detectHoveredEdge(param.point.y, param.point.x, model, series, chart);
+    if (!edge) return;
+
+    dragEdgeRef.current = { active: true, edge };
+
+    // stop chart panning
+     e.preventDefault();
+  };
+
+  const onPointerMove = (e: PointerEvent) => {
+    if (!dragEdgeRef.current.active) {
       return;
     }
 
-    const model = transactionPrimitiveRef.current.getModel();
+    const edge = dragEdgeRef.current.edge;
 
-    const edge = detectHoveredEdge(
-      param.point.y,
-      param.point.x,
-      model,
-      series,
-      chart
-    );
+    const rect = container.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const x = e.clientX - rect.left;
 
-    hoverEdgeRef.current = edge;
-
-    if (edge === "right") container.style.cursor = "ew-resize";
-    else if (edge) container.style.cursor = "ns-resize";
-    else container.style.cursor = "default";
-
-    transactionPrimitiveRef.current.setHover(edge);
-
-    chart.applyOptions({});
-  };
-
-  chart.subscribeCrosshairMove(onCrosshairMove);
-  return () => {
-    chart.unsubscribeCrosshairMove(onCrosshairMove);
-  };
-}, [transactionBox]);
-
-
-useEffect(() => {
-  // start editing
-  const chart = chartApiRef.current;
-  if (!chart) return;
-
-
-  const onClick = () => {
-    if (!hoverEdgeRef.current) return;
-    if (!dragEdgeRef.current) {
-
-
-      dragEdgeRef.current = hoverEdgeRef.current;
-      isDraggingRef.current = true;
-
-      // disable chart interaction
-      chart.applyOptions({
-        handleScroll: false,
-        handleScale: false,
-      });
-    } else {
-      dragEdgeRef.current = null;
-      isDraggingRef.current = false;
-      onTransactionBoxChange(transactionPrimitiveRef.current.getModel());
-      chart.applyOptions({
-        handleScroll: true,
-        handleScale: true,
-      });
-    }
-  };
-
-  chart.subscribeClick(onClick);
-  return () => chart.unsubscribeClick(onClick);
-}, [transactionBox]);
-
-
-useEffect(() => {
-  // update transaction box when moving cursor
-  const chart = chartApiRef.current;
-  const series = seriesRef.current;
-  const primitive = transactionPrimitiveRef.current;
-  if (!chart || !series || !primitive) return;
-
-  const HIT = 6;
-
-  const onMove = (param: MouseEventParams) => {
-    if (!param.point || !param.logical) return;
-
-    const { x, y } = param.point;
-    const model = primitive.getModel();
-
-    const entryY = series.priceToCoordinate(model.entryPrice);
-    if (entryY === null) return;
-
-    const profitY = series.priceToCoordinate(
-      model.entryPrice + model.profitSize
-       
-    );
-    const lossY = series.priceToCoordinate(
-     model.entryPrice + model.lossSize
-    );
-
-    const x1 = chart.timeScale().logicalToCoordinate(model.startLogical);
-    const x2 = chart.timeScale().logicalToCoordinate(
-      (model.startLogical + model.duration) as Logical
-    );
-
-    let hover: HoverEdge = null;
-
-    if (profitY !== null && Math.abs(y - profitY) < HIT) hover = "profit";
-    else if (lossY !== null && Math.abs(y - lossY) < HIT) hover = "loss";
-    else if (x1 !== null && Math.abs(x - x1) < HIT) hover = "left";
-    else if (x2 !== null && Math.abs(x - x2) < HIT) hover = "right";
-
-    primitive.setHover(hover);
-
-    if (isDraggingRef.current && dragEdgeRef.current) {
-      const primitive = transactionPrimitiveRef.current!;
-      const model = primitive.getModel();
-
-      if (dragEdgeRef.current === "right") {
-        const logical = chart.timeScale().coordinateToLogical(param.point.x);
-        if (logical !== null) {
-          primitive.update({
+    if (edge === "width") {
+      const logical = chart.timeScale().coordinateToLogical(x);
+      if (logical != null) {
+        // using update to prevent snapping to default chart settings (scale/zoom)
+        primitive.update({
             duration: Math.max(1, logical - model.startLogical),
-          });
-        }
+        });
       }
-
-      if (dragEdgeRef.current === "profit") {
-        const price = series.coordinateToPrice(param.point.y);
+    } else {
+      const price = series.coordinateToPrice(y);
+      if (price == null) return;
+      
+      if (edge === "profit") {
         if (price !== null) {
           if (price > model.entryPrice) {
             primitive.update({
@@ -487,9 +409,7 @@ useEffect(() => {
           }
         }
       }
-
-      if (dragEdgeRef.current === "loss") {
-        const price = series.coordinateToPrice(param.point.y);
+      if (edge === "loss") {
         if (price !== null) {
           if (price < model.entryPrice) {
             primitive.update({
@@ -506,14 +426,60 @@ useEffect(() => {
           }
         }
       }
-  }
-
-    chart.applyOptions({});
+    }
+    series.applyOptions({});
   };
 
-  chart.subscribeCrosshairMove(onMove);
+  const onPointerUp = () => {
+    dragEdgeRef.current = { active: false, edge: null };
+    // make a new reference to trigger stat calculation updates
+    onTransactionBoxChange?.({...transactionPrimitiveRef.current.getModel()});
+    setTransactionBox({...transactionPrimitiveRef.current.getModel()});
+  };
 
-  return () => chart.unsubscribeCrosshairMove(onMove);
+  container.addEventListener("pointerdown", onPointerDown);
+  window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerup", onPointerUp);
+
+  return () => {
+    container.removeEventListener("pointerdown", onPointerDown);
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+  };
+}, [transactionBox]);
+
+
+useEffect(() => {
+  // detecting hover
+  const chart = chartApiRef.current;
+  const series = seriesRef.current;
+  const container = chartRef.current;
+  const primitive = transactionPrimitiveRef.current;
+
+
+  if (!chart || !series || !container ||!primitive) return;
+
+  const model = primitive.getModel();
+
+
+  const onCrosshairMove = (param: MouseEventParams) => {
+    if (param.point && transactionPrimitiveRef.current) {
+      const edge = detectHoveredEdge(param.point.y, param.point.x, model, series, chart);
+      if (!edge) {
+        container.style.cursor = "default"; 
+        return;
+      }
+      if (edge === "width") container.style.cursor = "ew-resize";
+      else if (edge) container.style.cursor = "ns-resize";
+      else container.style.cursor = "default";
+    }
+    
+  };
+
+  chart.subscribeCrosshairMove(onCrosshairMove);
+  return () => {
+    chart.unsubscribeCrosshairMove(onCrosshairMove);
+  };
 }, [transactionBox]);
 
 
@@ -521,9 +487,9 @@ useEffect(() => {
 const handleTransactionButton = () => {
   if (!transactionBox) {
     const duration = 20;
-    const profitSize = 100 * Math.max(...outcomesData.map(outcome =>  Math.max(...outcome.slice(0, duration).map(outcomeCandle => outcomeCandle.high)))) / outcomesData[0][0].open - 100;
+    const profitSize = 100 * Math.max(...outcomesData.map(outcome =>  Math.max(...outcome.slice(0, duration).map(outcomeCandle => outcomeCandle.high / outcome[0].open))))  - 100;
     
-    const model: TransactionBoxModel = transactionBox || {
+    const model: TransactionBoxModel = {
       entryPrice: 100,
       profitSize: profitSize,
       lossSize: -profitSize/2,
@@ -531,9 +497,12 @@ const handleTransactionButton = () => {
       duration: duration,
       position: "long",
     };
-    onTransactionBoxChange(model);
+    onTransactionBoxChange?.(model);
+    setTransactionBox(model);
+
   } else {
-    onTransactionBoxChange(null);
+    onTransactionBoxChange?.(null);
+    setTransactionBox(null);
   }
 };
 
@@ -646,10 +615,10 @@ const handleTransactionButton = () => {
               </div>
         }
       </div>
-       <div
+      <div
         ref={chartRef}
         className="w-full h-[600px]"
       />
-    </div>
+      </div>
   );
 };

@@ -59,10 +59,15 @@ class RangeSelectionPrimitive implements ISeriesPrimitive<Time> {
               const height = scope.mediaSize.height;
               const timeScale = this.chart.timeScale();
 
-              const startX = timeScale.logicalToCoordinate(this.startLogical as Logical);
+              const starXRight = timeScale.logicalToCoordinate(this.startLogical as Logical);
+              const starXLeft = timeScale.logicalToCoordinate(this.startLogical - 1 as Logical);
+
+              const startX = (starXLeft + starXRight) / 2;
+              console.log(startX)
+
               const endX =
                 this.endLogical !== null
-                  ? timeScale.logicalToCoordinate(this.endLogical as Logical)
+                  ? (timeScale.logicalToCoordinate(this.endLogical as Logical) + timeScale.logicalToCoordinate(this.endLogical - 1 as Logical)) / 2
                   : null;
 
               if (startX === null) return;

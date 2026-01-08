@@ -6,7 +6,6 @@ import { Toolbar } from "@/components/chart/Toolbar";
 import { SimilaritySearchDialog, SearchConfig } from "@/components/chart/SimilaritySearchDialog";
 import { useCollections } from "@/hooks/useCollections";
 import { CompareToCollectionDialog } from "@/components/library/CompareToCollectionDialog";
-import { VirtualTransactionDialog, VirtualTransactionParams } from "@/components/chart/VirtualTransactionDialog";
 import { toast } from "sonner";
 import { searchSimilarPatterns } from "@/lib/similarityCalculator";
 import { CANDLE_DATA } from "@/data/candles";

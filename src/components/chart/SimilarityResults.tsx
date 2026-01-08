@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,13 +25,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { MockChartDisplay, generateMockCandles, CandleData } from "./MockChartDisplay";
-import { TradeStatistics, TradeStats, IndividualTradeStats } from "./TradeStatistics";
+import { TradeStatistics, TradeStats } from "./TradeStatistics";
 import { OverlayChartCanvas } from "./OverlayChartCanvas";
 import { DetailChartCanvas } from "./DetailChartCanvas";
 import { BaseChartCanvas } from "./BaseChartCanvas";
 import { SaveToLibraryDialog } from "@/components/library/SaveToLibraryDialog";
 import { useCollections } from "@/hooks/useCollections";
 import { Logical } from "lightweight-charts";
+import { IndividualTradeStatistics } from "./IndividualTradeStatistics";
 
 export interface SimilarPattern {
   id: string;
@@ -81,7 +82,22 @@ export const SimilarityResults = ({
   const [outcomeChartType, setOutcomeChartType] = useState<"candle" | "line">("candle");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [baseChartType, setBaseChartType] = useState<"candle" | "line">("candle");
-  const [transactionParams, setTransactionParams] = useState<TransactionBoxModel | null>(null);
+  const transactionParams = useRef<TransactionBoxModel | null>(null);
+  
+  const setTransactionParams = (newTransactionParams: TransactionBoxModel) => {
+    transactionParams.current = newTransactionParams;
+  }
+
+  const settersRef = useRef<Array<(v: TransactionBoxModel) => void>>([setTransactionParams]);
+
+  const registerTransactionChangester = (fn: (v: TransactionBoxModel) => void) => {
+    settersRef.current.push(fn);
+  };
+
+  const triggerAll = (val: TransactionBoxModel) => {
+    settersRef.current.forEach((fn) => fn(val));
+  };
+
 
   const sortedPatterns = [...patterns].sort((a, b) => {
     if (sortBy === "similarity") {
@@ -102,144 +118,6 @@ export const SimilarityResults = ({
     toast.success(`Pattern saved to library: ${pattern.asset} - ${pattern.similarity}%`);
   };
 
-  // Calculate statistics based on virtual transaction
-  const calculateStats = (): TradeStats | null => {
-    if (!transactionParams) {
-      return null;
-    }
-
-    const outcomesData = filteredPatterns.map((pattern) => {
-      return pattern.outcomeCandles;
-    });
-
-    const trades = outcomesData.map((outcome) => {
-      if (!outcome || outcome.length === 0) return null;
-
-      const entryPrice = 100;
-      const isLong = transactionParams.position === "long";
-      const takeProfitPrice = entryPrice + transactionParams.profitSize;
-      const stopLossPrice = entryPrice + transactionParams.lossSize;
-
-      let result: "win" | "loss" | "timeout" = "timeout";
-      let profit = 0;
-      let duration = transactionParams.duration;
-
-      for (let i = 0; i < Math.min(outcome.length, transactionParams.duration); i++) {
-        const candle = outcome[i];
-        if (isLong) {
-          if (candle.high / outcome[0].open * 100 >= takeProfitPrice) {
-            result = "win";
-            profit = transactionParams.profitSize / 100;
-            duration = i + 1;
-            break;
-          } else if (candle.low / outcome[0].open * 100 <= stopLossPrice) {
-            result = "loss";
-            profit = -transactionParams.lossSize / 100;
-            duration = i + 1;
-            break;
-          }
-        } else {
-          if (candle.low / outcome[0].open * 100  <= takeProfitPrice) {
-            result = "win";
-            profit = -transactionParams.profitSize / 100;
-            duration = i + 1;
-            break;
-          } else if (candle.high / outcome[0].open * 100 >= stopLossPrice) {
-            result = "loss";
-            profit = transactionParams.lossSize / 100;
-            duration = i + 1;
-            break;
-          }
-        }
-      }
-
-      if (result === "timeout") {
-        const lastCandle = outcome[Math.min(outcome.length - 1, transactionParams.duration - 1)];
-        profit = isLong 
-          ? ((lastCandle.close / outcome[0].open * 100 - entryPrice) / entryPrice) * 100
-          : ((entryPrice - lastCandle.close/ outcome[0].open * 100) / entryPrice) * 100;
-      }
-
-      return { result, profit, duration };
-    }).filter(t => t !== null);
-
-    const wins = trades.filter(t => t!.result === "win").length;
-    const tradesTimedOut = trades.filter(t => t!.result === "timeout").length;
-    const avgProfit = trades.reduce((acc, t) => acc + t!.profit, 0) / trades.length;
-    const avgDuration = trades.reduce((acc, t) => acc + t!.duration, 0) / trades.length;
-    const totalProfit = trades.reduce((acc, t) => acc + t!.profit, 0);
-
-    return {
-      tradesWon: wins,
-      tradesLost: trades.length - wins - tradesTimedOut,
-      winRate: (wins / trades.length) * 100,
-      avgProfit,
-      totalProfit,
-      totalTrades: trades.length,
-      avgDuration,
-      tradesTimedOut,
-    };
-  };
-
-  const getIndividualStats = (pattern: SimilarPattern): IndividualTradeStats | undefined => {
-    if (!transactionParams) return undefined;
-
-    const outcomeCandles = pattern.outcomeCandles;
-
-    const entryPrice = outcomeCandles[0].open;
-    const isLong = transactionParams.position === "long";
-    const takeProfitPrice = entryPrice * (1 + transactionParams.profitSize / 100);
-    const stopLossPrice = entryPrice * (1 + transactionParams.lossSize / 100);
-
-    let result: "win" | "loss" | "timeout" = "timeout";
-    let profit = 0;
-    let duration = transactionParams.duration;
-
-    for (let i = 0; i < Math.min(outcomeCandles.length, transactionParams.duration); i++) {
-      const candle = outcomeCandles[i];
-      if (isLong) {
-        if (candle.high >= takeProfitPrice) {
-          result = "win";
-          profit = transactionParams.profitSize;
-          duration = i + 1;
-          break;
-        } else if (candle.low <= stopLossPrice) {
-          result = "loss";
-          profit = transactionParams.lossSize;
-          duration = i + 1;
-          break;
-        }
-      } else {
-        if (candle.low <= takeProfitPrice) {
-          result = "win";
-          profit = transactionParams.profitSize;
-          duration = i + 1;
-          break;
-        } else if (candle.high >= stopLossPrice) {
-          result = "loss";
-          profit = transactionParams.lossSize;
-          duration = i + 1;
-          break;
-        }
-      }
-    }
-
-    if (result === "timeout") {
-      const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.duration - 1)];
-      profit = isLong
-        ? ((lastCandle.close - entryPrice) / entryPrice) * 100
-        : ((entryPrice - lastCandle.close) / entryPrice) * 100;
-    }
-
-    return {
-      profit,
-      similarity: pattern.similarity,
-      asset: pattern.asset,
-      timeframe: pattern.timeframe,
-      date: pattern.date,
-      outcome: result,
-    };
-  };
 
   const handleSaveToLibrary = (name: string) => {
     addCollection(name, setupCandles, patterns);
@@ -326,11 +204,11 @@ export const SimilarityResults = ({
         </div>
 
         {/* Statistics */}
-        {transactionParams && calculateStats() && (
-          <div className="mb-6">
-            <TradeStatistics stats={calculateStats()!} />
-          </div>
-        )}
+        <TradeStatistics
+        registerTransactionChange={registerTransactionChangester} 
+        outcomes={filteredPatterns}
+        />
+        
 
         {/* Content */}
         <div className="flex-1 overflow-hidden">
@@ -370,8 +248,8 @@ export const SimilarityResults = ({
                   baseChart={setupCandles}
                   pattern={filteredPatterns[currentIndex]}
                   onSave={() => handleSavePattern(filteredPatterns[currentIndex])}
-                  individualStats={getIndividualStats(filteredPatterns[currentIndex])}
-                  transactionParams= {transactionParams}
+                  registerTransactionChange={registerTransactionChangester}
+                  transactionParams={transactionParams.current}
                 />
                 <div className="flex items-center justify-between mt-6 pt-6 border-t">
                   <Button
@@ -411,8 +289,8 @@ export const SimilarityResults = ({
                 setupCandles={setupCandles}
                 chartType={outcomeChartType}
                 onChartTypeChange={setOutcomeChartType}
-                transactionParams={transactionParams}
-                onTransactionParamsChange={setTransactionParams}
+                onTransactionParamsChange={triggerAll}
+                initialTransactionParams={transactionParams.current}
               />
             </div>
           )}
@@ -472,20 +350,25 @@ interface PatternDetailViewProps {
   baseChart: CandleData[];
   pattern: SimilarPattern;
   onSave: () => void;
-  individualStats?: IndividualTradeStats;
-  transactionParams?: TransactionBoxModel | null;
+  registerTransactionChange: (fn: (v: TransactionBoxModel) => void) => void;
+  transactionParams: TransactionBoxModel;
 }
 
 const PatternDetailView = ({
   baseChart,
   pattern,
   onSave,
-  individualStats,
-  transactionParams,
+  registerTransactionChange,
+  transactionParams
 }: PatternDetailViewProps) => {
   const [chartType, setChartType] = useState<"candle" | "line">("candle");
   const setupCandles = pattern.setupCandles;
   const outcomeCandles = pattern.outcomeCandles;
+
+  // const [transactionParams, setTransactionParams] = useState<TransactionBoxModel | null>(null);
+  //  useEffect(() => {
+  //     registerTransactionChange(setTransactionParams);
+  //   }, [registerTransactionChange]);
 
   return (
     <div className="flex-1 flex flex-col gap-6">
@@ -501,7 +384,9 @@ const PatternDetailView = ({
         </Badge>
       </div>
 
-      {individualStats && <TradeStatistics individualStats={individualStats} />}
+      <IndividualTradeStatistics 
+        individualOutcome={pattern}
+        transactionParams={transactionParams} />
 
       <div className="flex-1">
         <DetailChartCanvas
@@ -522,15 +407,15 @@ const OverlayView = ({
   setupCandles,
   chartType,
   onChartTypeChange,
-  transactionParams,
   onTransactionParamsChange,
+  initialTransactionParams
 }: {
   patterns: SimilarPattern[];
   setupCandles: CandleData[];
   chartType: "candle" | "line";
   onChartTypeChange: (type: "candle" | "line") => void;
-  transactionParams: TransactionBoxModel | null;
   onTransactionParamsChange: (params: TransactionBoxModel | null) => void;
+  initialTransactionParams: TransactionBoxModel | null;
 }) => {
 
   // Prepare outcomes data
@@ -568,7 +453,7 @@ const OverlayView = ({
             outcomesData={outcomesData}
             chartType={chartType}
             onTransactionBoxChange={onTransactionParamsChange}
-            transactionBox={transactionParams}
+            initialTransactionParams={initialTransactionParams}
           />
         </Card>
 
