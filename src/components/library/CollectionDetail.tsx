@@ -1,17 +1,22 @@
+import { useState } from "react";
 import { Collection } from "@/types/collection";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { SimilarityResults } from "@/components/chart/SimilarityResults";
+import { SimilarityResults, SimilarPattern } from "@/components/chart/SimilarityResults";
 
 interface CollectionDetailProps {
   collection: Collection;
   onBack: () => void;
+  onUpdateCollection?: (updatedResults: SimilarPattern[]) => void;
 }
 
 export const CollectionDetail = ({
   collection,
   onBack,
+  onUpdateCollection,
 }: CollectionDetailProps) => {
+  const [patterns, setPatterns] = useState<SimilarPattern[]>(collection.results);
+
   const handleClose = () => {
     onBack();
   };
@@ -19,6 +24,12 @@ export const CollectionDetail = ({
   const handleSaveToLibrary = (pattern: any) => {
     // Already saved in the collection, could show a toast
     console.log("Pattern already in collection:", pattern);
+  };
+
+  const handleRemovePattern = (patternId: string) => {
+    const updatedPatterns = patterns.filter((p) => p.id !== patternId);
+    setPatterns(updatedPatterns);
+    onUpdateCollection?.(updatedPatterns);
   };
 
   return (
@@ -31,7 +42,7 @@ export const CollectionDetail = ({
         <div>
           <h2 className="text-2xl font-bold text-foreground">{collection.name}</h2>
           <p className="text-sm text-muted-foreground">
-            {collection.results.length} patterns • Created{" "}
+            {patterns.length} patterns • Created{" "}
             {new Date(collection.createdAt).toLocaleDateString()}
           </p>
         </div>
@@ -39,10 +50,11 @@ export const CollectionDetail = ({
 
       <div className="flex-1 overflow-hidden">
         <SimilarityResults
-          patterns={collection.results}
+          patterns={patterns}
           onClose={handleClose}
           onSaveToLibrary={handleSaveToLibrary}
           setupCandles={collection.representativeChart}
+          onRemovePattern={handleRemovePattern}
         />
       </div>
     </div>
