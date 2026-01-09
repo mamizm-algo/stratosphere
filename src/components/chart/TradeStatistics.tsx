@@ -23,8 +23,12 @@ interface TradeStatisticsProps {
 export const TradeStatistics = ({ registerTransactionChange,  outcomes }: TradeStatisticsProps) => {
   const [transactionParams, setTransactionParams] = useState<TransactionBoxModel | null>(null);
    useEffect(() => {
-      registerTransactionChange(setTransactionParams);
-    }, [registerTransactionChange]);
+    registerTransactionChange(setTransactionParams);
+  }, [registerTransactionChange]);
+
+  const normalize = (price: number, min: number, max: number) => {
+    return (price - min) / (max - min) + 100;
+  }
 
   // Calculate statistics based on virtual transaction
   const calculateStats = (): TradeStats | null => {
@@ -32,45 +36,61 @@ export const TradeStatistics = ({ registerTransactionChange,  outcomes }: TradeS
       return null;
     }
 
-    const outcomesData = outcomes.map((pattern) => {
-      return pattern.outcomeCandles;
-    });
+    const trades = outcomes.map((outcome) => {
+      const outcomeCandles = outcome.outcomeCandles;
+      if (!outcomeCandles || outcomeCandles.length === 0) return null;
 
-    const trades = outcomesData.map((outcome) => {
-      if (!outcome || outcome.length === 0) return null;
-
-      const entryPrice = 100;
+      const setupCandles = outcome.setupCandles;
+      const entryPrice = outcomeCandles[0].open;
       const isLong = transactionParams.position === "long";
-      const takeProfitPrice = entryPrice + transactionParams.profitSize;
-      const stopLossPrice = entryPrice + transactionParams.lossSize;
+
+       // convert from relative values to absolute for detail transaction view
+
+      const setupMin = Math.min(...setupCandles.map(candle => candle.low));
+      const setupMax = Math.max(...setupCandles.map(candle => candle.high));
+
+      const lastIndex = setupCandles.length - 1;
+      const setupOffset = 100 - normalize(setupCandles[lastIndex].close, setupMin, setupMax);
+
+       // calculate profit size
+      const normalizedProfitPrice = transactionParams.entryPrice + transactionParams.profitSize;
+      const offsetProfitPrice = normalizedProfitPrice - setupOffset;
+      const takeProfitPrice = (offsetProfitPrice - 100) * (setupMax - setupMin) + setupMin;
+      const profitSize = (Math.abs(takeProfitPrice - entryPrice)) / entryPrice * 100;
+
+      // calculate loss size
+      const normalizedLossPrice = transactionParams.entryPrice + transactionParams.lossSize;
+      const offsetLossPrice = normalizedLossPrice - setupOffset;
+      const stopLossPrice = (offsetLossPrice - 100) * (setupMax - setupMin) + setupMin;
+      const lossSize = (Math.abs(stopLossPrice - entryPrice)) / entryPrice * 100;
 
       let result: "win" | "loss" | "timeout" = "timeout";
       let profit = 0;
       let duration = transactionParams.duration;
 
-      for (let i = 0; i < Math.min(outcome.length, transactionParams.duration); i++) {
-        const candle = outcome[i];
+      for (let i = 0; i < Math.min(outcomeCandles.length, transactionParams.duration); i++) {
+        const candle = outcomeCandles[i];
         if (isLong) {
-          if (candle.high / outcome[0].open * 100 >= takeProfitPrice) {
+          if (candle.high >= takeProfitPrice) {
             result = "win";
-            profit = transactionParams.profitSize / 100;
+            profit = profitSize;
             duration = i + 1;
             break;
-          } else if (candle.low / outcome[0].open * 100 <= stopLossPrice) {
+          } else if (candle.low <= stopLossPrice) {
             result = "loss";
-            profit = transactionParams.lossSize / 100;
+            profit = -lossSize;
             duration = i + 1;
             break;
           }
         } else {
-          if (candle.low / outcome[0].open * 100  <= takeProfitPrice) {
+          if (candle.low   <= takeProfitPrice) {
             result = "win";
-            profit = Math.abs(transactionParams.profitSize) / 100;
+            profit = profitSize;
             duration = i + 1;
             break;
-          } else if (candle.high / outcome[0].open * 100 >= stopLossPrice) {
+          } else if (candle.high >= stopLossPrice) {
             result = "loss";
-            profit = -transactionParams.lossSize / 100;
+            profit = -lossSize;
             duration = i + 1;
             break;
           }
@@ -78,10 +98,10 @@ export const TradeStatistics = ({ registerTransactionChange,  outcomes }: TradeS
       }
 
       if (result === "timeout") {
-        const lastCandle = outcome[Math.min(outcome.length - 1, transactionParams.duration - 1)];
+        const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.duration - 1)];
         profit = isLong 
-          ? ((lastCandle.close / outcome[0].open * 100 - entryPrice) / entryPrice) * 100
-          : ((entryPrice - lastCandle.close/ outcome[0].open * 100) / entryPrice) * 100;
+          ? ((lastCandle.close - entryPrice) / entryPrice) * 100
+          : ((entryPrice - lastCandle.close) / entryPrice) * 100;
       }
 
       return { result, profit, duration };
@@ -111,7 +131,7 @@ export const TradeStatistics = ({ registerTransactionChange,  outcomes }: TradeS
     const stats = calculateStats();
  
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 mb-4">
         {/* General Statistics */}
         {stats && outcomes && (
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">

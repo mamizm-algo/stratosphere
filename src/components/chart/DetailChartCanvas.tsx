@@ -61,7 +61,6 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
   private chart: IChartApi;
   private series: ISeriesApi<"Candlestick">;
   private model: TransactionBoxModel;
-  private hoverEdge: HoverEdge = null;
 
   constructor(
     chart: IChartApi,
@@ -71,18 +70,6 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
     this.chart = chart;
     this.series = series;
     this.model = model;
-  }
-
-  setHover(edge: HoverEdge) {
-    this.hoverEdge = edge;
-  }
-
-  getModel() {
-    return this.model;
-  }
-
-  update(patch: Partial<TransactionBoxModel>) {
-    this.model = { ...this.model, ...patch };
   }
 
   paneViews(): IPrimitivePaneView[] {
@@ -96,9 +83,10 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
             const boxStartLeft = timeScale.logicalToCoordinate(this.model.startLogical - 1 as Logical);
             const boxStartRight = timeScale.logicalToCoordinate(this.model.startLogical as Logical);
             const boxStart = (boxStartLeft + boxStartRight) / 2;
-
-            const boxEnd = timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration) as Logical);
             
+            const boxEndLeft = timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration - 1) as Logical);
+            const boxEndRight =timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration) as Logical);
+            const boxEnd = (boxEndLeft + boxEndRight) / 2;
             const entryY = this.series.priceToCoordinate(this.model.entryPrice);
 
             if (entryY === null) return;
@@ -137,7 +125,6 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
   }
 }
 
-
 interface DetailChartCanvasProps {
   baseChart: CandleData[]; 
   setupCandles: CandleData[];
@@ -155,113 +142,113 @@ export const DetailChartCanvas = ({
   onChartTypeChange,
   transactionParams,
 }: DetailChartCanvasProps) => {
-const chartRef = useRef<HTMLDivElement | null>(null);
-const chartApiRef = useRef<IChartApi | null>(null);
-const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-const baseChartSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-const selectionPrimitiveRef = useRef<SetupOutcomeDividerPrimitive | null>(null);
-const transactionPrimitiveRef = useRef<TransactionBoxPrimitive | null>(null);
-const [showBaseChart, setShowBaseChart] = useState<boolean>(true);
-const [baseGhostChart, setBaseGhostChart] = useState<CandlestickData<Time> [] | null>(null);
+  const chartRef = useRef<HTMLDivElement | null>(null);
+  const chartApiRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const baseChartSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const selectionPrimitiveRef = useRef<SetupOutcomeDividerPrimitive | null>(null);
+  const transactionPrimitiveRef = useRef<TransactionBoxPrimitive | null>(null);
+  const [showBaseChart, setShowBaseChart] = useState<boolean>(true);
+  const [baseGhostChart, setBaseGhostChart] = useState<CandlestickData<Time> [] | null>(null);
 
 
-useEffect(() => {
-  if (!chartRef.current) return;
+  useEffect(() => {
+    if (!chartRef.current) return;
 
-  const chart = createChart(chartRef.current, {
-  layout: {
-    background: { color: "hsl(220, 25%, 8%)" },
-    textColor: "hsl(215, 20%, 65%)",
-  },
-  grid: {
-    vertLines: { color: "hsl(240 3.7% 15.9%)" },
-    horzLines: { color: "hsl(240 3.7% 15.9%)" },
-  },
-  crosshair: {
-    mode: CrosshairMode.Normal,
-  },
-  timeScale: {
-    borderColor: "hsl(240 3.7% 15.9%)",
-  },
-  // make chart responsive
-  rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
-  leftPriceScale: { visible: false },
-  handleScroll: true,
-  handleScale: true,
-  // this tells lightweight-charts to fill the container
-  width: chartRef.current.clientWidth,
-  height: chartRef.current.clientHeight,
-});
-
-  const series = chart.addSeries(CandlestickSeries);
-  
-  const upColor = '#26a69952';
-  const downColor = '#ef535054';
-  const baseChartSeries = chart.addSeries(CandlestickSeries, {
-    upColor: upColor,
-    downColor: downColor,
-    borderVisible: false,
-    wickUpColor: upColor,
-    wickDownColor: downColor,
-    lastValueVisible: false,
-    priceLineVisible: false,
-});
-
-  chartApiRef.current = chart;
-  seriesRef.current = series;
-  baseChartSeriesRef.current = baseChartSeries;
-
-  return () => chart.remove();
-}, []);
-
-useEffect(() => {
-  const chart = chartApiRef.current;
-  if (!chart) return;
-
-  const resizeObserver = new ResizeObserver(() => {
-    if (chartRef.current) {
-      chart.resize(
-        chartRef.current.clientWidth,
-        chartRef.current.clientHeight
-      );
-    }
+    const chart = createChart(chartRef.current, {
+    layout: {
+      background: { color: "hsl(220, 25%, 8%)" },
+      textColor: "hsl(215, 20%, 65%)",
+    },
+    grid: {
+      vertLines: { color: "hsl(240 3.7% 15.9%)" },
+      horzLines: { color: "hsl(240 3.7% 15.9%)" },
+    },
+    crosshair: {
+      mode: CrosshairMode.Normal,
+    },
+    timeScale: {
+      borderColor: "hsl(240 3.7% 15.9%)",
+    },
+    // make chart responsive
+    rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
+    leftPriceScale: { visible: false },
+    handleScroll: true,
+    handleScale: true,
+    // this tells lightweight-charts to fill the container
+    width: chartRef.current.clientWidth,
+    height: chartRef.current.clientHeight,
   });
 
-  resizeObserver.observe(chartRef.current);
+    const series = chart.addSeries(CandlestickSeries);
+    
+    const upColor = '#26a69952';
+    const downColor = '#ef535054';
+    const baseChartSeries = chart.addSeries(CandlestickSeries, {
+      upColor: upColor,
+      downColor: downColor,
+      borderVisible: false,
+      wickUpColor: upColor,
+      wickDownColor: downColor,
+      lastValueVisible: false,
+      priceLineVisible: false,
+  });
 
-  return () => {
-    resizeObserver.disconnect();
-  };
-}, []);
+    chartApiRef.current = chart;
+    seriesRef.current = series;
+    baseChartSeriesRef.current = baseChartSeries;
+
+    return () => chart.remove();
+  }, []);
+
+  useEffect(() => {
+    const chart = chartApiRef.current;
+    if (!chart) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (chartRef.current) {
+        chart.resize(
+          chartRef.current.clientWidth,
+          chartRef.current.clientHeight
+        );
+      }
+    });
+
+    resizeObserver.observe(chartRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
 
 
-useEffect(() => {
-  if (!seriesRef.current || !chartApiRef.current) return;
+  useEffect(() => {
+    if (!seriesRef.current || !chartApiRef.current) return;
 
-  // Combine both sets of candles
-  const allCandles = setupCandles.concat(outcomeCandles);
-  const seriesData = allCandles.map((c) => ({
-    time: new Date(c.ctm).getTime(),
-    open: c.open,
-    high: c.high,
-    low: c.low,
-    close: c.close,
-  }));
-  seriesRef.current.setData(seriesData);
+    // Combine both sets of candles
+    const allCandles = setupCandles.concat(outcomeCandles);
+    const seriesData = allCandles.map((c) => ({
+      time: new Date(c.ctm).getTime(),
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    }));
+    seriesRef.current.setData(seriesData);
 
-  if (selectionPrimitiveRef.current) {
-    seriesRef.current.detachPrimitive(selectionPrimitiveRef.current);
-  }
+    if (selectionPrimitiveRef.current) {
+      seriesRef.current.detachPrimitive(selectionPrimitiveRef.current);
+    }
 
-  const dividerIndex = setupCandles.length; // e.g., first candle of outcomeCandles
-  const primitive = new SetupOutcomeDividerPrimitive(
-      chartApiRef.current!,
-      dividerIndex as Logical
-  );
-  seriesRef.current!.attachPrimitive(primitive);
-  selectionPrimitiveRef.current = primitive;
-}, [setupCandles, outcomeCandles]);
+    const dividerIndex = setupCandles.length; // e.g., first candle of outcomeCandles
+    const primitive = new SetupOutcomeDividerPrimitive(
+        chartApiRef.current!,
+        dividerIndex as Logical
+    );
+    seriesRef.current!.attachPrimitive(primitive);
+    selectionPrimitiveRef.current = primitive;
+  }, [setupCandles, outcomeCandles]);
 
   // ghost base chart
   useEffect(() => {
@@ -269,20 +256,20 @@ useEffect(() => {
 
     // align to outcome open
     const seriesData = [];
-    const baseReferenceCandleClose = baseChart[baseChart.length - 1].close;
-    const setupReferenceCandleClose = setupCandles[setupCandles.length - 1].close;
-    for (let i = 1; i <= baseChart.length; i++) {
-      const baseCandle = baseChart[baseChart.length - i];
-      const setupCandle = setupCandles[setupCandles.length - i];
+    const lastIndex = setupCandles.length - 1;
+    const baseToSetupOffset = setupCandles[lastIndex].close - baseChart[lastIndex].close
+    for (let i = 0; i < baseChart.length; i++) {
+      const baseCandle = baseChart[i];
+      const setupCandle = setupCandles[i];
       seriesData.push({
         time: new Date(setupCandle.ctm).getTime(),
-        open: baseCandle.open / baseReferenceCandleClose * setupReferenceCandleClose,
-        high: baseCandle.high / baseReferenceCandleClose * setupReferenceCandleClose,
-        low: baseCandle.low / baseReferenceCandleClose * setupReferenceCandleClose,
-        close: baseCandle.close / baseReferenceCandleClose * setupReferenceCandleClose,
+        open: baseCandle.open + baseToSetupOffset,
+        high: baseCandle.high + baseToSetupOffset,
+        low: baseCandle.low + baseToSetupOffset,
+        close: baseCandle.close + baseToSetupOffset,
       })
     }
-    setBaseGhostChart(seriesData.reverse());
+    setBaseGhostChart(seriesData);
     if (showBaseChart) {
       baseChartSeriesRef.current.setData(seriesData);
     }
@@ -300,6 +287,12 @@ useEffect(() => {
   }, [showBaseChart, baseGhostChart]);
 
 // transaction box
+
+const normalize = (price: number, min: number, max: number) => {
+    return (price - min) / (max - min) + 100;
+  }
+
+
 useEffect(() => {
   const chart = chartApiRef.current;
   const series = seriesRef.current;
@@ -316,10 +309,25 @@ useEffect(() => {
 
     // convert from relative values to absolute for detail transaction view
     const openPrice = outcomeCandles[0].open;
-    const profitSize = 
-      openPrice * (1 + transactionParams.profitSize/100) - openPrice;
-    const lossSize = 
-      openPrice * (1 + transactionParams.lossSize/100) - openPrice;
+
+    const setupMin = Math.min(...setupCandles.map(candle => candle.low));
+    const setupMax = Math.max(...setupCandles.map(candle => candle.high));
+
+    const lastIndex = setupCandles.length - 1;
+    const setupOffset = 100 - normalize(setupCandles[lastIndex].close, setupMin, setupMax);
+
+    // calculate profit size (revert normalization)
+    const normalizedProfitPrice = transactionParams.entryPrice + transactionParams.profitSize;
+    const offsetProfitPrice = normalizedProfitPrice - setupOffset;
+    const denormalizedProfitPrice = (offsetProfitPrice - 100) * (setupMax - setupMin) + setupMin;
+    const profitSize = denormalizedProfitPrice - openPrice;
+
+    // calculate loss size (revert normalization)
+    const normalizedLossPrice = transactionParams.entryPrice + transactionParams.lossSize;
+    const offsetLossPrice = normalizedLossPrice - setupOffset;
+    const denormalizedLossPrice = (offsetLossPrice - 100) * (setupMax - setupMin) + setupMin;
+    const lossSize = denormalizedLossPrice - openPrice;
+   
      
     const detailTransaction: TransactionBoxModel = {
       entryPrice: openPrice,
@@ -352,22 +360,6 @@ useEffect(() => {
         <div className="flex items-center justify-between">
           <h4 className="text-lg font-semibold text-foreground">Setup + Outcome Chart</h4>
           <div className="flex gap-2">
-            {/* <div
-              key="showGhostBaseChart"
-              className="flex items-center space-x-2 p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors"
-            >
-              <label
-                htmlFor="showGhostBaseChart"
-                className="text-sm font-medium leading-none cursor-pointer flex-1"
-              >
-                Show base chart
-              </label>
-              <Checkbox
-                id="showGhostBaseChart"
-                checked={showBaseChart}
-                onCheckedChange={() => {setShowBaseChart(!showBaseChart)}} 
-              />
-            </div> */}
             <div
               className={cn(
                 "flex items-center space-x-2 p-y-1 px-3 rounded-lg border transition-colors",

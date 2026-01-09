@@ -27,9 +27,13 @@ export interface IndividualTradeStats {
 interface TradeStatisticsProps {
   individualOutcome?: SimilarPattern;
   individualStats?: IndividualTradeStats;
-    transactionParams?: TransactionBoxModel | null;
-
+  transactionParams?: TransactionBoxModel | null;
 }
+
+const normalize = (price: number, min: number, max: number) => {
+    return (price - min) / (max - min) + 100;
+  }
+
 
 export const IndividualTradeStatistics = ({ transactionParams, individualOutcome }: TradeStatisticsProps) => {
   
@@ -38,10 +42,26 @@ export const IndividualTradeStatistics = ({ transactionParams, individualOutcome
 
     const outcomeCandles = individualOutcome.outcomeCandles;
 
+    const setupMin = Math.min(...individualOutcome.setupCandles.map(candle => candle.low));
+    const setupMax = Math.max(...individualOutcome.setupCandles.map(candle => candle.high));
+
     const entryPrice = outcomeCandles[0].open;
     const isLong = transactionParams.position === "long";
-    const takeProfitPrice = entryPrice * (1 + transactionParams.profitSize / 100);
-    const stopLossPrice = entryPrice * (1 + transactionParams.lossSize / 100);
+
+    const lastIndex = individualOutcome.setupCandles.length - 1;
+    const setupOffset = 100 - normalize(individualOutcome.setupCandles[lastIndex].close, setupMin, setupMax);
+    
+    // calculate profit size
+    const normalizedProfitPrice = transactionParams.entryPrice + transactionParams.profitSize;
+    const offsetProfitPrice = normalizedProfitPrice - setupOffset;
+    const takeProfitPrice = (offsetProfitPrice - 100) * (setupMax - setupMin) + setupMin;
+    const profitSize = (Math.abs(takeProfitPrice - entryPrice)) / entryPrice * 100;
+
+    // calculate loss size
+    const normalizedLossPrice = transactionParams.entryPrice + transactionParams.lossSize;
+    const offsetLossPrice = normalizedLossPrice - setupOffset;
+    const stopLossPrice = (offsetLossPrice - 100) * (setupMax - setupMin) + setupMin;
+    const lossSize = (Math.abs(stopLossPrice - entryPrice)) / entryPrice * 100;
 
     let result: "win" | "loss" | "timeout" = "timeout";
     let profit = 0;
@@ -52,24 +72,24 @@ export const IndividualTradeStatistics = ({ transactionParams, individualOutcome
       if (isLong) {
         if (candle.high >= takeProfitPrice) {
           result = "win";
-          profit = transactionParams.profitSize;
+          profit = profitSize;
           duration = i + 1;
           break;
         } else if (candle.low <= stopLossPrice) {
           result = "loss";
-          profit = transactionParams.lossSize;
+          profit = -lossSize;
           duration = i + 1;
           break;
         }
       } else {
         if (candle.low <= takeProfitPrice) {
           result = "win";
-          profit = Math.abs(transactionParams.profitSize);
+          profit = profitSize;
           duration = i + 1;
           break;
         } else if (candle.high >= stopLossPrice) {
           result = "loss";
-          profit = -transactionParams.lossSize;
+          profit = -lossSize;
           duration = i + 1;
           break;
         }
@@ -95,7 +115,6 @@ export const IndividualTradeStatistics = ({ transactionParams, individualOutcome
 
 
   if (!transactionParams){
-    console.log("returning empty")
     return;
   } else {
     const individualStats = getIndividualStats();

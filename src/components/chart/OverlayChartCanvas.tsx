@@ -139,7 +139,9 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
             const boxStartRight = timeScale.logicalToCoordinate(this.model.startLogical as Logical);
             const boxStart = (boxStartLeft + boxStartRight) / 2;
 
-            const boxEnd = timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration) as Logical);
+            const boxEndLeft = timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration - 1) as Logical);
+            const boxEndRight =timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration) as Logical);
+            const boxEnd = (boxEndLeft + boxEndRight) / 2;
             
             const entryY = this.series.priceToCoordinate(this.model.entryPrice);
 
@@ -235,9 +237,9 @@ export const OverlayChartCanvas = ({
     height: chartRef.current.clientHeight,
   });
 
-    const series = chart.addSeries(CandlestickSeries, {
-      lastValueVisible: false,
-      priceLineVisible: false,
+  const series = chart.addSeries(CandlestickSeries, {
+    lastValueVisible: false,
+    priceLineVisible: false,
   });
   const upColor = '#26a6992f';
   const downColor = '#ef53502a';
@@ -263,10 +265,10 @@ export const OverlayChartCanvas = ({
     const c = setupCandles[i];
     seriesData.push({
       time: candleIndex++,
-      open: c.open / setupReferencePrice * 100.0,
-      high: c.high / setupReferencePrice * 100.0,
-      low: c.low / setupReferencePrice * 100.0,
-      close: c.close / setupReferencePrice * 100.0,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
     });
   }
   seriesRef.current.setData(seriesData);
@@ -283,16 +285,15 @@ export const OverlayChartCanvas = ({
   for (let i = 0; i < outcomesData.length; i++) {
     const outcomeCandles = outcomesData[i];
     const seriesData = [];
-    const outcomeReferencePrice = outcomeCandles[0].open;
 
      for (let i = 0; i < outcomeCandles.length; i++) {
       const c = outcomeCandles[i];
       seriesData.push({
         time: candleIndex+i,
-        open: c.open / outcomeReferencePrice * 100.0,
-        high: c.high / outcomeReferencePrice * 100.0,
-        low: c.low / outcomeReferencePrice * 100.0,
-        close: c.close / outcomeReferencePrice * 100.0,
+        open: c.open, 
+        high: c.high, 
+        low: c.low, 
+        close: c.close,
       });
      }
     outcomeSeries[i].setData(seriesData);
@@ -497,7 +498,7 @@ const handleTransactionButton = () => {
     const profitSize = 100 * Math.max(...outcomesData.map(outcome =>  Math.max(...outcome.slice(0, duration).map(outcomeCandle => outcomeCandle.high / outcome[0].open))))  - 100;
     
     const model: TransactionBoxModel = {
-      entryPrice: 100,
+      entryPrice: setupCandles[setupCandles.length - 1].close,
       profitSize: profitSize,
       lossSize: -profitSize/2,
       startLogical: setupCandles.length as Logical,

@@ -111,7 +111,6 @@ export const SimilarityResults = ({
     settersRef.current.forEach((fn) => fn(val));
   };
 
-
   const sortedPatterns = [...patterns].sort((a, b) => {
     if (sortBy === "similarity") {
       return b.similarity - a.similarity;
@@ -123,6 +122,59 @@ export const SimilarityResults = ({
     filterAsset === "all"
       ? sortedPatterns
       : sortedPatterns.filter((p) => p.asset === filterAsset);
+
+  const normalize = (price: number, min: number, max: number) => {
+    return (price - min) / (max - min) + 100;
+  }
+
+  // Prepare outcomes data
+  const normalizedPatterns = filteredPatterns.map((pattern) => {
+    const setupMin = Math.min(...pattern.setupCandles.map(candle => candle.low));
+    const setupMax = Math.max(...pattern.setupCandles.map(candle => candle.high));
+
+    const lastIndex = pattern.setupCandles.length - 1;
+    const setupOffset = 100 - normalize(pattern.setupCandles[lastIndex].close, setupMin, setupMax);
+
+    const normalizedSetup = pattern.setupCandles.map(setupCandle => { 
+      return { ...setupCandle,
+        open: normalize(setupCandle.open, setupMin, setupMax) + setupOffset,
+        high: normalize(setupCandle.high, setupMin, setupMax) + setupOffset,
+        low: normalize(setupCandle.low, setupMin, setupMax) + setupOffset,
+        close: normalize(setupCandle.close, setupMin, setupMax) + setupOffset,
+      }
+    });
+
+    const normalizedOutcome = pattern.outcomeCandles.map(outcomeCandle => { 
+      return { ...outcomeCandle,
+        open: normalize(outcomeCandle.open, setupMin, setupMax) + setupOffset,
+        high: normalize(outcomeCandle.high, setupMin, setupMax) + setupOffset,
+        low: normalize(outcomeCandle.low, setupMin, setupMax) + setupOffset,
+        close: normalize(outcomeCandle.close, setupMin, setupMax) + setupOffset,
+      }
+    });
+
+    
+  return { ...pattern,
+    setupCandles: normalizedSetup,
+    outcomeCandles: normalizedOutcome
+  }
+});
+ 
+
+  const setupMin = Math.min(...setupCandles.map(candle => candle.low));
+  const setupMax = Math.max(...setupCandles.map(candle => candle.high));
+  const lastIndex = setupCandles.length - 1;
+  const baseChartOffset = 100 - normalize(setupCandles[lastIndex].close, setupMin, setupMax);
+
+  const normalizedSetupCandles = setupCandles.map(setup => { 
+      return { ...setup,
+        open: normalize(setup.open, setupMin, setupMax) + baseChartOffset,
+        high: normalize(setup.high, setupMin, setupMax) + baseChartOffset,
+        low: normalize(setup.low, setupMin, setupMax) + baseChartOffset,
+        close: normalize(setup.close, setupMin, setupMax) + baseChartOffset,
+      }
+    });
+
 
   const uniqueAssets = Array.from(new Set(patterns.map((p) => p.asset)));
 
@@ -232,6 +284,7 @@ export const SimilarityResults = ({
         {/* Statistics */}
         <TradeStatistics
         registerTransactionChange={registerTransactionChangester} 
+        // outcomes={normalizedPatterns}
         outcomes={filteredPatterns}
         />
         
@@ -312,8 +365,8 @@ export const SimilarityResults = ({
           {viewMode === "overlay" && (
             <div className="h-full">
               <OverlayView
-                patterns={filteredPatterns}
-                setupCandles={setupCandles}
+                patterns={normalizedPatterns}
+                setupCandles={normalizedSetupCandles}
                 chartType={outcomeChartType}
                 onChartTypeChange={setOutcomeChartType}
                 onTransactionParamsChange={triggerAll}
@@ -425,8 +478,27 @@ const PatternDetailView = ({
   transactionParams
 }: PatternDetailViewProps) => {
   const [chartType, setChartType] = useState<"candle" | "line">("candle");
-  const setupCandles = pattern.setupCandles;
-  const outcomeCandles = pattern.outcomeCandles;
+
+  const normalize = (price: number, min: number, max: number) => {
+    return (price - min) / (max - min) + 100;
+  }
+
+  const setupMin = Math.min(...pattern.setupCandles.map(candle => candle.low));
+  const setupMax = Math.max(...pattern.setupCandles.map(candle => candle.high));
+  const setupCandles = pattern.setupCandles
+  const outcomeCandles = pattern.outcomeCandles
+
+  
+  const baseMin = normalize(Math.min(...baseChart.map(candle => candle.low)), setupMin, setupMax);
+  const baseMax = normalize(Math.max(...baseChart.map(candle => candle.high)), setupMin, setupMax);
+  const baseCandles = baseChart.map(baseCandle => { 
+      return { ...baseCandle,
+        open: normalize(baseCandle.open, baseMin, baseMax),
+        high: normalize(baseCandle.high, baseMin, baseMax),
+        low: normalize(baseCandle.low, baseMin, baseMax),
+        close: normalize(baseCandle.close, baseMin, baseMax),
+      }
+    });
 
   return (
     <div className="flex-1 flex flex-col gap-6">
@@ -461,7 +533,7 @@ const PatternDetailView = ({
 
       <div className="flex-1">
         <DetailChartCanvas
-          baseChart = {baseChart}
+          baseChart = {baseCandles}
           setupCandles={setupCandles}
           outcomeCandles={outcomeCandles}
           chartType={chartType}
