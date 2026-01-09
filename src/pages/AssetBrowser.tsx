@@ -67,7 +67,6 @@ class RangeSelectionPrimitive implements ISeriesPrimitive<Time> {
               const starXLeft = timeScale.logicalToCoordinate(this.startLogical - 1 as Logical);
 
               const startX = (starXLeft + starXRight) / 2;
-              console.log(startX)
 
               const endX =
                 this.endLogical !== null
@@ -332,7 +331,9 @@ const cancelSelection = () => {
 const handleSearch = (config: SearchConfig) => {
     if (!selectedRange) return;
     // Get the selected candle fragment
-    const selectedCandles = candles.slice(selectedRange.start, selectedRange.end + 1);
+    const selectedCandles = candles.slice(selectedRange.start, selectedRange.end);
+
+    console.log(selectedCandles.length)
 
     // Search through all imported data for similar patterns
     const searchResults = searchSimilarPatterns(

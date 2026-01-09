@@ -103,8 +103,6 @@ export const searchSimilarPatterns = (
   const outcomeLength = 80; // Default outcome bars to display
   const maxResults = 200; // Maximum number of results to return
   const timeFilter = searchConfig.timeOfDay === "" ? null : convertTimeToUTC(searchConfig.timeOfDay, searchConfig.timezoneOffset);
-  console.log(timeFilter.hours);
-  console.log(timeFilter.minutes);
   
   // Iterate through all assets and timeframes in the search config
   searchConfig.assets.forEach((asset) => {
@@ -134,7 +132,7 @@ export const searchSimilarPatterns = (
         const outcomeCandles = filteredCandles.slice(i + patternLength, i + patternLength + outcomeLength);
 
         const outcomeStartTime = new Date(outcomeCandles[0].ctm);
-        if (timeFilter && outcomeStartTime.getHours() != timeFilter.hours || outcomeStartTime.getMinutes() != timeFilter.minutes) {
+        if (timeFilter && (outcomeStartTime.getHours() != timeFilter.hours || outcomeStartTime.getMinutes() != timeFilter.minutes)) {
           continue;
         }
         
