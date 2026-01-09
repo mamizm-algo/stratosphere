@@ -109,6 +109,12 @@ export const SimilaritySearchDialog = ({
     setSelectedPresetId(null);
   };
 
+  const clearTimeFilter = () => {
+    setTimeOfDay("");
+    setTimezone("UTC"); // or keep last-used if you prefer
+    setSelectedPresetId(null);
+  };
+
 
   const handleAssetSelect = (assetId: string) => {
     if (!selectedAssets.includes(assetId)) {
@@ -288,29 +294,41 @@ export const SimilaritySearchDialog = ({
               </div>
 
               {/* Timezone Selector */}
-              <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-secondary/30">
-                <Globe className="w-4 h-4 text-muted-foreground" />
-                <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground mb-1 block">
-                    Timezone
-                  </Label>
-                  <Select value={timezone} onValueChange={handleTimezoneChange}>
-                    <SelectTrigger className="h-8 bg-background">
-                      <SelectValue placeholder="Select timezone" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
-                      {TIMEZONES.map((tz) => (
-                        <SelectItem key={tz.id} value={tz.id}>
-                          <span className="flex items-center gap-2">
-                            <span>{tz.name}</span>
-                            <span className="text-xs text-muted-foreground">({tz.offset})</span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {timeOfDay && 
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-secondary/30">
+                  <Globe className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground mb-1 block">
+                      Timezone
+                    </Label>
+                    <Select value={timezone} onValueChange={handleTimezoneChange}>
+                      <SelectTrigger className="h-8 bg-background">
+                        <SelectValue placeholder="Select timezone" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        {TIMEZONES.map((tz) => (
+                          <SelectItem key={tz.id} value={tz.id}>
+                            <span className="flex items-center gap-2">
+                              <span>{tz.name}</span>
+                              <span className="text-xs text-muted-foreground">({tz.offset})</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
+              }
+               {(timeOfDay || selectedPresetId) && (
+              <Button
+                variant="outline"
+                className="text-destructive hover:text-destructive gap-2"
+                size="sm"
+                onClick={clearTimeFilter}
+              >
+                Clear Time Settings
+              </Button>
+            )}
             </div>
 
             {/* Similarity Threshold */}
