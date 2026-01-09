@@ -124,6 +124,7 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
 
   update(patch: Partial<TransactionBoxModel>) {
     Object.assign(this.model, patch);
+    console.log(this.model)
   }
   
 
@@ -142,11 +143,11 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
 
             if (entryY === null) return;
 
-            const profitTop = this.model.entryPrice + this.model.profitSize;
-            const lossBottom = this.model.entryPrice + this.model.lossSize;
+            const profitPrice = this.model.entryPrice + this.model.profitSize;
+            const lossPrice = this.model.entryPrice + this.model.lossSize;
 
-            const profitY = this.series.priceToCoordinate(profitTop);
-            const lossY = this.series.priceToCoordinate(lossBottom);
+            const profitY = this.series.priceToCoordinate(profitPrice);
+            const lossY = this.series.priceToCoordinate(lossPrice);
             if (profitY === null || lossY === null) return;
 
             ctx.save();

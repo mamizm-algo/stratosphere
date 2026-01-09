@@ -64,12 +64,12 @@ export const IndividualTradeStatistics = ({ transactionParams, individualOutcome
       } else {
         if (candle.low <= takeProfitPrice) {
           result = "win";
-          profit = transactionParams.profitSize;
+          profit = Math.abs(transactionParams.profitSize);
           duration = i + 1;
           break;
         } else if (candle.high >= stopLossPrice) {
           result = "loss";
-          profit = transactionParams.lossSize;
+          profit = -transactionParams.lossSize;
           duration = i + 1;
           break;
         }

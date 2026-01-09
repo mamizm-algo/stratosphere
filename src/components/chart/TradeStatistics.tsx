@@ -58,19 +58,19 @@ export const TradeStatistics = ({ registerTransactionChange,  outcomes }: TradeS
             break;
           } else if (candle.low / outcome[0].open * 100 <= stopLossPrice) {
             result = "loss";
-            profit = -transactionParams.lossSize / 100;
+            profit = transactionParams.lossSize / 100;
             duration = i + 1;
             break;
           }
         } else {
           if (candle.low / outcome[0].open * 100  <= takeProfitPrice) {
             result = "win";
-            profit = -transactionParams.profitSize / 100;
+            profit = Math.abs(transactionParams.profitSize) / 100;
             duration = i + 1;
             break;
           } else if (candle.high / outcome[0].open * 100 >= stopLossPrice) {
             result = "loss";
-            profit = transactionParams.lossSize / 100;
+            profit = -transactionParams.lossSize / 100;
             duration = i + 1;
             break;
           }
