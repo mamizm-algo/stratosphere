@@ -27,9 +27,47 @@ export const calculateSimilarityScore = (
   const { referencePattern, candidatePattern } = params;
 
   const similarityResult = similarity_pair_by_optimal_k(referencePattern.map(refCandle => refCandle.close), candidatePattern.map(candCandle => candCandle.close));
-  // Return score rounded to nearest integer
-  return Math.round(100*similarityResult[0]);
+    // Return score rounded to nearest integer
+    return Math.round(100*similarityResult[0]);
 };
+
+
+function parseTimeOfDay(time: string): { hours: number; minutes: number } {
+  const [h, m] = time.split(":").map(Number);
+  return { hours: h, minutes: m };
+}
+
+function parseTimezoneOffset(offset: string): number {
+  // "+02:30" → +150 minutes
+  // "-05:00" → -300 minutes
+
+  const sign = offset.startsWith("-") ? -1 : 1;
+  const [h, m] = offset.slice(1).split(":").map(Number);
+
+  return sign * (h * 60 + m);
+}
+
+function convertTimeToUTC(
+  timeOfDay: string,
+  timezoneOffset: string
+): {hours: number, minutes: number} {
+  const { hours, minutes } = parseTimeOfDay(timeOfDay);
+  const offsetMinutes = parseTimezoneOffset(timezoneOffset);
+
+  // Convert local time to total minutes
+  let totalMinutes = hours * 60 + minutes;
+
+  // Subtract offset to get UTC
+  totalMinutes -= offsetMinutes;
+
+  // Normalize to 0–1439 (wrap day)
+  totalMinutes = ((totalMinutes % 1440) + 1440) % 1440;
+
+  const utcHours = Math.floor(totalMinutes / 60);
+  const utcMinutes = totalMinutes % 60;
+
+  return {hours: utcHours, minutes: utcMinutes};
+}
 
 /**
  * Search result interface
@@ -64,6 +102,9 @@ export const searchSimilarPatterns = (
   const patternLength = referencePattern.length;
   const outcomeLength = 80; // Default outcome bars to display
   const maxResults = 200; // Maximum number of results to return
+  const timeFilter = searchConfig.timeOfDay === "" ? null : convertTimeToUTC(searchConfig.timeOfDay, searchConfig.timezoneOffset);
+  console.log(timeFilter.hours);
+  console.log(timeFilter.minutes);
   
   // Iterate through all assets and timeframes in the search config
   searchConfig.assets.forEach((asset) => {
@@ -91,6 +132,12 @@ export const searchSimilarPatterns = (
       for (let i = 0; i <= filteredCandles.length - patternLength - outcomeLength; i++) {
         const candidatePattern = filteredCandles.slice(i, i + patternLength);
         const outcomeCandles = filteredCandles.slice(i + patternLength, i + patternLength + outcomeLength);
+
+        const outcomeStartTime = new Date(outcomeCandles[0].ctm);
+        if (timeFilter && outcomeStartTime.getHours() != timeFilter.hours || outcomeStartTime.getMinutes() != timeFilter.minutes) {
+          continue;
+        }
+        
         
         // Calculate similarity score
         const similarity = calculateSimilarityScore({
@@ -114,7 +161,7 @@ export const searchSimilarPatterns = (
             similarity,
             asset,
             timeframe,
-            date: candidatePattern[0].ctm?.toISOString() || new Date().toISOString(),
+            date: outcomeStartTime.toISOString() || new Date().toISOString(),
             outcome,
             setupCandles: candidatePattern,
             outcomeCandles,
@@ -123,7 +170,7 @@ export const searchSimilarPatterns = (
           });
 
           // TODO: for now simply skipping ahead by outcome length when found similar. In the future should be more advanced
-          i += outcomeLength;
+          i += outcomeLength/2;
         }
       }
     });
@@ -135,7 +182,7 @@ export const searchSimilarPatterns = (
     .slice(0, maxResults);
 };
 
-export function approximate_series_even_indices(series: number[], k: number): [number[], number[]] {
+function approximate_series_even_indices(series: number[], k: number): [number[], number[]] {
     /**
      * Return tuple (indices, values) for approximation with k points (including first and last).
      * indices are integers into original series.
@@ -167,7 +214,7 @@ export function approximate_series_even_indices(series: number[], k: number): [n
 // ---------------------------
 // Rule generation & checking
 // ---------------------------
-export function generate_pairwise_rules(values: number[]): [number, number, number][] {
+function generate_pairwise_rules(values: number[]): [number, number, number][] {
     /**
      * values: list of numbers (approximation values)
      * returns list of (i, j, rel) for all i<j where rel in {1,0,-1}
@@ -186,7 +233,7 @@ export function generate_pairwise_rules(values: number[]): [number, number, numb
     return rules;
 }
 
-export function count_broken_rules_against(values_target: number[], rules: [number, number, number][]): number {
+function count_broken_rules_against(values_target: number[], rules: [number, number, number][]): number {
     /**
      * values_target: list of numbers (approximation of the compared chart),
      *                must have the same length as the source used to create the rules.
@@ -209,7 +256,7 @@ export function count_broken_rules_against(values_target: number[], rules: [numb
     return broken;
 }
 
-export function find_optimal_k_relative(seriesA: number[], seriesB: number[]): [number, number, number, number, number] {
+function find_optimal_k_relative(seriesA: number[], seriesB: number[]): [number, number, number, number, number] {
     /**
      * For k in 2..N, build approxA_k and approxB_k, generate rules from A_k,
      * compute broken rules when applied to B_k as broken/k.
@@ -254,7 +301,7 @@ export function find_optimal_k_relative(seriesA: number[], seriesB: number[]): [
     return [best_k, best_broken!, best_total_rules!, best_ratio, best_total_broken!];
 }
 
-export function similarity_pair_by_optimal_k(seriesA: number[], seriesB: number[]): [number, Record<string, number>] {
+function similarity_pair_by_optimal_k(seriesA: number[], seriesB: number[]): [number, Record<string, number>] {
     /**
      * Computes kA (optimal for A relative to B) and kB (optimal for B relative to A)
      * and returns similarity = (kA/len + kB/len) / 2 along with diagnostic info.

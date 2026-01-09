@@ -56,7 +56,7 @@ export interface SearchConfig {
   dateFrom: string;
   dateTo: string;
   timeOfDay: string;
-  timezone: string;
+  timezoneOffset: string;
   similarityThreshold: number;
 }
 
@@ -94,8 +94,6 @@ export const SimilaritySearchDialog = ({
     const preset = TIME_PRESETS.find(pr => pr.id === id);
     setSelectedPresetId(preset.id)
     setTimeOfDay(preset.time);
-    const timezone = TIMEZONES.find(tz => tz.id === preset.timezone);
-    console.log(timezone.name)
     setTimezone(preset.timezone);
   };
 
@@ -145,6 +143,8 @@ export const SimilaritySearchDialog = ({
       return;
     }
 
+    const timezoneOffset = TIMEZONES.find(tz => tz.id === timezone).offset;
+
     setIsSearching(true);
     const config: SearchConfig = {
       assets: selectedAssets,
@@ -152,7 +152,7 @@ export const SimilaritySearchDialog = ({
       dateFrom,
       dateTo,
       timeOfDay,
-      timezone,
+      timezoneOffset,
       similarityThreshold: similarityThreshold[0],
     };
 
