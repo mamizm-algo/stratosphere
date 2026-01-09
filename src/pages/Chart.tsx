@@ -92,6 +92,7 @@ const Chart = () => {
         open={searchDialogOpen}
         onOpenChange={setSearchDialogOpen}
         onSearch={handleSearch}
+        patternLength={candleCount}
       />
 
       <CompareToCollectionDialog

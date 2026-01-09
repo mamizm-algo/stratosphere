@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { CANDLE_DATA } from "@/data/candles";
 
 const TIMEZONES = [
   { id: "UTC", name: "UTC", offset: "+00:00" },
@@ -48,6 +49,7 @@ interface SimilaritySearchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSearch: (config: SearchConfig) => void;
+  patternLength: number;
 }
 
 export interface SearchConfig {
@@ -65,19 +67,20 @@ const AVAILABLE_ASSETS = [
 ];
 
 const AVAILABLE_TIMEFRAMES = [
-  { id: "1m", name: "1 Minute" },
-  // { id: "5m", name: "5 Minutes" },
-  // { id: "15m", name: "15 Minutes" },
-  // { id: "30m", name: "30 Minutes" },
-  // { id: "1h", name: "1 Hour" },
-  // { id: "4h", name: "4 Hours" },
-  // { id: "1d", name: "1 Day" },
+  { id: "1m", name: "1 Minute", candlesPerDay: 1440 },
+  // { id: "5m", name: "5 Minutes", candlesPerDay: 288 },
+  // { id: "15m", name: "15 Minutes", candlesPerDay: 96 },
+  // { id: "30m", name: "30 Minutes", candlesPerDay: 48 },
+  // { id: "1h", name: "1 Hour", candlesPerDay: 24 },
+  // { id: "4h", name: "4 Hours", candlesPerDay: 6 },
+  // { id: "1d", name: "1 Day", candlesPerDay: 1 },
 ];
 
 export const SimilaritySearchDialog = ({
   open,
   onOpenChange,
   onSearch,
+  patternLength
 }: SimilaritySearchDialogProps) => {
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
   const [selectedTimeframes, setSelectedTimeframes] = useState<string[]>([]);
@@ -89,6 +92,32 @@ export const SimilaritySearchDialog = ({
   const [similarityThreshold, setSimilarityThreshold] = useState([70]);
   const [isSearching, setIsSearching] = useState(false);
 
+  
+  const calculateEstimatedTime = () => {
+    if (selectedAssets.length > 0 && selectedTimeframes.length > 0) {
+      const maxPatternLength = 100;
+      const assetTimeframes = selectedAssets.flatMap(asset => selectedTimeframes.map(tf => `${asset}_${tf}`));
+      let dataLength = assetTimeframes.map(asset => CANDLE_DATA[asset].length).reduce((a,b) => a+b, 0);
+      if (timeOfDay) {
+        for (const timeframe of selectedTimeframes) {
+          const timeframeCandlesPerDay = AVAILABLE_TIMEFRAMES.find(avail_tf => avail_tf.id === timeframe).candlesPerDay;
+          dataLength /= timeframeCandlesPerDay;  
+        }
+      }
+      // assuming max length of selected range (100), this is the time that it takes to process 1k candles
+      const timePerThousandCandles = 3;
+      const dataLengthThousands = dataLength / 1000;
+      const timeWithMaxPatternLength = dataLengthThousands * timePerThousandCandles;
+      const timeGivenPatternLength = timeWithMaxPatternLength * patternLength / maxPatternLength;
+      console.log(`thousands of records=${dataLengthThousands} 
+        pattern length=${patternLength} 
+        time with max pattern length=${timeWithMaxPatternLength}
+        time given pattern length=${timeGivenPatternLength}
+        `)
+      return timeGivenPatternLength;
+    }
+    return null;
+  }
 
   const handlePresetClick = (id: string) => {
     const preset = TIME_PRESETS.find(pr => pr.id === id);
@@ -357,11 +386,17 @@ export const SimilaritySearchDialog = ({
           </div>
         </ScrollArea>
 
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSearch} disabled={isSearching} className="gap-2">
+       <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button variant="outline" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+
+        <div className="flex flex-col items-end">
+          <Button
+            onClick={handleSearch}
+            disabled={isSearching}
+            className="gap-2"
+          >
             {isSearching ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -374,7 +409,15 @@ export const SimilaritySearchDialog = ({
               </>
             )}
           </Button>
+
+          {!isSearching && calculateEstimatedTime() && (
+            <span className="mt-1 text-xs text-muted-foreground">
+              Estimated search time: {'<'}{Math.ceil(calculateEstimatedTime())} second(s)
+            </span>
+          )}
         </div>
+      </div>
+
       </DialogContent>
     </Dialog>
   );

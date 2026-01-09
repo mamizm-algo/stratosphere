@@ -333,8 +333,6 @@ const handleSearch = (config: SearchConfig) => {
     // Get the selected candle fragment
     const selectedCandles = candles.slice(selectedRange.start, selectedRange.end);
 
-    console.log(selectedCandles.length)
-
     // Search through all imported data for similar patterns
     const searchResults = searchSimilarPatterns(
       selectedCandles,
@@ -367,8 +365,8 @@ const handleSearch = (config: SearchConfig) => {
   
   const handleAddToCollection = () => {
     if (!selectedRange) return;
-    const fragmentData = candles.slice(selectedRange.start, selectedRange.end + 1);
-    const outcome = candles.slice(selectedRange.end + 1, selectedRange.end + 100);
+    const fragmentData = candles.slice(selectedRange.start, selectedRange.end);
+    const outcome = candles.slice(selectedRange.end, selectedRange.end + 100);
 
     setCurrentFragmentData(fragmentData);
     setOutcomeData(outcome);
@@ -460,7 +458,7 @@ return (
                   Clear Selection
                 </Button>
                 <span className="text-sm text-muted-foreground">
-                  Selected: {selectedRange.end - selectedRange.start + 1} candles
+                  Selected: {selectedRange.end - selectedRange.start} candles
                 </span>
               </>
             )}
@@ -484,11 +482,14 @@ return (
         </div>
       </div>
 
-      <SimilaritySearchDialog
-        open={searchDialogOpen}
-        onOpenChange={setSearchDialogOpen}
-        onSearch={handleSearch}
-      />
+      {selectedRange && 
+        <SimilaritySearchDialog
+          open={searchDialogOpen}
+          onOpenChange={setSearchDialogOpen}
+          onSearch={handleSearch}
+          patternLength={selectedRange.end - selectedRange.start}
+        />
+      }
 
       <AddToCollectionDialog
         open={addToCollectionOpen}
