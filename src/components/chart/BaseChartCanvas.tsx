@@ -32,6 +32,8 @@ export const BaseChartCanvas = ({
       },
       timeScale: {
         borderColor: "hsl(240 3.7% 15.9%)",
+        timeVisible: true,     // show HH:mm
+        secondsVisible: false // optional (true for tick-level data)
       },
       rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
       leftPriceScale: { visible: false },

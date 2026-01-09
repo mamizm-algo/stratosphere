@@ -225,6 +225,8 @@ export const OverlayChartCanvas = ({
       mode: CrosshairMode.Normal,
     },
     timeScale: {
+        visible: false,
+
       borderColor: "hsl(240 3.7% 15.9%)",
     },
     // ✅ make chart responsive

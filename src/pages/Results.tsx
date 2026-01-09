@@ -316,6 +316,7 @@ const Results = () => {
       addCollection(name, setupCandles, patterns);
     } catch (e) {
       toast.success(`We couldn't save your collection. Try removing some old collections first.`);
+      return;
     }
     setIsSaved(true);
     clearSearchResults();

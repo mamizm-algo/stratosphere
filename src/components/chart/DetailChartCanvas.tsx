@@ -169,6 +169,8 @@ export const DetailChartCanvas = ({
     },
     timeScale: {
       borderColor: "hsl(240 3.7% 15.9%)",
+      timeVisible: true,     // show HH:mm
+      secondsVisible: false // optional (true for tick-level data)
     },
     // make chart responsive
     rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
@@ -229,7 +231,7 @@ export const DetailChartCanvas = ({
     // Combine both sets of candles
     const allCandles = setupCandles.concat(outcomeCandles);
     const seriesData = allCandles.map((c) => ({
-      time: new Date(c.ctm).getTime(),
+      time: Math.floor(new Date(c.ctm).getTime() / 1000),
       open: c.open,
       high: c.high,
       low: c.low,
@@ -262,7 +264,7 @@ export const DetailChartCanvas = ({
       const baseCandle = baseChart[i];
       const setupCandle = setupCandles[i];
       seriesData.push({
-        time: new Date(setupCandle.ctm).getTime(),
+        time: Math.floor(new Date(setupCandle.ctm).getTime() / 1000),
         open: baseCandle.open + baseToSetupOffset,
         high: baseCandle.high + baseToSetupOffset,
         low: baseCandle.low + baseToSetupOffset,

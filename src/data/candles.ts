@@ -12,17 +12,17 @@ import candleDataJson from './candle-data.json'
  * 3. Replace the CANDLE_DATA constant with the imported data
  */
 
-const candleData: CandleData[] = candleDataJson.slice(0, 11000).map(c => ({ ...c, x: 0, ctm: new Date(c.ctm) }));
+const candleData: CandleData[] = candleDataJson.slice(0, 11000).map(c => ({ ...c }));
 console.log(candleData.length);
 // Placeholder for candle data
 // Replace this with imported JSON data when ready
 export const CANDLE_DATA: Record<string, CandleData[]> = {"GOLD_1m": candleData.map((candle_json) => {
   return {
-    open: candle_json.open,
-    close: candle_json.open + candle_json.close,
-    high: candle_json.open + candle_json.high,
-    low: candle_json.open + candle_json.low,
-    ctm: new Date(candle_json.ctm),
+    open: (candle_json.open)/100,
+    close: (candle_json.open + candle_json.close)/100,
+    high: (candle_json.open + candle_json.high)/100,
+    low: (candle_json.open + candle_json.low)/100,
+    ctm: candle_json.ctm,
     vol: candle_json.vol
   }
 })};

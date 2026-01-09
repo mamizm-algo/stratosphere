@@ -6,7 +6,7 @@ export interface CandleData {
   close: number;
   high: number;
   low: number;
-  ctm?: Date;
+  ctm: number;
   vol?: number;
 }
 

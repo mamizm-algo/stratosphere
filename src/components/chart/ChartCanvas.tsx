@@ -65,6 +65,8 @@ export const ChartCanvas = ({drawMode, volatility, onCandleCountChange, onClear,
     timeScale: {
       borderColor: "hsl(240 3.7% 15.9%)",
       barSpacing: 30,
+      visible: false,
+
     },
     // make chart responsive
     rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },

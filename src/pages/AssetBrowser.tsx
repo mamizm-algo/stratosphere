@@ -160,8 +160,10 @@ useEffect(() => {
   },
   timeScale: {
     borderColor: "hsl(240 3.7% 15.9%)",
+    timeVisible: true,     // show HH:mm
+    secondsVisible: false // optional (true for tick-level data)
   },
-  // ✅ make chart responsive
+  // make chart responsive
   rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
   leftPriceScale: { visible: false },
   handleScroll: true,
@@ -200,10 +202,10 @@ useEffect(() => {
 }, []);
 
 useEffect(() => {
-  if (!seriesRef.current) return;
+  if (!seriesRef.current || candles.length < 1) return;
 
   const data: CandlestickData[] = candles.map(c => ({
-    time: c.ctm.getTime(),
+    time: Math.floor(new Date(c.ctm).getTime() / 1000),
     open: c.open,
     high: c.high,
     low: c.low,
