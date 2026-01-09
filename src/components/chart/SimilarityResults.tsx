@@ -453,7 +453,7 @@ const PatternCard = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {outcomeIcon}
-          <span className="text-xs text-muted-foreground">{pattern.date}</span>
+          <span className="text-xs text-muted-foreground">{new Date(pattern.date).toLocaleDateString()}, {new Date(pattern.date).toLocaleTimeString()}</span>
         </div>
       </div>
     </Card>
