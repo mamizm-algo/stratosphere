@@ -38,10 +38,10 @@ const TIMEZONES = [
 ];
 
 const TIME_PRESETS = [
-  { id: "market-open-us", label: "US Market Open", time: "09:30", icon: "🇺🇸" },
-  { id: "market-close-us", label: "US Market Close", time: "16:00", icon: "🇺🇸" },
-  { id: "london-open", label: "London Open", time: "08:00", icon: "🇬🇧" },
-  { id: "asian-session", label: "Asian Session", time: "00:00", icon: "🌏" },
+  { id: "market-open-us", label: "US Market Open (stocks)", time: "09:30", timezone: "America/New_York", icon: "🌎" },
+  { id: "market-open-us-stocks", label: "US Market Open (forex)", time: "08:00", timezone: "America/New_York", icon: "🌎" },
+  { id: "london-open", label: "London Open", time: "08:00", timezone: "Europe/London", icon: "🌍" },
+  { id: "asian-session", label: "Asian Session", time: "00:00", timezone: "Asia/Tokyo", icon: "🌏" },
 ];
 
 interface SimilaritySearchDialogProps {
@@ -85,12 +85,30 @@ export const SimilaritySearchDialog = ({
   const [dateTo, setDateTo] = useState("");
   const [timeOfDay, setTimeOfDay] = useState("");
   const [timezone, setTimezone] = useState("UTC");
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [similarityThreshold, setSimilarityThreshold] = useState([70]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const handlePresetClick = (time: string) => {
-    setTimeOfDay(timeOfDay === time ? "" : time);
+
+  const handlePresetClick = (id: string) => {
+    const preset = TIME_PRESETS.find(pr => pr.id === id);
+    setSelectedPresetId(preset.id)
+    setTimeOfDay(preset.time);
+    const timezone = TIMEZONES.find(tz => tz.id === preset.timezone);
+    console.log(timezone.name)
+    setTimezone(preset.timezone);
   };
+
+  const handleTimeChange = (value: string) => {
+    setTimeOfDay(value);
+    setSelectedPresetId(null);
+  };
+
+  const handleTimezoneChange = (value: string) => {
+    setTimezone(value);
+    setSelectedPresetId(null);
+  };
+
 
   const handleAssetSelect = (assetId: string) => {
     if (!selectedAssets.includes(assetId)) {
@@ -238,9 +256,9 @@ export const SimilaritySearchDialog = ({
                   <button
                     key={preset.id}
                     type="button"
-                    onClick={() => handlePresetClick(preset.time)}
+                    onClick={() => handlePresetClick(preset.id)}
                     className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 text-left ${
-                      timeOfDay === preset.time
+                      selectedPresetId === preset.id
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border hover:bg-secondary/50 hover:border-primary/50"
                     }`}
@@ -260,13 +278,12 @@ export const SimilaritySearchDialog = ({
                   <Label htmlFor="customTime" className="text-xs text-muted-foreground mb-1 block">
                     Or enter custom time
                   </Label>
-                  <Input
-                    id="customTime"
-                    type="time"
-                    value={timeOfDay}
-                    onChange={(e) => setTimeOfDay(e.target.value)}
-                    className="h-8 bg-background"
-                  />
+                <Input
+                  id="customTime"
+                  type="time"
+                  value={timeOfDay}
+                  onChange={(e) => handleTimeChange(e.target.value)}
+                />
                 </div>
               </div>
 
@@ -277,7 +294,7 @@ export const SimilaritySearchDialog = ({
                   <Label className="text-xs text-muted-foreground mb-1 block">
                     Timezone
                   </Label>
-                  <Select value={timezone} onValueChange={setTimezone}>
+                  <Select value={timezone} onValueChange={handleTimezoneChange}>
                     <SelectTrigger className="h-8 bg-background">
                       <SelectValue placeholder="Select timezone" />
                     </SelectTrigger>
