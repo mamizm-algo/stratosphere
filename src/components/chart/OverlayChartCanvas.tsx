@@ -124,7 +124,6 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
 
   update(patch: Partial<TransactionBoxModel>) {
     Object.assign(this.model, patch);
-    console.log(this.model)
   }
   
 
@@ -136,7 +135,10 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
             const ctx = scope.context;
             const timeScale = this.chart.timeScale();
             
-            const boxStart = timeScale.logicalToCoordinate(this.model.startLogical);
+            const boxStartLeft = timeScale.logicalToCoordinate(this.model.startLogical - 1 as Logical);
+            const boxStartRight = timeScale.logicalToCoordinate(this.model.startLogical as Logical);
+            const boxStart = (boxStartLeft + boxStartRight) / 2;
+
             const boxEnd = timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration) as Logical);
             
             const entryY = this.series.priceToCoordinate(this.model.entryPrice);
@@ -158,13 +160,17 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
             const lossHeight = lossY - entryY;
 
             ctx.fillStyle = "rgba(0, 200, 140, 0.25)";
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = "rgba(0, 200, 140, 0.25)";
+
+            ctx.lineWidth = 0.2;
 
             ctx.fillRect(left, entryY, width, profitHeight);
             ctx.strokeRect(left, entryY, width, profitHeight);
 
             ctx.fillStyle = "rgba(200,0,0,0.25)";
-            ctx.lineWidth = 1;
+            ctx.strokeStyle =  "rgba(200,0,0,0.25)";
+
+            ctx.lineWidth = 0.2;
 
             ctx.fillRect(left, entryY, width, lossHeight);
             ctx.strokeRect(left, entryY, width, lossHeight);
@@ -344,9 +350,9 @@ useEffect(() => {
   const chart = chartApiRef.current;
   const container = chartRef.current;
   const primitive = transactionPrimitiveRef.current;
-  const series = seriesRef.current;
+  const outcomeSeries = outcomeSeriesRef.current[0];
 
-  if (!chart || !container || !primitive || !series) return;
+  if (!chart || !container || !primitive || !outcomeSeries) return;
 
   const model = primitive.getModel();
 
@@ -361,7 +367,7 @@ useEffect(() => {
       },
     } as any;
 
-    const edge = detectHoveredEdge(param.point.y, param.point.x, model, series, chart);
+    const edge = detectHoveredEdge(param.point.y, param.point.x, model, outcomeSeries, chart);
     if (!edge) return;
 
     dragEdgeRef.current = { active: true, edge };
@@ -390,7 +396,7 @@ useEffect(() => {
         });
       }
     } else {
-      const price = series.coordinateToPrice(y);
+      const price = outcomeSeries.coordinateToPrice(y);
       if (price == null) return;
       
       if (edge === "profit") {
@@ -428,7 +434,7 @@ useEffect(() => {
         }
       }
     }
-    series.applyOptions({});
+    outcomeSeries.applyOptions({});
   };
 
   const onPointerUp = () => {
@@ -453,19 +459,19 @@ useEffect(() => {
 useEffect(() => {
   // detecting hover
   const chart = chartApiRef.current;
-  const series = seriesRef.current;
+  const outcomeSeries = outcomeSeriesRef.current[0];
   const container = chartRef.current;
   const primitive = transactionPrimitiveRef.current;
 
 
-  if (!chart || !series || !container ||!primitive) return;
+  if (!chart || !outcomeSeries || !container ||!primitive) return;
 
   const model = primitive.getModel();
 
 
   const onCrosshairMove = (param: MouseEventParams) => {
     if (param.point && transactionPrimitiveRef.current) {
-      const edge = detectHoveredEdge(param.point.y, param.point.x, model, series, chart);
+      const edge = detectHoveredEdge(param.point.y, param.point.x, model, outcomeSeries, chart);
       if (!edge) {
         container.style.cursor = "default"; 
         return;

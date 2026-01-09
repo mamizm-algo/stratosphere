@@ -87,61 +87,47 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
 
   paneViews(): IPrimitivePaneView[] {
     return [{
-      renderer: () => ({
+       renderer: () => ({
         draw: (target) => {
           target.useMediaCoordinateSpace(scope => {
             const ctx = scope.context;
             const timeScale = this.chart.timeScale();
+            
+            const boxStartLeft = timeScale.logicalToCoordinate(this.model.startLogical - 1 as Logical);
+            const boxStartRight = timeScale.logicalToCoordinate(this.model.startLogical as Logical);
+            const boxStart = (boxStartLeft + boxStartRight) / 2;
 
-            const x1 = timeScale.logicalToCoordinate(this.model.startLogical);
-            const x2 = timeScale.logicalToCoordinate(
-              (this.model.startLogical + this.model.duration) as Logical
-            );
-            if (x1 === null || x2 === null) return;
-
+            const boxEnd = timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration) as Logical);
+            
             const entryY = this.series.priceToCoordinate(this.model.entryPrice);
+
             if (entryY === null) return;
 
-            const profitTop = this.model.entryPrice + this.model.profitSize;
+            const profitPrice = this.model.entryPrice + this.model.profitSize;
+            const lossPrice = this.model.entryPrice + this.model.lossSize;
 
-            const lossBottom = this.model.entryPrice + this.model.lossSize;
-
-            const profitY = this.series.priceToCoordinate(profitTop);
-            const lossY = this.series.priceToCoordinate(lossBottom);
+            const profitY = this.series.priceToCoordinate(profitPrice);
+            const lossY = this.series.priceToCoordinate(lossPrice);
             if (profitY === null || lossY === null) return;
 
             ctx.save();
 
-            // === zones ===
+            const left = boxStart;
+            const width = Math.abs(boxEnd - boxStart);
+            const profitHeight = profitY - entryY;
+            const lossHeight = lossY - entryY;
+
+            ctx.lineWidth = 0;
             ctx.fillStyle = "rgba(0, 200, 140, 0.25)";
-            ctx.fillRect(x1, Math.min(entryY, profitY), x2 - x1, Math.abs(entryY - profitY));
 
+            ctx.fillRect(left, entryY, width, profitHeight);
+            ctx.strokeRect(left, entryY, width, profitHeight);
+
+            ctx.lineWidth = 0;
             ctx.fillStyle = "rgba(200,0,0,0.25)";
-            ctx.fillRect(x1, Math.min(entryY, lossY), x2 - x1, Math.abs(entryY - lossY));
 
-            // === borders ===
-            const drawLine = (
-              active: boolean,
-              draw: () => void
-            ) => {
-              ctx.strokeStyle = active ? "rgba(46, 111, 107,0.9)" : "rgba(255, 255, 255, 0)";
-              ctx.lineWidth = active ? 3 : 1;
-              ctx.beginPath();
-              draw();
-              ctx.stroke();
-            };
-
-            drawLine(this.hoverEdge != null, () => {
-              ctx.moveTo(x1, profitY);
-              ctx.lineTo(x2, profitY);
-              ctx.moveTo(x1, lossY);
-              ctx.lineTo(x2, lossY);
-              ctx.moveTo(x1, profitY);
-              ctx.lineTo(x1, lossY);
-              ctx.moveTo(x2, profitY);
-              ctx.lineTo(x2, lossY);
-            });
-
+            ctx.fillRect(left, entryY, width, lossHeight);
+            ctx.strokeRect(left, entryY, width, lossHeight);
 
             ctx.restore();
           });
