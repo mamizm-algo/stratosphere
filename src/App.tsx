@@ -13,6 +13,7 @@ import Chart from "./pages/Chart";
 import Library from "./pages/Library";
 import AssetBrowser from "./pages/AssetBrowser";
 import Results from "./pages/Results";
+import Sandbox from "./pages/Sandbox";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => {
   { path: "/library", element:<Library /> },
   { path: "/browse-assets", element:<AssetBrowser /> },
   { path: "/results", element:<Results /> },
+  { path: "/sandbox", element:<Sandbox /> },
   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */},
   { path: "*", element:<NotFound /> },
 ]);

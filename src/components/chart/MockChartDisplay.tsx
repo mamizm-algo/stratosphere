@@ -148,7 +148,7 @@ export const generateMockCandles = (count: number, basePrice: number = 100, tren
       close,
       high,
       low,
-      ctm: new Date(now - (count - i) * 3600000), // 1 hour per candle
+      ctm: now - (count - i) * 3600000, // 1 hour per candle
     });
 
     currentPrice = close;
