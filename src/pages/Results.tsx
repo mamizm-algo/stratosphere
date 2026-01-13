@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useBlocker } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -31,14 +31,14 @@ import {
   TrendingDown,
   Save,
   AlertTriangle,
-  Home,
   FileSearch,
-  Library,
+  Target,
+  Clock,
+  Hourglass,
+  MessageCircleQuestion,
 } from "lucide-react";
 import { toast } from "sonner";
 import { MockChartDisplay, generateMockCandles, CandleData } from "@/components/chart/MockChartDisplay";
-import { VirtualTransactionDialog, VirtualTransactionParams } from "@/components/chart/VirtualTransactionDialog";
-import { TradeStatistics, TradeStats, IndividualTradeStats } from "@/components/chart/TradeStatistics";
 import { OverlayChartCanvas } from "@/components/chart/OverlayChartCanvas";
 import { DetailChartCanvas } from "@/components/chart/DetailChartCanvas";
 import { BaseChartCanvas } from "@/components/chart/BaseChartCanvas";
@@ -46,6 +46,7 @@ import { SaveToLibraryDialog } from "@/components/library/SaveToLibraryDialog";
 import { useCollections } from "@/hooks/useCollections";
 import { HomeHeader } from "@/components/HomeHeader";
 import { TransactionBoxModel } from "@/components/chart/SimilarityResults";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const RESULTS_STORAGE_KEY = "similarity_search_results";
 const SETUP_CANDLES_STORAGE_KEY = "similarity_search_setup_candles";
@@ -66,7 +67,27 @@ export interface SimilarPattern {
   };
 }
 
-// Helper functions to store/retrieve results
+export interface TradeStats {
+  tradesWon: number;
+  tradesLost: number;
+  winRate: number;
+  avgProfit: number;
+  totalProfit: number;
+  totalTrades: number;
+  avgDuration?: number;
+  tradesTimedOut: number;
+}
+
+export interface IndividualTradeStats {
+  profit: number;
+  similarity: number;
+  asset: string;
+  timeframe: string;
+  date: string;
+  outcome: "win" | "loss" | "timeout";
+}
+
+// Helper functions
 export const storeSearchResults = (patterns: SimilarPattern[], setupCandles: CandleData[]) => {
   sessionStorage.setItem(RESULTS_STORAGE_KEY, JSON.stringify(patterns));
   sessionStorage.setItem(SETUP_CANDLES_STORAGE_KEY, JSON.stringify(setupCandles));
@@ -75,6 +96,10 @@ export const storeSearchResults = (patterns: SimilarPattern[], setupCandles: Can
 export const clearSearchResults = () => {
   sessionStorage.removeItem(RESULTS_STORAGE_KEY);
   sessionStorage.removeItem(SETUP_CANDLES_STORAGE_KEY);
+};
+
+const normalize = (price: number, min: number, max: number) => {
+  return (price - min) / (max - min) + 100;
 };
 
 const Results = () => {
@@ -88,11 +113,19 @@ const Results = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sortBy, setSortBy] = useState<"similarity" | "date">("similarity");
   const [filterAsset, setFilterAsset] = useState<string>("all");
-  const [virtualTransactionOpen, setVirtualTransactionOpen] = useState(false);
   const [outcomeChartType, setOutcomeChartType] = useState<"candle" | "line">("candle");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [baseChartType, setBaseChartType] = useState<"candle" | "line">("candle");
-  const [transactionParams, setTransactionParams] = useState<TransactionBoxModel | null>(null);
+  
+  const transactionParamsRef = useRef<TransactionBoxModel | null>(null);
+  const [, forceUpdate] = useState({});
+  
+  const setTransactionParams = useCallback((params: TransactionBoxModel | null) => {
+    transactionParamsRef.current = params;
+    forceUpdate({});
+  }, []);
+  
+  const transactionParams = transactionParamsRef.current;
 
   // Load results from sessionStorage on mount
   useEffect(() => {
@@ -154,7 +187,6 @@ const Results = () => {
     }
   };
 
-
   const sortedPatterns = [...patterns].sort((a, b) => {
     if (sortBy === "similarity") {
       return b.similarity - a.similarity;
@@ -169,56 +201,60 @@ const Results = () => {
 
   const uniqueAssets = Array.from(new Set(patterns.map((p) => p.asset)));
 
-
-  const handleApplyVirtualTransaction = (params: VirtualTransactionParams) => {
-    setTransactionParams({ ...params });
-    toast.success("Virtual transaction parameters applied");
-  };
-
+  // Calculate overall statistics
   const calculateStats = (): TradeStats | null => {
-    if (!transactionParams) {
-      return null;
-    }
+    if (!transactionParams || filteredPatterns.length === 0) return null;
 
-    const outcomesData = filteredPatterns.map((pattern) => {
-      return pattern.outcomeCandles;
-    });
+    const trades = filteredPatterns.map((pattern) => {
+      const outcomeCandles = pattern.outcomeCandles;
+      const setupCandlesArr = pattern.setupCandles;
+      if (!outcomeCandles || outcomeCandles.length === 0 || !setupCandlesArr) return null;
 
-    const trades = outcomesData.map((outcome) => {
-      if (!outcome || outcome.length === 0) return null;
-
-      const entryPrice = outcome[0].open;
+      const entryPrice = outcomeCandles[0].open;
       const isLong = transactionParams.position === "long";
-      const takeProfitPrice = entryPrice * (1 + transactionParams.takeProfit / 100 * (isLong ? 1 : -1));
-      const stopLossPrice = entryPrice * (1 - transactionParams.stopLoss / 100 * (isLong ? 1 : -1));
+
+      const setupMin = Math.min(...setupCandlesArr.map((c) => c.low));
+      const setupMax = Math.max(...setupCandlesArr.map((c) => c.high));
+      const lastIndex = setupCandlesArr.length - 1;
+      const setupOffset = 100 - normalize(setupCandlesArr[lastIndex].close, setupMin, setupMax);
+
+      const normalizedProfitPrice = transactionParams.entryPrice + transactionParams.profitSize;
+      const offsetProfitPrice = normalizedProfitPrice - setupOffset;
+      const takeProfitPrice = (offsetProfitPrice - 100) * (setupMax - setupMin) + setupMin;
+      const profitSize = Math.abs(takeProfitPrice - entryPrice) / entryPrice * 100;
+
+      const normalizedLossPrice = transactionParams.entryPrice + transactionParams.lossSize;
+      const offsetLossPrice = normalizedLossPrice - setupOffset;
+      const stopLossPrice = (offsetLossPrice - 100) * (setupMax - setupMin) + setupMin;
+      const lossSize = Math.abs(stopLossPrice - entryPrice) / entryPrice * 100;
 
       let result: "win" | "loss" | "timeout" = "timeout";
       let profit = 0;
-      let duration = transactionParams.timeHorizon;
+      let duration = transactionParams.duration;
 
-      for (let i = 0; i < Math.min(outcome.length, transactionParams.timeHorizon); i++) {
-        const candle = outcome[i];
+      for (let i = 0; i < Math.min(outcomeCandles.length, transactionParams.duration); i++) {
+        const candle = outcomeCandles[i];
         if (isLong) {
           if (candle.high >= takeProfitPrice) {
             result = "win";
-            profit = transactionParams.takeProfit;
+            profit = profitSize;
             duration = i + 1;
             break;
           } else if (candle.low <= stopLossPrice) {
             result = "loss";
-            profit = -transactionParams.stopLoss;
+            profit = -lossSize;
             duration = i + 1;
             break;
           }
         } else {
           if (candle.low <= takeProfitPrice) {
             result = "win";
-            profit = transactionParams.takeProfit;
+            profit = profitSize;
             duration = i + 1;
             break;
           } else if (candle.high >= stopLossPrice) {
             result = "loss";
-            profit = -transactionParams.stopLoss;
+            profit = -lossSize;
             duration = i + 1;
             break;
           }
@@ -226,68 +262,93 @@ const Results = () => {
       }
 
       if (result === "timeout") {
-        const lastCandle = outcome[Math.min(outcome.length - 1, transactionParams.timeHorizon - 1)];
+        const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.duration - 1)];
         profit = isLong
           ? ((lastCandle.close - entryPrice) / entryPrice) * 100
           : ((entryPrice - lastCandle.close) / entryPrice) * 100;
       }
 
       return { result, profit, duration };
-    }).filter(t => t !== null);
+    }).filter((t) => t !== null);
 
-    const wins = trades.filter(t => t!.result === "win").length;
+    if (trades.length === 0) return null;
+
+    const wins = trades.filter((t) => t!.result === "win").length;
+    const tradesTimedOut = trades.filter((t) => t!.result === "timeout").length;
     const avgProfit = trades.reduce((acc, t) => acc + t!.profit, 0) / trades.length;
     const avgDuration = trades.reduce((acc, t) => acc + t!.duration, 0) / trades.length;
+    const totalProfit = trades.reduce((acc, t) => acc + t!.profit, 0);
 
     return {
+      tradesWon: wins,
+      tradesLost: trades.length - wins - tradesTimedOut,
       winRate: (wins / trades.length) * 100,
       avgProfit,
+      totalProfit,
       totalTrades: trades.length,
       avgDuration,
+      tradesTimedOut,
     };
   };
 
-  const getIndividualStats = (pattern: SimilarPattern): IndividualTradeStats | undefined => {
-    if (!transactionParams) return undefined;
+  // Calculate individual stats for a pattern
+  const getIndividualStats = (pattern: SimilarPattern): IndividualTradeStats | null => {
+    if (!transactionParams) return null;
 
     const outcomeCandles = pattern.outcomeCandles || generateMockCandles(
       15,
       setupCandles?.[setupCandles.length - 1]?.close || 100,
       pattern.outcome === "bullish" ? "up" : pattern.outcome === "bearish" ? "down" : "sideways"
     );
+    
+    const setupCandlesArr = pattern.setupCandles || setupCandles;
+    if (!setupCandlesArr || setupCandlesArr.length === 0) return null;
 
     const entryPrice = outcomeCandles[0].open;
     const isLong = transactionParams.position === "long";
-    const takeProfitPrice = entryPrice * (1 + transactionParams.takeProfit / 100 * (isLong ? 1 : -1));
-    const stopLossPrice = entryPrice * (1 - transactionParams.stopLoss / 100 * (isLong ? 1 : -1));
+
+    const setupMin = Math.min(...setupCandlesArr.map((c) => c.low));
+    const setupMax = Math.max(...setupCandlesArr.map((c) => c.high));
+    const lastIndex = setupCandlesArr.length - 1;
+    const setupOffset = 100 - normalize(setupCandlesArr[lastIndex].close, setupMin, setupMax);
+
+    const normalizedProfitPrice = transactionParams.entryPrice + transactionParams.profitSize;
+    const offsetProfitPrice = normalizedProfitPrice - setupOffset;
+    const takeProfitPrice = (offsetProfitPrice - 100) * (setupMax - setupMin) + setupMin;
+    const profitSize = Math.abs(takeProfitPrice - entryPrice) / entryPrice * 100;
+
+    const normalizedLossPrice = transactionParams.entryPrice + transactionParams.lossSize;
+    const offsetLossPrice = normalizedLossPrice - setupOffset;
+    const stopLossPrice = (offsetLossPrice - 100) * (setupMax - setupMin) + setupMin;
+    const lossSize = Math.abs(stopLossPrice - entryPrice) / entryPrice * 100;
 
     let result: "win" | "loss" | "timeout" = "timeout";
     let profit = 0;
-    let duration = transactionParams.timeHorizon;
+    let duration = transactionParams.duration;
 
-    for (let i = 0; i < Math.min(outcomeCandles.length, transactionParams.timeHorizon); i++) {
+    for (let i = 0; i < Math.min(outcomeCandles.length, transactionParams.duration); i++) {
       const candle = outcomeCandles[i];
       if (isLong) {
         if (candle.high >= takeProfitPrice) {
           result = "win";
-          profit = transactionParams.takeProfit;
+          profit = profitSize;
           duration = i + 1;
           break;
         } else if (candle.low <= stopLossPrice) {
           result = "loss";
-          profit = -transactionParams.stopLoss;
+          profit = -lossSize;
           duration = i + 1;
           break;
         }
       } else {
         if (candle.low <= takeProfitPrice) {
           result = "win";
-          profit = transactionParams.takeProfit;
+          profit = profitSize;
           duration = i + 1;
           break;
         } else if (candle.high >= stopLossPrice) {
           result = "loss";
-          profit = -transactionParams.stopLoss;
+          profit = -lossSize;
           duration = i + 1;
           break;
         }
@@ -295,7 +356,7 @@ const Results = () => {
     }
 
     if (result === "timeout") {
-      const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.timeHorizon - 1)];
+      const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.duration - 1)];
       profit = isLong
         ? ((lastCandle.close - entryPrice) / entryPrice) * 100
         : ((entryPrice - lastCandle.close) / entryPrice) * 100;
@@ -312,10 +373,10 @@ const Results = () => {
   };
 
   const handleSaveToLibrary = (name: string) => {
-    try{
+    try {
       addCollection(name, setupCandles, patterns);
     } catch (e) {
-      toast.success(`We couldn't save your collection. Try removing some old collections first.`);
+      toast.error(`We couldn't save your collection. Try removing some old collections first.`);
       return;
     }
     setIsSaved(true);
@@ -323,7 +384,9 @@ const Results = () => {
     toast.success(`Collection "${name}" saved to library`);
   };
 
-  // Show empty state if no results
+  const stats = calculateStats();
+
+  // Empty state
   if (patterns.length === 0) {
     return (
       <div className="flex flex-col h-screen bg-background">
@@ -350,41 +413,41 @@ const Results = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <HomeHeader/>
+    <div className="flex flex-col h-screen bg-background overflow-hidden">
+      <HomeHeader />
 
-      <div className="container mx-auto flex-1 flex flex-col py-6 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+      <div className="flex-1 flex flex-col px-4 lg:px-6 py-4 overflow-hidden">
+        {/* Header - Compact */}
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-3xl font-bold text-foreground">
+            <h2 className="text-2xl font-bold text-foreground">
               Similar Patterns Found
             </h2>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground">
               {filteredPatterns.length} matches across {uniqueAssets.length} assets
             </p>
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+        {/* Controls - Compact single row */}
+        <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
-              <TabsList>
-                <TabsTrigger value="base" className="gap-2">
-                  <ChevronLeft className="w-4 h-4" />
-                  Base Chart
+              <TabsList className="h-9">
+                <TabsTrigger value="base" className="gap-1.5 text-xs px-3">
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  Base
                 </TabsTrigger>
-                <TabsTrigger value="grid" className="gap-2">
-                  <LayoutGrid className="w-4 h-4" />
+                <TabsTrigger value="grid" className="gap-1.5 text-xs px-3">
+                  <LayoutGrid className="w-3.5 h-3.5" />
                   Grid
                 </TabsTrigger>
-                <TabsTrigger value="detail" className="gap-2">
-                  <ChevronRight className="w-4 h-4" />
+                <TabsTrigger value="detail" className="gap-1.5 text-xs px-3">
+                  <ChevronRight className="w-3.5 h-3.5" />
                   Detail
                 </TabsTrigger>
-                <TabsTrigger value="overlay" className="gap-2">
-                  <Layers className="w-4 h-4" />
+                <TabsTrigger value="overlay" className="gap-1.5 text-xs px-3">
+                  <Layers className="w-3.5 h-3.5" />
                   Overlay
                 </TabsTrigger>
               </TabsList>
@@ -392,32 +455,31 @@ const Results = () => {
 
             <Button
               variant="default"
-              className="gap-2"
+              size="sm"
+              className="gap-1.5"
               onClick={() => setSaveDialogOpen(true)}
             >
-              <Save className="w-4 h-4" />
-              Save Results
+              <Save className="w-3.5 h-3.5" />
+              Save
             </Button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Select value={filterAsset} onValueChange={setFilterAsset}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Filter asset" />
+              <SelectTrigger className="w-32 h-9 text-xs">
+                <SelectValue placeholder="Filter" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Assets</SelectItem>
                 {uniqueAssets.map((asset) => (
-                  <SelectItem key={asset} value={asset}>
-                    {asset}
-                  </SelectItem>
+                  <SelectItem key={asset} value={asset}>{asset}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Sort by" />
+              <SelectTrigger className="w-32 h-9 text-xs">
+                <SelectValue placeholder="Sort" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="similarity">By Similarity</SelectItem>
@@ -427,30 +489,23 @@ const Results = () => {
           </div>
         </div>
 
-        {/* Statistics */}
-        {transactionParams && calculateStats() && (
-          <div className="mb-6">
-            <TradeStatistics stats={calculateStats()!} />
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="flex-1 overflow-hidden">
+        {/* Main Content Area - Full height, no scroll on outer container */}
+        <div className="flex-1 min-h-0">
+          {/* BASE CHART VIEW - Full width */}
           {viewMode === "base" && (
-            <ScrollArea className="h-full">
-              <div className="pb-6">
-                <BaseChartCanvas
-                  candles={setupCandles.length > 0 ? setupCandles : generateMockCandles(20, 100, "sideways")}
-                  chartType={baseChartType}
-                  onChartTypeChange={setBaseChartType}
-                />
-              </div>
-            </ScrollArea>
+            <div className="h-full">
+              <BaseChartCanvas
+                candles={setupCandles.length > 0 ? setupCandles : generateMockCandles(20, 100, "sideways")}
+                chartType={baseChartType}
+                onChartTypeChange={setBaseChartType}
+              />
+            </div>
           )}
 
+          {/* GRID VIEW - Full width with scrollable grid */}
           {viewMode === "grid" && (
             <ScrollArea className="h-full">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 pb-4">
                 {filteredPatterns.map((pattern) => (
                   <PatternCard
                     key={pattern.id}
@@ -465,21 +520,25 @@ const Results = () => {
             </ScrollArea>
           )}
 
+          {/* DETAIL VIEW - Chart on left, stats on right (desktop), stacked (mobile) */}
           {viewMode === "detail" && filteredPatterns.length > 0 && (
-            <ScrollArea className="h-full">
-              <div className="flex flex-col">
+            <div className="h-full flex flex-col lg:flex-row gap-4">
+              {/* Chart area - takes most space */}
+              <div className="flex-1 min-w-0 flex flex-col min-h-0">
                 <PatternDetailView
                   pattern={filteredPatterns[currentIndex]}
-                  individualStats={getIndividualStats(filteredPatterns[currentIndex])}
-                  transactionParams={transactionParams}
                   setupCandles={setupCandles}
+                  transactionParams={transactionParams}
                 />
-                <div className="flex items-center justify-between mt-6 pt-6 border-t">
+                
+                {/* Navigation - bottom of chart area */}
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-border shrink-0">
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
                     disabled={currentIndex === 0}
-                    className="gap-2"
+                    className="gap-1.5"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Previous
@@ -489,52 +548,203 @@ const Results = () => {
                   </span>
                   <Button
                     variant="outline"
-                    onClick={() =>
-                      setCurrentIndex(
-                        Math.min(filteredPatterns.length - 1, currentIndex + 1)
-                      )
-                    }
+                    size="sm"
+                    onClick={() => setCurrentIndex(Math.min(filteredPatterns.length - 1, currentIndex + 1))}
                     disabled={currentIndex === filteredPatterns.length - 1}
-                    className="gap-2"
+                    className="gap-1.5"
                   >
                     Next
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
-            </ScrollArea>
+
+              {/* Stats sidebar - fixed width on desktop, full width on mobile */}
+              {transactionParams && (
+                <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-3 lg:overflow-y-auto">
+                  {/* Overall Stats - Compact */}
+                  {stats && (
+                    <Card className="p-3">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Overall Stats</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        <StatItem 
+                          icon={<Target className="w-3.5 h-3.5 text-primary" />}
+                          label="Win Rate"
+                          value={`${stats.winRate.toFixed(1)}%`}
+                          tooltip={`${stats.tradesWon} wins / ${stats.totalTrades} trades`}
+                        />
+                        <StatItem 
+                          icon={<TrendingUp className="w-3.5 h-3.5 text-primary" />}
+                          label="Total"
+                          value={String(stats.totalTrades)}
+                        />
+                        <StatItem 
+                          icon={stats.avgProfit >= 0 ? <TrendingUp className="w-3.5 h-3.5 text-bullish" /> : <TrendingDown className="w-3.5 h-3.5 text-bearish" />}
+                          label="Avg Result"
+                          value={`${stats.avgProfit >= 0 ? "+" : ""}${stats.avgProfit.toFixed(2)}%`}
+                          valueClass={stats.avgProfit >= 0 ? "text-bullish" : "text-bearish"}
+                        />
+                        <StatItem 
+                          icon={stats.totalProfit >= 0 ? <TrendingUp className="w-3.5 h-3.5 text-bullish" /> : <TrendingDown className="w-3.5 h-3.5 text-bearish" />}
+                          label="Total P/L"
+                          value={`${stats.totalProfit >= 0 ? "+" : ""}${stats.totalProfit.toFixed(2)}%`}
+                          valueClass={stats.totalProfit >= 0 ? "text-bullish" : "text-bearish"}
+                        />
+                        <StatItem 
+                          icon={<Clock className="w-3.5 h-3.5 text-primary" />}
+                          label="Avg Duration"
+                          value={`${stats.avgDuration?.toFixed(1) || 0} bars`}
+                        />
+                        <StatItem 
+                          icon={<Hourglass className="w-3.5 h-3.5 text-muted-foreground" />}
+                          label="Timeouts"
+                          value={String(stats.tradesTimedOut)}
+                        />
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Individual Trade Stats */}
+                  {(() => {
+                    const indStats = getIndividualStats(filteredPatterns[currentIndex]);
+                    if (!indStats) return null;
+                    return (
+                      <Card className="p-3">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">This Trade</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="col-span-2">
+                            <p className="text-[10px] text-muted-foreground uppercase">Result</p>
+                            <p className={`text-xl font-bold ${indStats.profit >= 0 ? "text-bullish" : "text-bearish"}`}>
+                              {indStats.profit >= 0 ? "+" : ""}{indStats.profit.toFixed(2)}%
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase">Outcome</p>
+                            <p className={`text-sm font-semibold ${
+                              indStats.outcome === "win" ? "text-bullish" : 
+                              indStats.outcome === "loss" ? "text-bearish" : 
+                              "text-muted-foreground"
+                            }`}>
+                              {indStats.outcome.toUpperCase()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase">Similarity</p>
+                            <p className="text-sm font-semibold text-primary">{indStats.similarity}%</p>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
           )}
 
+          {/* OVERLAY VIEW - Chart with side panel for stats */}
           {viewMode === "overlay" && (
-            <div className="h-full">
-              <OverlayView
-                patterns={filteredPatterns}
-                setupCandles={setupCandles}
-                chartType={outcomeChartType}
-                onChartTypeChange={setOutcomeChartType}
-                transactionParams={transactionParams}
-                onTransactionParamsChange={setTransactionParams}
-              />
+            <div className="h-full flex flex-col lg:flex-row gap-4">
+              {/* Main chart area */}
+              <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-semibold text-foreground">Overlay Analysis</h3>
+                  <Select value={outcomeChartType} onValueChange={(v) => setOutcomeChartType(v as "candle" | "line")}>
+                    <SelectTrigger className="w-28 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="candle">Candles</SelectItem>
+                      <SelectItem value="line">Line</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Card className="flex-1 p-4 min-h-0">
+                  <OverlayChartCanvas
+                    setupCandles={setupCandles}
+                    outcomesData={filteredPatterns.map((p) => p.outcomeCandles || generateMockCandles(15, setupCandles[setupCandles.length - 1]?.close || 100, p.outcome === "bullish" ? "up" : p.outcome === "bearish" ? "down" : "sideways"))}
+                    chartType={outcomeChartType}
+                    onTransactionBoxChange={setTransactionParams}
+                    initialTransactionParams={transactionParams}
+                  />
+                </Card>
+              </div>
+
+              {/* Stats sidebar */}
+              {transactionParams && stats && (
+                <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-3">
+                  <Card className="p-3">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Transaction</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase">Position</p>
+                        <p className="font-semibold capitalize">{transactionParams.position}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase">Duration</p>
+                        <p className="font-semibold">{transactionParams.duration} bars</p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-3">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Performance</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <StatItem 
+                        icon={<Target className="w-3.5 h-3.5 text-primary" />}
+                        label="Win Rate"
+                        value={`${stats.winRate.toFixed(1)}%`}
+                      />
+                      <StatItem 
+                        icon={<TrendingUp className="w-3.5 h-3.5 text-primary" />}
+                        label="Trades"
+                        value={String(stats.totalTrades)}
+                      />
+                      <StatItem 
+                        icon={stats.avgProfit >= 0 ? <TrendingUp className="w-3.5 h-3.5 text-bullish" /> : <TrendingDown className="w-3.5 h-3.5 text-bearish" />}
+                        label="Avg Result"
+                        value={`${stats.avgProfit >= 0 ? "+" : ""}${stats.avgProfit.toFixed(2)}%`}
+                        valueClass={stats.avgProfit >= 0 ? "text-bullish" : "text-bearish"}
+                      />
+                      <StatItem 
+                        icon={stats.totalProfit >= 0 ? <TrendingUp className="w-3.5 h-3.5 text-bullish" /> : <TrendingDown className="w-3.5 h-3.5 text-bearish" />}
+                        label="Total P/L"
+                        value={`${stats.totalProfit >= 0 ? "+" : ""}${stats.totalProfit.toFixed(2)}%`}
+                        valueClass={stats.totalProfit >= 0 ? "text-bullish" : "text-bearish"}
+                      />
+                      <StatItem 
+                        icon={<Clock className="w-3.5 h-3.5 text-primary" />}
+                        label="Avg Duration"
+                        value={`${stats.avgDuration?.toFixed(1) || 0}`}
+                      />
+                      <StatItem 
+                        icon={<Hourglass className="w-3.5 h-3.5 text-muted-foreground" />}
+                        label="Timeouts"
+                        value={String(stats.tradesTimedOut)}
+                      />
+                    </div>
+                  </Card>
+
+                  <Card className="p-3">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Tip</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Draw a transaction box on the chart to test your strategy across all patterns.
+                    </p>
+                  </Card>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      <VirtualTransactionDialog
-        open={virtualTransactionOpen}
-        onOpenChange={setVirtualTransactionOpen}
-        onApply={setTransactionParams}
-        initialParams={transactionParams || undefined}
-      />
-
       <SaveToLibraryDialog
         open={saveDialogOpen}
         onOpenChange={setSaveDialogOpen}
         onSave={handleSaveToLibrary}
-        collectionNames={collections.map(collection => collection.name)}
+        collectionNames={collections.map((c) => c.name)}
       />
- 
-      {/* Leave Warning Dialog */}
+
       <AlertDialog open={showLeaveWarning} onOpenChange={setShowLeaveWarning}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -543,18 +753,13 @@ const Results = () => {
               Unsaved Results
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Your similarity search results have not been saved. If you leave this page, they will be lost. Would you like to save them first?
+              Your similarity search results have not been saved. If you leave this page, they will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelLeave}>Stay on Page</AlertDialogCancel>
-            <Button variant="outline" onClick={handleConfirmLeave}>
-              Leave Without Saving
-            </Button>
-            <AlertDialogAction onClick={() => {
-              setShowLeaveWarning(false);
-              setSaveDialogOpen(true);
-            }}>
+            <AlertDialogCancel onClick={handleCancelLeave}>Stay</AlertDialogCancel>
+            <Button variant="outline" onClick={handleConfirmLeave}>Leave</Button>
+            <AlertDialogAction onClick={() => { setShowLeaveWarning(false); setSaveDialogOpen(true); }}>
               Save Results
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -563,6 +768,41 @@ const Results = () => {
     </div>
   );
 };
+
+// Compact stat item component
+const StatItem = ({ 
+  icon, 
+  label, 
+  value, 
+  valueClass = "text-foreground",
+  tooltip 
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  value: string; 
+  valueClass?: string;
+  tooltip?: string;
+}) => (
+  <div className="flex items-start gap-1.5">
+    <div className="mt-0.5">{icon}</div>
+    <div className="min-w-0">
+      <div className="flex items-center gap-1">
+        <p className="text-[10px] text-muted-foreground uppercase truncate">{label}</p>
+        {tooltip && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <MessageCircleQuestion className="w-3 h-3 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent><p className="text-xs">{tooltip}</p></TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
+      <p className={`text-sm font-bold ${valueClass}`}>{value}</p>
+    </div>
+  </div>
+);
 
 // Pattern Card Component
 const PatternCard = ({
@@ -595,7 +835,7 @@ const PatternCard = ({
 
       <MockChartDisplay candles={candles} width={300} height={120} />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-2">
           {outcomeIcon}
           <span className="text-xs text-muted-foreground">{pattern.date}</span>
@@ -608,21 +848,14 @@ const PatternCard = ({
 // Pattern Detail View Component
 interface PatternDetailViewProps {
   pattern: SimilarPattern;
-  individualStats?: IndividualTradeStats;
-  transactionParams?: {
-    takeProfit: number;
-    stopLoss: number;
-    timeHorizon: number;
-    position: "long" | "short";
-  } | null;
-  setupCandles?: CandleData[];
+  setupCandles: CandleData[];
+  transactionParams: TransactionBoxModel | null;
 }
 
 const PatternDetailView = ({
   pattern,
-  individualStats,
+  setupCandles: baseSetupCandles,
   transactionParams,
-  setupCandles: propSetupCandles,
 }: PatternDetailViewProps) => {
   const [chartType, setChartType] = useState<"candle" | "line">("candle");
   const setupCandles = pattern.setupCandles || generateMockCandles(20, 100, "sideways");
@@ -632,24 +865,36 @@ const PatternDetailView = ({
     pattern.outcome === "bullish" ? "up" : pattern.outcome === "bearish" ? "down" : "sideways"
   );
 
+  // Normalize base chart for overlay
+  const setupMin = Math.min(...setupCandles.map((c) => c.low));
+  const setupMax = Math.max(...setupCandles.map((c) => c.high));
+  const baseMin = normalize(Math.min(...baseSetupCandles.map((c) => c.low)), setupMin, setupMax);
+  const baseMax = normalize(Math.max(...baseSetupCandles.map((c) => c.high)), setupMin, setupMax);
+  const baseCandles = baseSetupCandles.map((c) => ({
+    ...c,
+    open: normalize(c.open, baseMin, baseMax),
+    high: normalize(c.high, baseMin, baseMax),
+    low: normalize(c.low, baseMin, baseMax),
+    close: normalize(c.close, baseMin, baseMax),
+  }));
+
   return (
-    <div className="flex-1 flex flex-col gap-6">
+    <div className="flex-1 flex flex-col gap-3 min-h-0">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-foreground">{pattern.asset}</h3>
-          <p className="text-muted-foreground mt-1">
+          <h3 className="text-xl font-bold text-foreground">{pattern.asset}</h3>
+          <p className="text-sm text-muted-foreground">
             {pattern.date} • {pattern.timeframe}
           </p>
         </div>
-        <Badge variant="secondary" className="bg-primary/10 text-primary text-lg px-4 py-2">
+        <Badge variant="secondary" className="bg-primary/10 text-primary text-base px-3 py-1">
           {pattern.similarity}% Match
         </Badge>
       </div>
 
-      {individualStats && <TradeStatistics individualStats={individualStats} />}
-
-      <div className="flex-1">
+      <div className="flex-1 min-h-0">
         <DetailChartCanvas
+          baseChart={baseCandles}
           setupCandles={setupCandles}
           outcomeCandles={outcomeCandles}
           chartType={chartType}
@@ -658,168 +903,6 @@ const PatternDetailView = ({
         />
       </div>
     </div>
-  );
-};
-
-// Overlay View Component
-const OverlayView = ({
-  patterns,
-  setupCandles,
-  chartType,
-  onChartTypeChange,
-  transactionParams,
-  onTransactionParamsChange,
-}: {
-  patterns: SimilarPattern[];
-  setupCandles: CandleData[];
-  chartType: "candle" | "line";
-  onChartTypeChange: (type: "candle" | "line") => void;
-  transactionParams: TransactionBoxModel | null;
-  onTransactionParamsChange: (params:TransactionBoxModel | null) => void;
-}) => {
-  const [tradeStats, setTradeStats] = useState<TradeStats | null>(null);
-
-  const outcomesData = patterns.map((pattern) => {
-    return pattern.outcomeCandles || generateMockCandles(
-      15,
-      setupCandles[setupCandles.length - 1]?.close || 100,
-      pattern.outcome === "bullish" ? "up" : pattern.outcome === "bearish" ? "down" : "sideways"
-    );
-  });
-
-  useEffect(() => {
-    if (!transactionParams) {
-      setTradeStats(null);
-      return;
-    }
-
-    const trades = patterns.map((pattern, idx) => {
-      const outcome = outcomesData[idx];
-      if (!outcome || outcome.length === 0) return null;
-
-      const entryPrice = outcome[0].open;
-      const isLong = transactionParams.position === "long";
-      const takeProfitPrice = entryPrice * (1 + transactionParams.takeProfit / 100 * (isLong ? 1 : -1));
-      const stopLossPrice = entryPrice * (1 - transactionParams.stopLoss / 100 * (isLong ? 1 : -1));
-
-      let result: "win" | "loss" | "timeout" = "timeout";
-      let profit = 0;
-      let duration = transactionParams.timeHorizon;
-
-      for (let i = 0; i < Math.min(outcome.length, transactionParams.timeHorizon); i++) {
-        const candle = outcome[i];
-        if (isLong) {
-          if (candle.high >= takeProfitPrice) {
-            result = "win";
-            profit = transactionParams.takeProfit;
-            duration = i + 1;
-            break;
-          } else if (candle.low <= stopLossPrice) {
-            result = "loss";
-            profit = -transactionParams.stopLoss;
-            duration = i + 1;
-            break;
-          }
-        } else {
-          if (candle.low <= takeProfitPrice) {
-            result = "win";
-            profit = transactionParams.takeProfit;
-            duration = i + 1;
-            break;
-          } else if (candle.high >= stopLossPrice) {
-            result = "loss";
-            profit = -transactionParams.stopLoss;
-            duration = i + 1;
-            break;
-          }
-        }
-      }
-
-      if (result === "timeout") {
-        const lastCandle = outcome[Math.min(outcome.length - 1, transactionParams.timeHorizon - 1)];
-        profit = isLong
-          ? ((lastCandle.close - entryPrice) / entryPrice) * 100
-          : ((entryPrice - lastCandle.close) / entryPrice) * 100;
-      }
-
-      return { result, profit, duration };
-    }).filter(t => t !== null);
-
-    const wins = trades.filter(t => t!.result === "win").length;
-    const avgProfit = trades.reduce((acc, t) => acc + t!.profit, 0) / trades.length;
-    const avgDuration = trades.reduce((acc, t) => acc + t!.duration, 0) / trades.length;
-
-    setTradeStats({
-      winRate: (wins / trades.length) * 100,
-      avgProfit,
-      totalTrades: trades.length,
-      avgDuration,
-    });
-  }, [transactionParams, patterns]);
-
-  return (
-    <ScrollArea className="h-full">
-      <div className="space-y-6 pb-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-foreground">Unified Overlay Analysis</h3>
-          <Select value={chartType} onValueChange={(v) => onChartTypeChange(v as "candle" | "line")}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="candle">Candles</SelectItem>
-              <SelectItem value="line">Line</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {transactionParams && (
-          <Card className="p-6">
-            <h4 className="text-lg font-semibold text-foreground mb-4">Transaction Parameters</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Position</p>
-                <p className="text-lg font-semibold capitalize">{transactionParams.position}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Take Profit</p>
-                <p className="text-lg font-semibold text-bullish">{transactionParams.takeProfit.toFixed(2)}%</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Stop Loss</p>
-                <p className="text-lg font-semibold text-bearish">{transactionParams.stopLoss.toFixed(2)}%</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Time Horizon</p>
-                <p className="text-lg font-semibold">{transactionParams.timeHorizon} candles</p>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        <Card className="p-6">
-          <div className="mb-4">
-            <h4 className="text-lg font-semibold text-foreground mb-1">Setup Pattern + Outcome Overlays</h4>
-            <p className="text-sm text-muted-foreground">
-              Setup on the left, outcomes on the right. Draw a transaction box to test your strategy.
-            </p>
-          </div>
-          <OverlayChartCanvas
-            setupCandles={setupCandles}
-            outcomesData={outcomesData}
-            chartType={chartType}
-            onTransactionBoxChange={onTransactionParamsChange}
-            transactionBox={transactionParams}
-          />
-        </Card>
-
-        <Card className="p-6">
-          <h4 className="text-lg font-semibold text-foreground mb-4">Pattern Insights</h4>
-          <p className="text-sm text-muted-foreground">
-            The unified overlay shows the setup pattern (left of divider) and overlaid outcome continuations (right of divider).
-          </p>
-        </Card>
-      </div>
-    </ScrollArea>
   );
 };
 

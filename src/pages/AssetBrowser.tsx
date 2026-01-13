@@ -204,8 +204,8 @@ useEffect(() => {
 useEffect(() => {
   if (!seriesRef.current || candles.length < 1) return;
 
-  const data: CandlestickData[] = candles.map(c => ({
-    time: Math.floor(new Date(c.ctm).getTime() / 1000),
+  const data: CandlestickData<Time>[] = candles.map(c => ({
+    time: Math.floor(new Date(c.ctm).getTime() / 1000) as Time,
     open: c.open,
     high: c.high,
     low: c.low,
