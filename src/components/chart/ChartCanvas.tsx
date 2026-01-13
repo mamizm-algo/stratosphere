@@ -152,7 +152,7 @@ useEffect(() => {
 
           // preview immediately
           seriesRef.current?.update({
-            time: candle.ctm,
+            time: candle.ctm as Time,
             open: candle.open,
             high: candle.high,
             low: candle.low,
@@ -170,7 +170,7 @@ useEffect(() => {
           };
           drawingCandleRef.current = candle;
           seriesRef.current?.update({
-            time: candle.ctm,
+            time: candle.ctm as Time,
             open: candle.open,
             high: candle.high,
             low: candle.low,
@@ -211,7 +211,7 @@ useEffect(() => {
           candle.low = Math.min(candle.open, candle.close) - wickDownHeight;
 
           series.update({
-            time: candle.ctm,
+            time: candle.ctm as Time,
             open: candle.open,
             high: candle.high,
             low: candle.low,

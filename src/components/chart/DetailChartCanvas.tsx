@@ -231,13 +231,13 @@ export const DetailChartCanvas = ({
     // Combine both sets of candles
     const allCandles = setupCandles.concat(outcomeCandles);
     const seriesData = allCandles.map((c) => ({
-      time: Math.floor(new Date(c.ctm).getTime() / 1000),
+      time: Math.floor(new Date(c.ctm).getTime() / 1000) as Time,
       open: c.open,
       high: c.high,
       low: c.low,
       close: c.close,
     }));
-    seriesRef.current.setData(seriesData);
+    seriesRef.current.setData(seriesData as CandlestickData<Time>[]);
 
     if (selectionPrimitiveRef.current) {
       seriesRef.current.detachPrimitive(selectionPrimitiveRef.current);
