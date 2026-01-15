@@ -72,12 +72,19 @@ const Library = () => {
 
   const handleUpdateCollectionResults = (updatedResults: any[]) => {
     if (selectedCollection) {
-      updateCollection(selectedCollection.name, { results: updatedResults });
-      // Update local state as well
-      setSelectedCollection({
-        ...selectedCollection,
-        results: updatedResults,
-      });
+      if (updatedResults.length === 0) {
+        // Delete collection when last pattern is removed
+        deleteCollection(selectedCollection.name);
+        setSelectedCollection(null);
+        toast.success("Collection deleted (no patterns remaining)");
+      } else {
+        updateCollection(selectedCollection.name, { results: updatedResults });
+        // Update local state as well
+        setSelectedCollection({
+          ...selectedCollection,
+          results: updatedResults,
+        });
+      }
     }
   };
 
