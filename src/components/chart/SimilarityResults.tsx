@@ -67,6 +67,7 @@ interface SimilarityResultsProps {
   setupCandles?: CandleData[];
   onSaveAsCollection?: (name: string) => void;
   onRemovePattern?: (patternId: string) => void;
+  collectionName?: string;
 }
 
 export interface TransactionBoxModel {
@@ -85,6 +86,7 @@ export const SimilarityResults = ({
   setupCandles,
   onSaveAsCollection,
   onRemovePattern,
+  collectionName,
 }: SimilarityResultsProps) => {
   const { collections, addCollection } = useCollections();
   const [viewMode, setViewMode] = useState<"base" | "grid" | "detail" | "overlay">("grid");
@@ -205,58 +207,67 @@ export const SimilarityResults = ({
   return (
     <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm">
       <div className="container mx-auto h-full flex flex-col py-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-3xl font-bold text-foreground">
-              Similar Patterns Found
-            </h2>
-            <p className="text-muted-foreground mt-1">
-              {filteredPatterns.length} matches across {uniqueAssets.length} assets
-            </p>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Controls */}
+        {/* Header with Controls */}
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
+          {/* Left: Title and Navigation */}
+          <div className="flex items-center gap-4 min-w-0 flex-1">
+            {collectionName ? (
+              <div className="min-w-0 flex-shrink" title={collectionName}>
+                <h2 className="text-2xl font-bold text-foreground truncate max-w-[200px] md:max-w-[300px] lg:max-w-[400px]">
+                  {collectionName}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {filteredPatterns.length} patterns
+                </p>
+              </div>
+            ) : (
+              <div className="flex-shrink-0">
+                <h2 className="text-2xl font-bold text-foreground">
+                  Similar Patterns Found
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {filteredPatterns.length} matches across {uniqueAssets.length} assets
+                </p>
+              </div>
+            )}
+
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="flex-shrink-0">
               <TabsList>
                 <TabsTrigger value="base" className="gap-2">
                   <ChevronLeft className="w-4 h-4" />
-                  Base Chart
+                  <span className="hidden sm:inline">Base Chart</span>
                 </TabsTrigger>
                 <TabsTrigger value="grid" className="gap-2">
                   <LayoutGrid className="w-4 h-4" />
-                  Grid
+                  <span className="hidden sm:inline">Grid</span>
                 </TabsTrigger>
                 <TabsTrigger value="detail" className="gap-2">
                   <ChevronRight className="w-4 h-4" />
-                  Detail
+                  <span className="hidden sm:inline">Detail</span>
                 </TabsTrigger>
                 <TabsTrigger value="overlay" className="gap-2">
                   <Layers className="w-4 h-4" />
-                  Overlay
+                  <span className="hidden sm:inline">Overlay</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
 
-            <Button
-              variant="default"
-              className="gap-2"
-              onClick={() => setSaveDialogOpen(true)}
-            >
-              <Save className="w-4 h-4" />
-              Save Results
-            </Button>
+            {!collectionName && (
+              <Button
+                variant="default"
+                className="gap-2 flex-shrink-0"
+                onClick={() => setSaveDialogOpen(true)}
+              >
+                <Save className="w-4 h-4" />
+                <span className="hidden sm:inline">Save Results</span>
+              </Button>
+            )}
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Right: Filters and Close */}
+          <div className="flex items-center gap-3 flex-shrink-0">
             <Select value={filterAsset} onValueChange={setFilterAsset}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-32 md:w-40">
                 <SelectValue placeholder="Filter asset" />
               </SelectTrigger>
               <SelectContent>
@@ -270,7 +281,7 @@ export const SimilarityResults = ({
             </Select>
 
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-32 md:w-40">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -278,6 +289,10 @@ export const SimilarityResults = ({
                 <SelectItem value="date">By Date</SelectItem>
               </SelectContent>
             </Select>
+
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="w-5 h-5" />
+            </Button>
           </div>
         </div>
 
