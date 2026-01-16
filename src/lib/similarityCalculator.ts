@@ -125,6 +125,33 @@ export const searchSimilarPatterns = (
           return candleTime >= fromTime && candleTime <= toTime;
         });
       }
+
+      let resultsBestCandidate = null;
+      let lastAccepted: typeof resultsBestCandidate | null = null;
+
+      function tryAccept(candidate) {
+        if (!lastAccepted) {
+          results.push(candidate);
+          lastAccepted = candidate;
+          return;
+        }
+
+        const distance = candidate.startIndex - lastAccepted.startIndex;
+
+        if (distance >= patternLength) {
+          results.push(candidate);
+          lastAccepted = candidate;
+          return;
+        }
+
+        // Too close → keep the stronger one
+        if (candidate.similarity > lastAccepted.similarity) {
+          results[results.length - 1] = candidate;
+          lastAccepted = candidate;
+        }
+      }
+
+
       
       // Use sliding window to find all possible patterns
       for (let i = 0; i <= filteredCandles.length - patternLength - outcomeLength; i++) {
@@ -144,17 +171,19 @@ export const searchSimilarPatterns = (
         });
         
         // Filter by threshold
-        if (similarity >= (searchConfig.similarityThreshold || 70)) {
+        if (similarity >= (searchConfig.similarityThreshold || 70) 
+          && (resultsBestCandidate == null || similarity > resultsBestCandidate.similarity)) {
           // Determine outcome based on price movement
           const setupLastPrice = candidatePattern[candidatePattern.length - 1].close;
           const outcomeLastPrice = outcomeCandles[outcomeCandles.length - 1].close;
           const priceChange = ((outcomeLastPrice - setupLastPrice) / setupLastPrice) * 100;
           
+          
           let outcome: "bullish" | "bearish" | "neutral" = "neutral";
           if (priceChange > 2) outcome = "bullish";
           else if (priceChange < -2) outcome = "bearish";
-          
-          results.push({
+
+          resultsBestCandidate = {
             id: `${asset}_${timeframe}_${i}_${Date.now()}`,
             similarity,
             asset,
@@ -165,11 +194,17 @@ export const searchSimilarPatterns = (
             outcomeCandles,
             startIndex: i,
             endIndex: i + patternLength - 1,
-          });
-
-          // TODO: for now simply skipping ahead by outcome length when found similar. In the future should be more advanced
-          i += outcomeLength/2;
+          };
+        } else if (similarity < searchConfig.similarityThreshold) {
+          if (resultsBestCandidate) {
+            tryAccept(resultsBestCandidate);
+          }
+          resultsBestCandidate = null;
         }
+      }
+
+      if (resultsBestCandidate) {
+        tryAccept(resultsBestCandidate);
       }
     });
   });
