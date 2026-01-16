@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Canvas as FabricCanvas, Rect, Line, Group, FabricObject } from "fabric";
 import { DrawMode, Volatility } from "@/pages/Chart";
 import { toast } from "sonner";
 import { CandleData } from "./MockChartDisplay";
@@ -15,16 +14,12 @@ interface ChartCanvasProps {
 
 export const ChartCanvas = ({drawMode, volatility, onCandleCountChange, onClear, setSearchInputCandles }: ChartCanvasProps) => {
   const [candles, setCandles] = useState<CandleData[]>([]);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [openPrice, setOpenPrice] = useState<number | null>(null);
-  const [previewLine, setPreviewLine] = useState<Line | null>(null);
   const chartRef = useRef<HTMLDivElement | null>(null);
   const chartApiRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const helperSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const clickHandlerRef = useRef<((param: any) => void) | null>(null);
   const crosshairHandlerRef = useRef<((param: any) => void) | null>(null);
-  const [isSelecting, setIsSelecting] = useState(false);
   const drawingCandleRef = useRef<CandleData | null>(null);
   const rafPendingRef = useRef(false);
 
@@ -232,7 +227,6 @@ useEffect(() => {
         };
       } else {
         drawingCandleRef.current = null;
-        candles.pop();
         seriesRef.current.pop(1);
         cleanupSelectionListeners();
       }
@@ -260,28 +254,6 @@ const cleanupSelectionListeners = () => {
     crosshairHandlerRef.current = null;
   }
 };
-
-const finalizeSelection = (endLogical: number) => {
-  // const primitive = selectionPrimitiveRef.current;
-  // if (!primitive) return;
-
-  // primitive.updateEndLogical(endLogical);
-
-  // const start = Math.min(
-  //   primitive["startLogical"],
-  //   endLogical
-  // );
-  // const end = Math.max(
-  //   primitive["startLogical"],
-  //   endLogical
-  // );
-
-
-  // setIsSelecting(false);
-  // cleanupSelectionListeners();
-};
-
-
 
   return (
     <div className="w-full h-full rounded-lg border border-border overflow-hidden shadow-card bg-chart-bg relative">

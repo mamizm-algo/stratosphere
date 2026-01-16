@@ -29,6 +29,7 @@ const Chart = () => {
 
   const handleSearch = (config: SearchConfig) => {
     setDrawMode("select");
+    console.log(searchInputCandles.length)
     const searchResults = searchSimilarPatterns(
       searchInputCandles,
       CANDLE_DATA,
