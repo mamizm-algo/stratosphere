@@ -61,11 +61,9 @@ export const ChartCanvas = ({drawMode, volatility, onCandleCountChange, onClear,
       borderColor: "hsl(240 3.7% 15.9%)",
       barSpacing: 30,
       visible: false,
-
-      // rightBarStaysOnScroll: false,
+      rightBarStaysOnScroll: false,
       shiftVisibleRangeOnNewBar: false,
-      // fixLeftEdge: true,
-      // fixRightEdge: true,
+    
     },
     // make chart responsive
     rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
@@ -94,7 +92,7 @@ export const ChartCanvas = ({drawMode, volatility, onCandleCountChange, onClear,
 
   helperSeries.setData([
     { time: 0 as Time, value: 99 },
-    { time: 1 as Time, value: 101 },
+    { time: MAX_CANDLES as Time, value: 101 },
   ]);
   helperSeriesRef.current = helperSeries;
 
@@ -106,18 +104,6 @@ export const ChartCanvas = ({drawMode, volatility, onCandleCountChange, onClear,
 
   return () => chart.remove();
 }, []);
-
-
-  const updateVisibleRange = () => {
-    const count = candles.length + (drawingCandleRef.current ? 1 : 0);
-    const chart = chartApiRef.current;
-    chart.timeScale().setVisibleLogicalRange({
-      from: 0,
-      // to: Math.max(MAX_CANDLES, count),
-      to: MAX_CANDLES
-    });
-  };
-
 
 
   useEffect(() => {
@@ -173,7 +159,6 @@ useEffect(() => {
             low: candle.low,
             close: candle.close,
           });
-          // updateVisibleRange();
 
         } else {
           setCandles(prev => [...prev, drawingCandleRef.current!]);
@@ -192,7 +177,6 @@ useEffect(() => {
             low: candle.low,
             close: candle.close,
           });
-          // updateVisibleRange();
         }
       };
 
@@ -234,8 +218,6 @@ useEffect(() => {
             low: candle.low,
             close: candle.close,
           });
-          // updateVisibleRange();
-
           rafPendingRef.current = false;
           });
         };
@@ -253,7 +235,7 @@ useEffect(() => {
         seriesRef.current.pop(1);
         cleanupSelectionListeners();
       }
-  }, [drawMode]);
+  }, [drawMode, candles.length]);
 
 
 useEffect(() => {
