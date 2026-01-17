@@ -196,12 +196,14 @@ export const DetailChartCanvas = ({
       priceLineVisible: false,
   });
 
+  chart.timeScale().fitContent();
+
     chartApiRef.current = chart;
     seriesRef.current = series;
     baseChartSeriesRef.current = baseChartSeries;
 
     return () => chart.remove();
-  }, []);
+  }, [setupCandles, outcomeCandles]);
 
   useEffect(() => {
     const chart = chartApiRef.current;

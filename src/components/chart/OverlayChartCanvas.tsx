@@ -254,6 +254,7 @@ export const OverlayChartCanvas = ({
     lastValueVisible: false,
     priceLineVisible: false,
 }));
+    chart.timeScale().fitContent();
 
   chartApiRef.current = chart;
   seriesRef.current = series;

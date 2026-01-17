@@ -44,6 +44,7 @@ export const BaseChartCanvas = ({
     });
 
     const series = chart.addSeries(CandlestickSeries);
+    chart.timeScale().fitContent();
 
     chartApiRef.current = chart;
     seriesRef.current = series;
