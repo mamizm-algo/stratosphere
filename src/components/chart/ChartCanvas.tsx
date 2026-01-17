@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { DrawMode, Volatility } from "@/pages/Chart";
+import { DrawMode, MAX_CANDLES, Volatility } from "@/pages/Chart";
 import { toast } from "sonner";
 import { CandleData } from "./MockChartDisplay";
 import { createChart, CrosshairMode, CandlestickSeries, IChartApi, ISeriesApi, CandlestickData, ISeriesPrimitive, IPrimitivePaneView, Time, Logical, LineSeries } from "lightweight-charts";
@@ -57,11 +57,15 @@ export const ChartCanvas = ({drawMode, volatility, onCandleCountChange, onClear,
     crosshair: {
       mode: CrosshairMode.Normal,
     },
-    timeScale: {
+   timeScale: {
       borderColor: "hsl(240 3.7% 15.9%)",
       barSpacing: 30,
       visible: false,
 
+      // rightBarStaysOnScroll: false,
+      shiftVisibleRangeOnNewBar: false,
+      // fixLeftEdge: true,
+      // fixRightEdge: true,
     },
     // make chart responsive
     rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
@@ -76,6 +80,10 @@ export const ChartCanvas = ({drawMode, volatility, onCandleCountChange, onClear,
   const PRICE_RANGE = { from: 99, to: 101 };
 
   chart.priceScale("right").setVisibleRange(PRICE_RANGE);
+  chart.timeScale().setVisibleLogicalRange({
+    from: 0,
+    to: MAX_CANDLES,
+  });
 
   // helper series to adjust price scale
   const helperSeries = chart.addSeries(LineSeries, {
@@ -98,6 +106,18 @@ export const ChartCanvas = ({drawMode, volatility, onCandleCountChange, onClear,
 
   return () => chart.remove();
 }, []);
+
+
+  const updateVisibleRange = () => {
+    const count = candles.length + (drawingCandleRef.current ? 1 : 0);
+    const chart = chartApiRef.current;
+    chart.timeScale().setVisibleLogicalRange({
+      from: 0,
+      // to: Math.max(MAX_CANDLES, count),
+      to: MAX_CANDLES
+    });
+  };
+
 
 
   useEffect(() => {
@@ -153,6 +173,7 @@ useEffect(() => {
             low: candle.low,
             close: candle.close,
           });
+          // updateVisibleRange();
 
         } else {
           setCandles(prev => [...prev, drawingCandleRef.current!]);
@@ -171,6 +192,7 @@ useEffect(() => {
             low: candle.low,
             close: candle.close,
           });
+          // updateVisibleRange();
         }
       };
 
@@ -212,6 +234,7 @@ useEffect(() => {
             low: candle.low,
             close: candle.close,
           });
+          // updateVisibleRange();
 
           rafPendingRef.current = false;
           });

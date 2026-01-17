@@ -14,6 +14,8 @@ import { HomeHeader } from "@/components/HomeHeader";
 
 export type DrawMode = "candle" | "line" | "select";
 export type Volatility = "low" | "medium" | "high";
+export const MAX_CANDLES = 100;
+
 
 const Chart = () => {
   const navigate = useNavigate();
@@ -29,7 +31,6 @@ const Chart = () => {
 
   const handleSearch = (config: SearchConfig) => {
     setDrawMode("select");
-    console.log(searchInputCandles.length)
     const searchResults = searchSimilarPatterns(
       searchInputCandles,
       CANDLE_DATA,
@@ -62,6 +63,23 @@ const Chart = () => {
     setDrawMode("select");
   }
 
+  const handleCandleCountChange = (count: number) => {
+    setCandleCount(count);
+    if (count >= MAX_CANDLES) {
+      toast.error(`A maximum of ${MAX_CANDLES} candles can be drawn`);
+      setDrawMode("select");
+    }
+  }
+
+  const handleDrawModeChange = (drawMode: DrawMode) => {
+    if (candleCount >= MAX_CANDLES) {
+      toast.error(`A maximum of ${MAX_CANDLES} candles can be drawn`);
+      setDrawMode("select");
+    } else {
+      setDrawMode(drawMode);
+    }
+  }
+
   return (
     <>
       <div className="flex flex-col h-screen bg-background">
@@ -69,7 +87,7 @@ const Chart = () => {
         <div className="flex-1 flex flex-col overflow-hidden">
           <Toolbar 
             drawMode={drawMode} 
-            setDrawMode={setDrawMode}
+            setDrawMode={handleDrawModeChange}
             volatility={volatility}
             setVolatility={setVolatility}
             onSearchSimilar={handleSearchSimilarButton}
@@ -81,7 +99,7 @@ const Chart = () => {
             <ChartCanvas 
               drawMode={drawMode} 
               volatility={volatility}
-              onCandleCountChange={setCandleCount}
+              onCandleCountChange={handleCandleCountChange}
               onClear={(clearFn) => { handleClearRef.current = clearFn; }}
               setSearchInputCandles={setSearchInputCandles}
             />
