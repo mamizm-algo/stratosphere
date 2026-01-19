@@ -89,11 +89,21 @@ export const Toolbar = ({ drawMode, setDrawMode, volatility, setVolatility, onSe
             <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                  <MessageCircleQuestion className="w-4 h-4" />
+                  <MessageCircleQuestion className="w-3 h-3 text-muted-foreground hover:text-primary transition-colors" />
               </TooltipTrigger>
 
-              <TooltipContent>
-                <p>
+               <TooltipContent  side="top"
+                 sideOffset={-12}
+                          className="
+                            max-w-xs
+                            bg-background/95
+                            border
+                            border-primary/40
+                            text-foreground
+                            shadow-lg
+                            backdrop-blur-sm
+                          ">
+                <p className="text-sm leading-relaxed">  
                   Defines the generated length of candle wicks.
                 </p>
               </TooltipContent>

@@ -148,17 +148,26 @@ export const TradeStatistics = ({ registerTransactionChange,  outcomes }: TradeS
                     <MessageCircleQuestion className="w-4 h-4" />
                 </TooltipTrigger>
 
-                <TooltipContent >
-                  <p>
+                 <TooltipContent  side="top"
+                          className="
+                            max-w-xs
+                            bg-background/95
+                            border
+                            border-primary/40
+                            text-foreground
+                            shadow-lg
+                            backdrop-blur-sm
+                          ">
+                  <p className="text-sm leading-relaxed">  
                     {stats.totalTrades} trades opened
                   </p>
-                  <p>
+                  <p className="text-sm leading-relaxed">
                     {stats.tradesWon} hit the Take Profit level
                   </p>
-                  <p>
+                  <p className="text-sm leading-relaxed">
                     {stats.tradesLost} hit the Stop Loss
                   </p>
-                  <p>
+                  <p className="text-sm leading-relaxed">
                     {stats.tradesTimedOut} timed out before hitting either level
                   </p>
                 </TooltipContent>
@@ -193,8 +202,17 @@ export const TradeStatistics = ({ registerTransactionChange,  outcomes }: TradeS
                       <MessageCircleQuestion className="w-4 h-4" />
                   </TooltipTrigger>
 
-                  <TooltipContent>
-                    <p>
+                  <TooltipContent  side="top"
+                          className="
+                            max-w-xs
+                            bg-background/95
+                            border
+                            border-primary/40
+                            text-foreground
+                            shadow-lg
+                            backdrop-blur-sm
+                          ">
+                  <p className="text-sm leading-relaxed">  
                       Average result including wins, losses and timeouts.
                     </p>
                   </TooltipContent>
@@ -221,8 +239,17 @@ export const TradeStatistics = ({ registerTransactionChange,  outcomes }: TradeS
                       <MessageCircleQuestion className="w-4 h-4" />
                   </TooltipTrigger>
 
-                  <TooltipContent>
-                    <p>
+                 <TooltipContent  side="top"
+                          className="
+                            max-w-xs
+                            bg-background/95
+                            border
+                            border-primary/40
+                            text-foreground
+                            shadow-lg
+                            backdrop-blur-sm
+                          ">
+                  <p className="text-sm leading-relaxed">  
                       Total result made after executing all trades.
                     </p>
                   </TooltipContent>
@@ -246,8 +273,17 @@ export const TradeStatistics = ({ registerTransactionChange,  outcomes }: TradeS
                       <MessageCircleQuestion className="w-4 h-4" />
                   </TooltipTrigger>
 
-                  <TooltipContent>
-                    <p>
+                  <TooltipContent  side="top"
+                          className="
+                            max-w-xs
+                            bg-background/95
+                            border
+                            border-primary/40
+                            text-foreground
+                            shadow-lg
+                            backdrop-blur-sm
+                          ">
+                  <p className="text-sm leading-relaxed">  
                       Average number of candles passed before closing the trade (because of hitting the Take Profit or Stop Loss level, or timing out)
                     </p>
                   </TooltipContent>
@@ -268,8 +304,17 @@ export const TradeStatistics = ({ registerTransactionChange,  outcomes }: TradeS
                       <MessageCircleQuestion className="w-4 h-4" />
                   </TooltipTrigger>
 
-                  <TooltipContent>
-                    <p>
+                  <TooltipContent  side="top"
+                          className="
+                            max-w-xs
+                            bg-background/95
+                            border
+                            border-primary/40
+                            text-foreground
+                            shadow-lg
+                            backdrop-blur-sm
+                          ">
+                  <p className="text-sm leading-relaxed">  
                       Number of trades closed because the price didn't reach either the Take Profit nor Stop Loss.
                     </p>
                     <p>

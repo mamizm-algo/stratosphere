@@ -537,8 +537,17 @@ const handleTransactionButton = () => {
                   </Button>
                 </TooltipTrigger>
 
-                <TooltipContent>
-                  <p>
+                 <TooltipContent  side="top"
+                          className="
+                            max-w-xs
+                            bg-background/95
+                            border
+                            border-primary/40
+                            text-foreground
+                            shadow-lg
+                            backdrop-blur-sm
+                          ">
+                  <p className="text-sm leading-relaxed">  
                     Creates a default simulated trade by drawing a transaction box on the chart.
                   </p>
                   <p>
@@ -568,11 +577,25 @@ const handleTransactionButton = () => {
                         <TooltipTrigger asChild>
                             <MessageCircleQuestion className="w-3 h-3" />
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p>
-                            Click and move the Take Profit or Stop Loss level to the other side of the opening price to change to {transactionBox.position == "long" ? "Short" : "Long"}
-                          </p>
-                        </TooltipContent>
+                       <TooltipContent
+                        side="top"
+                        className="
+                          max-w-xs
+                          bg-background/95
+                          border
+                          border-primary/40
+                          text-foreground
+                          shadow-lg
+                          backdrop-blur-sm
+                        "
+                      >
+                        <p className="text-sm leading-relaxed">
+                          Click and move the Take Profit or Stop Loss level to the other side of the opening price to change to{" "}
+                          <span className="font-semibold text-primary">
+                            {transactionBox.position === "long" ? "Short" : "Long"}
+                          </span>
+                        </p>
+                      </TooltipContent>
                       </Tooltip>
                   </TooltipProvider>
                   </div>
@@ -587,8 +610,17 @@ const handleTransactionButton = () => {
                         <TooltipTrigger asChild>
                             <MessageCircleQuestion className="w-3 h-3" />
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p>
+                        <TooltipContent  side="top"
+                          className="
+                            max-w-xs
+                            bg-background/95
+                            border
+                            border-primary/40
+                            text-foreground
+                            shadow-lg
+                            backdrop-blur-sm
+                          ">
+                          <p className="text-sm leading-relaxed">  
                             Click and move the Take Profit level on the transaction box to adjust
                           </p>
                         </TooltipContent>
@@ -605,8 +637,17 @@ const handleTransactionButton = () => {
                         <TooltipTrigger asChild>
                             <MessageCircleQuestion className="w-3 h-3" />
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <p>
+                         <TooltipContent  side="top"
+                          className="
+                            max-w-xs
+                            bg-background/95
+                            border
+                            border-primary/40
+                            text-foreground
+                            shadow-lg
+                            backdrop-blur-sm
+                          ">
+                          <p className="text-sm leading-relaxed">  
                             Click and move the Stop Loss level on the transaction box to adjust
                           </p>
                         </TooltipContent>
