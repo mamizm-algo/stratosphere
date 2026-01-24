@@ -19,7 +19,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [hasAccess, setHasAccess] = useState(false);
+  const [hasAccess, setHasAccess] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -36,15 +36,15 @@ const App = () => {
     return null;
   }
 
-  if (!hasAccess) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <AccessGate onAccessGranted={handleAccessGranted} />
-        </TooltipProvider>
-      </QueryClientProvider>
-    );
-  }
+  // if (!hasAccess) {
+  //   return (
+  //     <QueryClientProvider client={queryClient}>
+  //       <TooltipProvider>
+  //         <AccessGate onAccessGranted={handleAccessGranted} />
+  //       </TooltipProvider>
+  //     </QueryClientProvider>
+  //   );
+  // }
 
   const router = createBrowserRouter([
   { path: "/", element:<Index /> },
