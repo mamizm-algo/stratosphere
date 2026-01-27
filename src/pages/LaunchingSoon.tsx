@@ -21,8 +21,11 @@ import {
   Github,
   Mail,
   CheckCircle2,
-  AlertCircle,
   Sparkles,
+  MessageCircle,
+  Users,
+  LineChart,
+  ArrowRight,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -211,178 +214,338 @@ const LaunchingSoon = () => {
         </div>
       </section>
 
-      {/* Problem & Solution Section */}
-      <section id="features" className="py-20 md:py-28 bg-background">
+      {/* Problem Statement - Manifesto Style */}
+      <section id="features" className="py-28 md:py-40 bg-background">
         <div className="container mx-auto px-6">
-          {/* Problem Statement */}
-          <div className="max-w-3xl mx-auto text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-              The Problem with Pattern Trading
-            </h2>
-            <div className="grid md:grid-cols-2 gap-6 text-left">
-              <div className="bg-card/50 border border-border rounded-xl p-6">
-                <div className="flex items-start gap-4">
-                  <div className="p-2 rounded-lg bg-destructive/10 shrink-0">
-                    <AlertCircle className="w-5 h-5 text-destructive" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-2">
-                      Subjectivity Bias
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Traders see patterns that may not exist, leading to
-                      emotional decisions and losing trades. What looks like a
-                      clear setup to one person looks completely different to
-                      another.
-                    </p>
-                  </div>
-                </div>
-              </div>
+          <div className="max-w-4xl mx-auto text-center space-y-16">
+            {/* Main problem hook */}
+            <div className="space-y-8">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
+                The pattern you see<br />
+                <span className="text-muted-foreground">might not be real.</span>
+              </h2>
+            </div>
 
-              <div className="bg-card/50 border border-border rounded-xl p-6">
-                <div className="flex items-start gap-4">
-                  <div className="p-2 rounded-lg bg-destructive/10 shrink-0">
-                    <AlertCircle className="w-5 h-5 text-destructive" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-2">
-                      Broken Backtesting
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Classic backtesting is either too manual (unreliable and
-                      time-consuming) or too technical (forces rigid,
-                      rule-based strategies that miss nuance).
-                    </p>
-                  </div>
-                </div>
-              </div>
+            {/* Punchy statements */}
+            <div className="space-y-12 py-8">
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                Two traders look at the same chart.<br />
+                One sees opportunity. The other sees danger.<br />
+                <span className="text-foreground font-medium">Both are guessing.</span>
+              </p>
+
+              <div className="w-24 h-px bg-primary/50 mx-auto" />
+
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                Pattern trading today is driven by<br />
+                <span className="text-foreground">intuition, bias, and hope</span> —<br />
+                not evidence.
+              </p>
+            </div>
+
+            {/* The cost */}
+            <div className="pt-8">
+              <p className="text-lg text-muted-foreground/80 max-w-xl mx-auto">
+                This is why most traders lose.<br />
+                Not because their strategies are wrong —<br />
+                but because they can't tell if they're right.
+              </p>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Solution - How It Works */}
+      {/* Solution Section - Premium Storytelling */}
+      <section className="py-28 md:py-40 bg-card/20">
+        <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground text-center mb-4">
-              How Stratosphere Solves This
-            </h2>
-            <p className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
-              A simple 3-step workflow that turns subjective pattern recognition
-              into objective, data-driven analysis.
-            </p>
+            {/* Solution headline */}
+            <div className="text-center space-y-6 mb-24">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground">
+                What if you could<br />
+                <span className="bg-gradient-primary bg-clip-text text-transparent">know for sure?</span>
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Stratosphere replaces guesswork with historical evidence.
+              </p>
+            </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            {/* 3-Step Flow */}
+            <div className="grid md:grid-cols-3 gap-12 md:gap-8">
               {/* Step 1 */}
-              <div className="space-y-4">
-                <div className="aspect-video bg-card/50 border border-border rounded-xl flex items-center justify-center">
-                  <div className="text-center p-4">
-                    <Target className="w-12 h-12 text-primary mx-auto mb-2" />
+              <div className="space-y-6">
+                <div className="aspect-video bg-card border border-border rounded-xl flex items-center justify-center overflow-hidden">
+                  <div className="text-center p-6">
+                    <Target className="w-16 h-16 text-primary mx-auto mb-3 opacity-60" />
                     <span className="text-sm text-muted-foreground">
                       Pattern selection preview
                     </span>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-bold text-primary">1</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">
-                      Define a Pattern
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
+                      <span className="text-lg font-bold text-primary-foreground">1</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-foreground">
+                      Define Your Pattern
                     </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Select a fragment of an existing price chart, or draw a
-                      custom pattern that represents your trading idea.
-                    </p>
                   </div>
+                  <p className="text-muted-foreground pl-13">
+                    Select a fragment from any chart — or draw the pattern you're looking for.
+                  </p>
                 </div>
               </div>
 
               {/* Step 2 */}
-              <div className="space-y-4">
-                <div className="aspect-video bg-card/50 border border-border rounded-xl flex items-center justify-center">
-                  <div className="text-center p-4">
-                    <Search className="w-12 h-12 text-primary mx-auto mb-2" />
+              <div className="space-y-6">
+                <div className="aspect-video bg-card border border-border rounded-xl flex items-center justify-center overflow-hidden">
+                  <div className="text-center p-6">
+                    <Search className="w-16 h-16 text-primary mx-auto mb-3 opacity-60" />
                     <span className="text-sm text-muted-foreground">
                       Search configuration preview
                     </span>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-bold text-primary">2</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">
-                      Set Search Criteria
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
+                      <span className="text-lg font-bold text-primary-foreground">2</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-foreground">
+                      Search History
                     </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Choose assets, timeframes, date ranges, and minimum
-                      similarity threshold to find relevant matches.
-                    </p>
                   </div>
+                  <p className="text-muted-foreground pl-13">
+                    Our algorithm scans thousands of historical charts to find similar patterns.
+                  </p>
                 </div>
               </div>
 
               {/* Step 3 */}
-              <div className="space-y-4">
-                <div className="aspect-video bg-card/50 border border-border rounded-xl flex items-center justify-center">
-                  <div className="text-center p-4">
-                    <BarChart3 className="w-12 h-12 text-primary mx-auto mb-2" />
+              <div className="space-y-6">
+                <div className="aspect-video bg-card border border-border rounded-xl flex items-center justify-center overflow-hidden">
+                  <div className="text-center p-6">
+                    <BarChart3 className="w-16 h-16 text-primary mx-auto mb-3 opacity-60" />
                     <span className="text-sm text-muted-foreground">
                       Results analysis preview
                     </span>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-bold text-primary">3</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">
-                      Analyze Results
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
+                      <span className="text-lg font-bold text-primary-foreground">3</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-foreground">
+                      Analyze Outcomes
                     </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Review historical matches with outcome statistics. Simulate
-                      the same trade across all matches for objective results.
-                    </p>
                   </div>
+                  <p className="text-muted-foreground pl-13">
+                    See what happened after each match. Get statistics. Make informed decisions.
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Key Benefits */}
-            <div className="mt-16 grid sm:grid-cols-3 gap-6">
-              <div className="flex items-start gap-3 p-4 bg-card/30 rounded-lg border border-border/50">
-                <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div className="mt-24 grid sm:grid-cols-3 gap-6">
+              <div className="flex items-start gap-4 p-6 bg-card/50 rounded-xl border border-border/50">
+                <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-foreground text-sm">
-                    Deterministic Algorithm
+                  <h4 className="font-semibold text-foreground mb-1">
+                    Deterministic
                   </h4>
-                  <p className="text-xs text-muted-foreground">
-                    Same input always produces the same results
+                  <p className="text-sm text-muted-foreground">
+                    Same input, same results. Every time.
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-4 bg-card/30 rounded-lg border border-border/50">
-                <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div className="flex items-start gap-4 p-6 bg-card/50 rounded-xl border border-border/50">
+                <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-foreground text-sm">
+                  <h4 className="font-semibold text-foreground mb-1">
                     No Curve Fitting
                   </h4>
-                  <p className="text-xs text-muted-foreground">
-                    Test ideas without overfitting to historical data
+                  <p className="text-sm text-muted-foreground">
+                    Test ideas without overfitting.
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-4 bg-card/30 rounded-lg border border-border/50">
-                <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div className="flex items-start gap-4 p-6 bg-card/50 rounded-xl border border-border/50">
+                <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-foreground text-sm">
-                    Multi-Asset Support
+                  <h4 className="font-semibold text-foreground mb-1">
+                    Multi-Asset
                   </h4>
-                  <p className="text-xs text-muted-foreground">
-                    Crypto, forex, stocks — all in one place
+                  <p className="text-sm text-muted-foreground">
+                    Crypto, forex, stocks — all in one place.
                   </p>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Case Study Section - Instagram Poll Example */}
+      <section className="py-28 md:py-40 bg-background">
+        <div className="container mx-auto px-6">
+          <div className="max-w-6xl mx-auto">
+            {/* Section header */}
+            <div className="text-center space-y-6 mb-20">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30">
+                <MessageCircle className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">Real Example</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+                From opinions to evidence
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                See how Stratosphere transforms a social media debate into data-driven insight.
+              </p>
+            </div>
+
+            {/* Case study content */}
+            <div className="space-y-16">
+              {/* The scenario */}
+              <div className="bg-card/50 border border-border rounded-2xl p-8 md:p-12">
+                <div className="grid lg:grid-cols-2 gap-12 items-center">
+                  {/* Left: Instagram mock */}
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <Users className="w-5 h-5" />
+                      <span className="text-sm font-medium">The Scenario</span>
+                    </div>
+                    <h3 className="text-2xl md:text-3xl font-semibold text-foreground">
+                      "Will price go up or down?"
+                    </h3>
+                    <p className="text-muted-foreground text-lg">
+                      A popular trading account posts a chart and asks followers to vote. 
+                      Thousands respond — opinions split, heated debates follow. 
+                      <span className="text-foreground font-medium"> No one has evidence.</span>
+                    </p>
+                    
+                    {/* Mock Instagram poll */}
+                    <div className="bg-background border border-border rounded-xl p-6 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                          <TrendingUp className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-foreground">@trading_guru</div>
+                          <div className="text-xs text-muted-foreground">2.4M followers</div>
+                        </div>
+                      </div>
+                      <div className="aspect-video bg-card rounded-lg flex items-center justify-center border border-border/50">
+                        <LineChart className="w-12 h-12 text-muted-foreground/50" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-10 bg-bullish/20 rounded-lg flex items-center px-4">
+                            <span className="text-sm text-foreground">🚀 Up</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground w-12">52%</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-10 bg-bearish/20 rounded-lg flex items-center px-4">
+                            <span className="text-sm text-foreground">📉 Down</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground w-12">48%</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center">12,847 votes • 3 hours left</p>
+                    </div>
+                  </div>
+
+                  {/* Right: The problem */}
+                  <div className="space-y-8">
+                    <div className="space-y-4">
+                      <h4 className="text-xl font-semibold text-foreground">The crowd is guessing.</h4>
+                      <p className="text-muted-foreground">
+                        Half say up, half say down. Everyone has an opinion — 
+                        but no one can point to historical evidence. 
+                        This is how most trading decisions get made.
+                      </p>
+                    </div>
+                    <div className="h-px bg-border" />
+                    <div className="space-y-4">
+                      <h4 className="text-xl font-semibold text-foreground">The real question:</h4>
+                      <p className="text-lg text-foreground italic">
+                        "What happened the last 100 times a chart looked like this?"
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* The Stratosphere approach */}
+              <div className="grid lg:grid-cols-2 gap-8">
+                {/* Before: The Internet */}
+                <div className="bg-card/30 border border-border rounded-2xl p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 rounded-lg bg-muted/50">
+                      <Users className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-muted-foreground">The Internet</h4>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4 p-4 bg-background/50 rounded-lg border border-border/50">
+                      <MessageCircle className="w-5 h-5 text-muted-foreground shrink-0" />
+                      <span className="text-muted-foreground">Opinions</span>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 bg-background/50 rounded-lg border border-border/50">
+                      <Users className="w-5 h-5 text-muted-foreground shrink-0" />
+                      <span className="text-muted-foreground">Votes</span>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 bg-background/50 rounded-lg border border-border/50">
+                      <TrendingUp className="w-5 h-5 text-muted-foreground shrink-0" />
+                      <span className="text-muted-foreground">Emotion</span>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 bg-background/50 rounded-lg border border-border/50">
+                      <Sparkles className="w-5 h-5 text-muted-foreground shrink-0" />
+                      <span className="text-muted-foreground">Hope</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* After: Stratosphere */}
+                <div className="bg-primary/5 border border-primary/30 rounded-2xl p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 rounded-lg bg-primary/20">
+                      <BarChart3 className="w-5 h-5 text-primary" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-foreground">Stratosphere</h4>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4 p-4 bg-background/80 rounded-lg border border-primary/20">
+                      <BarChart3 className="w-5 h-5 text-primary shrink-0" />
+                      <span className="text-foreground font-medium">Data</span>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 bg-background/80 rounded-lg border border-primary/20">
+                      <Search className="w-5 h-5 text-primary shrink-0" />
+                      <span className="text-foreground font-medium">Historical outcomes</span>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 bg-background/80 rounded-lg border border-primary/20">
+                      <Target className="w-5 h-5 text-primary shrink-0" />
+                      <span className="text-foreground font-medium">Evidence</span>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 bg-background/80 rounded-lg border border-primary/20">
+                      <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
+                      <span className="text-foreground font-medium">Probability</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* The result */}
+              <div className="text-center space-y-6 pt-8">
+                <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
+                  Instead of asking the crowd, you ask history.<br />
+                  <span className="text-foreground font-medium">
+                    And history has receipts.
+                  </span>
+                </p>
               </div>
             </div>
           </div>
@@ -392,31 +555,30 @@ const LaunchingSoon = () => {
       {/* Sandbox Section */}
       <section
         id="sandbox"
-        className="py-20 md:py-28 bg-gradient-to-b from-background to-card/30"
+        className="py-28 md:py-40 bg-gradient-to-b from-background to-card/30"
       >
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-8">
               <FlaskConical className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-foreground">
                 Try It Now
               </span>
             </div>
 
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Experiment with the Similarity Sandbox
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6">
+              See it for yourself
             </h2>
 
-            <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              See how similarity scoring works before you even sign up. The
-              Sandbox lets you experiment with our algorithm and build intuition
-              for pattern matching — no commitment required.
+            <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+              The Similarity Sandbox lets you experiment with our algorithm — 
+              no signup required. Build intuition before we launch.
             </p>
 
-            <div className="bg-card/50 border border-border rounded-xl p-8 mb-8">
-              <div className="aspect-video bg-background/50 rounded-lg flex items-center justify-center mb-6">
+            <div className="bg-card/50 border border-border rounded-2xl p-8 md:p-12">
+              <div className="aspect-video bg-background/50 rounded-xl flex items-center justify-center mb-8 border border-border/50">
                 <div className="text-center">
-                  <FlaskConical className="w-16 h-16 text-primary mx-auto mb-3" />
+                  <FlaskConical className="w-20 h-20 text-primary mx-auto mb-4 opacity-60" />
                   <p className="text-muted-foreground">Sandbox preview</p>
                 </div>
               </div>
@@ -424,75 +586,29 @@ const LaunchingSoon = () => {
               <Button
                 size="lg"
                 onClick={() => navigate("/sandbox")}
-                className="bg-primary hover:bg-primary/90 shadow-glow"
+                className="bg-primary hover:bg-primary/90 shadow-glow text-lg px-8 py-6 h-auto"
               >
-                <FlaskConical className="w-5 h-5 mr-2" />
                 Try the Similarity Sandbox
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </div>
 
-            <p className="text-sm text-muted-foreground">
-              Note: The Sandbox is a demo environment. The full product will
-              include more features and assets.
+            <p className="text-sm text-muted-foreground mt-8">
+              Note: The Sandbox is a demo environment. The full product will include more features and assets.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Social Proof Section */}
-      <section className="py-16 bg-background border-y border-border">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid sm:grid-cols-3 gap-8 text-center">
-              <div>
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                  <TrendingUp className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="font-semibold text-foreground mb-1">
-                  Built by Traders
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Created by traders who understand the challenges of
-                  pattern-based strategies
-                </p>
-              </div>
-              <div>
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                  <Search className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="font-semibold text-foreground mb-1">
-                  Early Access Coming
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Join the waitlist to be among the first to try the full
-                  platform
-                </p>
-              </div>
-              <div>
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                  <BarChart3 className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="font-semibold text-foreground mb-1">
-                  Case Studies Soon
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Real-world examples and results will be shared after launch
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* FAQ Section */}
-      <section id="faq" className="py-20 md:py-28 bg-card/20">
+      <section id="faq" className="py-28 md:py-40 bg-card/20">
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground text-center mb-4">
-              Frequently Asked Questions
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground text-center mb-6">
+              Questions?
             </h2>
-            <p className="text-muted-foreground text-center mb-12">
-              Have more questions? Reach out to us on social media.
+            <p className="text-lg text-muted-foreground text-center mb-16">
+              Here are some answers. More coming soon.
             </p>
 
             <Accordion type="single" collapsible className="space-y-4">
@@ -500,10 +616,10 @@ const LaunchingSoon = () => {
                 value="item-1"
                 className="bg-card/50 border border-border rounded-xl px-6"
               >
-                <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline">
+                <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   What markets does Stratosphere support?
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
+                <AccordionContent className="text-muted-foreground pb-6">
                   Stratosphere is designed to work with multiple asset classes
                   including cryptocurrencies, forex pairs, and stocks. We're
                   continuously adding more assets and markets based on user
@@ -515,13 +631,12 @@ const LaunchingSoon = () => {
                 value="item-2"
                 className="bg-card/50 border border-border rounded-xl px-6"
               >
-                <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline">
+                <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   Is this for beginners or advanced traders?
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  Stratosphere is built for traders of all experience levels.
-                  Beginners will appreciate the visual, intuitive approach to
-                  pattern analysis. Advanced traders will value the objective,
+                <AccordionContent className="text-muted-foreground pb-6">
+                  Both. Beginners will appreciate the visual, intuitive approach 
+                  to pattern analysis. Advanced traders will value the objective, 
                   data-driven validation of their strategies.
                 </AccordionContent>
               </AccordionItem>
@@ -530,13 +645,12 @@ const LaunchingSoon = () => {
                 value="item-3"
                 className="bg-card/50 border border-border rounded-xl px-6"
               >
-                <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline">
+                <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   When will the full product launch?
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
+                <AccordionContent className="text-muted-foreground pb-6">
                   We're currently in development with a target launch in 2025.
-                  Join the waitlist to be notified when we open early access and
-                  to get priority access to new features.
+                  Join the waitlist to get notified and receive priority access.
                 </AccordionContent>
               </AccordionItem>
 
@@ -544,15 +658,13 @@ const LaunchingSoon = () => {
                 value="item-4"
                 className="bg-card/50 border border-border rounded-xl px-6"
               >
-                <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline">
+                <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   How is this different from regular backtesting?
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  Traditional backtesting requires you to define rigid,
-                  rule-based strategies. Stratosphere uses visual pattern
-                  matching and similarity scoring, which lets you test ideas
-                  based on how charts "look" rather than specific indicator
-                  values.
+                <AccordionContent className="text-muted-foreground pb-6">
+                  Traditional backtesting requires rigid, rule-based strategies. 
+                  Stratosphere uses visual pattern matching and similarity scoring, 
+                  letting you test ideas based on how charts look — not just indicator values.
                 </AccordionContent>
               </AccordionItem>
 
@@ -560,10 +672,10 @@ const LaunchingSoon = () => {
                 value="item-5"
                 className="bg-card/50 border border-border rounded-xl px-6"
               >
-                <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline">
+                <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   Is there a free tier?
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
+                <AccordionContent className="text-muted-foreground pb-6">
                   Pricing details will be announced closer to launch. We plan to
                   offer options for different types of traders. The Similarity
                   Sandbox is currently free to use.
@@ -575,20 +687,20 @@ const LaunchingSoon = () => {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 md:py-28 bg-gradient-hero">
+      <section className="py-28 md:py-40 bg-gradient-hero">
         <div className="container mx-auto px-6">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Ready to Trade with Confidence?
+          <div className="max-w-2xl mx-auto text-center space-y-8">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
+              Stop guessing.<br />
+              <span className="text-muted-foreground">Start knowing.</span>
             </h2>
-            <p className="text-lg text-muted-foreground mb-8">
-              Join the waitlist and be the first to know when Stratosphere
-              launches.
+            <p className="text-xl text-muted-foreground">
+              Join the waitlist and be the first to trade with evidence.
             </p>
             <Button
               size="lg"
               onClick={() => scrollToSection("waitlist")}
-              className="bg-primary hover:bg-primary/90 shadow-glow"
+              className="bg-primary hover:bg-primary/90 shadow-glow text-lg px-8 py-6 h-auto"
             >
               <Mail className="w-5 h-5 mr-2" />
               Join the Waitlist
