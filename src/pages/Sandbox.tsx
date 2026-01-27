@@ -179,7 +179,7 @@ const Sandbox = () => {
       
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         {/* Description */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-4">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
             Similarity Sandbox
           </h1>
@@ -190,12 +190,12 @@ const Sandbox = () => {
         </div>
 
         {/* Similarity Score */}
-        <Card className="mx-auto mb-8 p-6 max-w-md bg-card/50 border-border">
+        <Card className="mx-auto mb-2 p-4 max-w-md bg-card/50 border-border">
           <div className="text-center">
-            <span className="text-sm text-muted-foreground uppercase tracking-wider">
+            <span className="text-base text-muted-foreground uppercase tracking-wider">
               Similarity Score
             </span>
-            <div className="mt-2 text-5xl md:text-6xl font-bold text-primary">
+            <div className="mt-2 text-5xl font-bold text-primary">
               {similarity}%
             </div>
           </div>
