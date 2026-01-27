@@ -33,8 +33,10 @@ import { toast } from "sonner";
 const LaunchingSoon = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
+  const [becomeTester, setBecomeTester] = useState(false);
   const [acceptEmails, setAcceptEmails] = useState(false);
+
+  
 
   const handleWaitlistSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,14 +44,13 @@ const LaunchingSoon = () => {
       toast.error("Please enter your email address");
       return;
     }
-    if (!acceptPrivacy) {
+    if (!acceptEmails) {
       toast.error("Please accept the privacy policy");
       return;
     }
     // Placeholder - will be replaced with actual Google Form submission
     toast.success("Thanks for joining! We'll be in touch soon.");
     setEmail("");
-    setAcceptPrivacy(false);
     setAcceptEmails(false);
   };
 
@@ -144,7 +145,7 @@ const LaunchingSoon = () => {
             </p>
 
             {/* Waitlist Form */}
-            <div className="max-w-md mx-auto pt-4">
+           <div className="mx-auto pt-4">
               <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-6 space-y-4">
                 <h3 className="text-lg font-semibold text-foreground">
                   Join the Waitlist
@@ -157,24 +158,7 @@ const LaunchingSoon = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-background/50"
                   />
-
                   <div className="space-y-3 text-left">
-                    <div className="flex items-start gap-3">
-                      <Checkbox
-                        id="privacy"
-                        checked={acceptPrivacy}
-                        onCheckedChange={(checked) =>
-                          setAcceptPrivacy(checked === true)
-                        }
-                      />
-                      <Label
-                        htmlFor="privacy"
-                        className="text-sm text-muted-foreground cursor-pointer"
-                      >
-                        I accept the privacy policy
-                      </Label>
-                    </div>
-
                     <div className="flex items-start gap-3">
                       <Checkbox
                         id="emails"
@@ -185,12 +169,28 @@ const LaunchingSoon = () => {
                       />
                       <Label
                         htmlFor="emails"
-                        className="text-sm text-muted-foreground cursor-pointer"
+                        className="text-xs text-muted-foreground cursor-pointer"
                       >
-                        I agree to receive emails from Stratosphere
+                      I agree to receive access updates and marketing emails from Stratosphere. By joining the waitlist, you also agree to our Privacy Policy.
                       </Label>
                     </div>
-                  </div>
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="privacy"
+                          checked={becomeTester}
+                          onCheckedChange={(checked) =>
+                            setBecomeTester(checked === true)
+                          }
+                        />
+                        <Label
+                          htmlFor="privacy"
+                          className="text-xs text-muted-foreground cursor-pointer"
+                        >
+                          Become a Tester - you will become an invaluable part of shaping the product's most important features
+                          and delivering feedback to how they solve your problems.
+                        </Label>
+                      </div>
+                    </div>
 
                   <Button
                     type="submit"
