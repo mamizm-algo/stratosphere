@@ -16,9 +16,6 @@ import {
   Target,
   FlaskConical,
   ChevronDown,
-  Twitter,
-  Linkedin,
-  Github,
   Mail,
   CheckCircle2,
   Sparkles,
@@ -26,6 +23,7 @@ import {
   Users,
   LineChart,
   ArrowRight,
+  Microscope
 } from "lucide-react";
 import { FaInstagram, FaLinkedin } from "react-icons/fa";
 
@@ -103,6 +101,12 @@ const LaunchingSoon = () => {
             >
               Features
             </button>
+             <button
+              onClick={() => scrollToSection("case")}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Use case
+            </button>
             <button
               onClick={() => scrollToSection("sandbox")}
               className="text-muted-foreground hover:text-foreground transition-colors"
@@ -157,14 +161,14 @@ const LaunchingSoon = () => {
 
             {/* Subheadline */}
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Stratosphere helps traders discover similar historical patterns,
+              STRATOSPHERE helps traders discover similar historical patterns,
               eliminate subjective bias, and validate trading strategies with
               data-driven insights — before risking real capital.
             </p>
 
             {/* Waitlist Form */}
            <div className="mx-auto pt-4">
-              <div className="bg-card backdrop-blur-sm border border-border rounded-xl p-6 space-y-4">
+              <div className="bg-card backdrop-blur-sm border border-primary hover:shadow-glow rounded-xl p-6 space-y-4">
                 <h3 className="text-lg font-semibold text-foreground">
                   Join the Waitlist
                 </h3>
@@ -177,6 +181,22 @@ const LaunchingSoon = () => {
                     className="bg-background/50"
                   />
                   <div className="space-y-3 text-left">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        id="tester"
+                        checked={becomeTester}
+                        onCheckedChange={(checked) =>
+                          setBecomeTester(checked === true)
+                        }
+                      />
+                      <Label
+                        htmlFor="tester"
+                        className="text-foreground cursor-pointer"
+                      >
+                        Become a Tester - you will become an invaluable part of shaping STRATOSPHERE's most important features
+                        and delivering feedback to how they solve your problems.
+                      </Label>
+                    </div>
                     <div className="flex items-start gap-3">
                       <Checkbox
                         id="emails"
@@ -192,22 +212,6 @@ const LaunchingSoon = () => {
                       I agree to receive access updates and marketing emails from Stratosphere. By joining the waitlist, you also agree to our Privacy Policy.
                       </Label>
                     </div>
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="privacy"
-                          checked={becomeTester}
-                          onCheckedChange={(checked) =>
-                            setBecomeTester(checked === true)
-                          }
-                        />
-                        <Label
-                          htmlFor="privacy"
-                          className="text-xs text-muted-foreground cursor-pointer"
-                        >
-                          Become a Tester - you will become an invaluable part of shaping the product's most important features
-                          and delivering feedback to how they solve your problems.
-                        </Label>
-                      </div>
                     </div>
 
                   <Button
@@ -229,59 +233,18 @@ const LaunchingSoon = () => {
         </div>
       </section>
 
-      {/* Problem Statement - Manifesto Style */}
-      <section id="features" className="py-28 md:py-40 bg-background">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center space-y-16">
-            {/* Main problem hook */}
-            <div className="space-y-8">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
-                The pattern you see<br />
-                <span className="text-muted-foreground">might not be real.</span>
-              </h2>
-            </div>
-
-            {/* Punchy statements */}
-            <div className="space-y-12 py-8">
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                Two traders look at the same chart.<br />
-                One sees opportunity. The other sees danger.<br />
-                <span className="text-foreground font-medium">Both are guessing.</span>
-              </p>
-
-              <div className="w-24 h-px bg-primary/50 mx-auto" />
-
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                Pattern trading today is driven by<br />
-                <span className="text-foreground">intuition, bias, and hope</span> —<br />
-                not evidence.
-              </p>
-            </div>
-
-            {/* The cost */}
-            <div className="pt-8">
-              <p className="text-lg text-muted-foreground/80 max-w-xl mx-auto">
-                This is why most traders lose.<br />
-                Not because their strategies are wrong —<br />
-                but because they can't tell if they're right.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Solution Section - Premium Storytelling */}
-      <section className="py-28 md:py-40">
+      <section id="features" className="py-24 md:py-36">
         <div className="container mx-auto px-6">
           <div className="max-w-8xl mx-auto">
             {/* Solution headline */}
-            <div className="text-center space-y-6 mb-24">
+            <div className="text-center space-y-6 mb-20">
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground">
-                What if you could<br />
-                <span className="bg-gradient-primary bg-clip-text text-transparent">know for sure?</span>
+                Objective, repeatable,<br />
+                <span className="bg-gradient-primary bg-clip-text text-transparent">reliable</span>
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Stratosphere replaces guesswork with historical evidence.
+                STRATOSPHERE replaces guesswork with historical evidence.
               </p>
             </div>
 
@@ -289,7 +252,7 @@ const LaunchingSoon = () => {
             <div className="grid md:grid-cols-3 gap-12 md:gap-8">
               {/* Step 1 */}
               <div className="space-y-6">
-                <div className="aspect-video flex items-center justify-center overflow-hidden">
+                <div className="aspect-video border border-primary rounded-xl hover:shadow-glow flex items-center justify-center overflow-hidden">
                   <img
                     src="/features_browse.png"
                     alt="Pattern selection preview"
@@ -313,10 +276,10 @@ const LaunchingSoon = () => {
 
               {/* Step 2 */}
               <div className="space-y-6">
-                <div className="aspect-video flex items-center justify-center overflow-hidden">
+                <div className="aspect-video  border border-primary rounded-xl hover:shadow-glow bg-card flex items-center justify-center overflow-hidden">
                    <img
                     src="/features_collection.png"
-                    alt="Pattern selection preview"
+                    alt="Result collection preview"
                     className="w-full h-full object-cover rounded-xl"
                   />
                 </div>
@@ -337,11 +300,11 @@ const LaunchingSoon = () => {
 
               {/* Step 3 */}
               <div className="space-y-6">
-                <div className="aspect-video flex items-center justify-center overflow-hidden">
+                <div className="aspect-video bg-card border border-primary rounded-xl hover:shadow-glow flex items-center justify-center overflow-hidden">
                    <img
                     src="/features_outcomes.png"
-                    alt="Pattern selection preview"
-                    className="w-full h-full object-cover rounded-xl"
+                    alt="Outcomes preview"
+                    className="h-full object-cover "
                   />
                 </div>
                 <div className="space-y-3">
@@ -366,10 +329,10 @@ const LaunchingSoon = () => {
                 <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-foreground mb-1">
-                    Deterministic
+                    Objective
                   </h4>
                   <p className="text-sm text-muted-foreground">
-                    Same input, same results. Every time.
+                    Remove emotions and bias from your strategy research with Pattern Similarity Score.
                   </p>
                 </div>
               </div>
@@ -377,10 +340,10 @@ const LaunchingSoon = () => {
                 <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-foreground mb-1">
-                    No Curve Fitting
+                    Repeatable
                   </h4>
                   <p className="text-sm text-muted-foreground">
-                    Test ideas without overfitting.
+                    Same input, same results. Find all charts matching your strategy in the matter of seconds.
                   </p>
                 </div>
               </div>
@@ -388,10 +351,10 @@ const LaunchingSoon = () => {
                 <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-foreground mb-1">
-                    Multi-Asset
+                    Reliable
                   </h4>
                   <p className="text-sm text-muted-foreground">
-                    Crypto, forex, stocks — all in one place.
+                    You are in control of the strategy, entry and exit conditions - we give you the data to make the best decision.
                   </p>
                 </div>
               </div>
@@ -401,11 +364,11 @@ const LaunchingSoon = () => {
       </section>
 
       {/* Case Study Section - Instagram Poll Example */}
-      <section className="py-28 md:py-40 bg-background">
+      <section id="case" className="py-28 md:py-24 bg-background">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
             {/* Section header */}
-            <div className="text-center space-y-6 mb-20">
+            <div className="text-center space-y-6 mb-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30">
                 <MessageCircle className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium text-foreground">Real Example</span>
@@ -419,10 +382,10 @@ const LaunchingSoon = () => {
             </div>
 
             {/* Case study content */}
-            <div className="space-y-16">
+            <div className="space-y-10">
               {/* The scenario */}
-              <div className="bg-card border border-border rounded-2xl p-8 md:p-12">
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div className="bg-card border border-border rounded-2xl p-6 md:p-6">
+                <div className="grid lg:grid-cols-2 gap-10 items-center">
                   {/* Left: Instagram mock */}
                   <div className="space-y-6">
                     <div className="flex items-center gap-3 text-muted-foreground">
@@ -449,9 +412,11 @@ const LaunchingSoon = () => {
                           <div className="text-xs text-muted-foreground">2.4M followers</div>
                         </div>
                       </div>
-                      <div className="aspect-video bg-card rounded-lg flex items-center justify-center border border-border/50">
-                        <LineChart className="w-12 h-12 text-muted-foreground/50" />
-                      </div>
+                      <img
+                    src="/guess_trade.png"
+                    alt="Pattern selection preview"
+                    className="w-full h-full object-cover rounded-xl"
+                  />
                       <div className="space-y-2">
                         <div className="flex items-center gap-3">
                           <div className="flex-1 h-10 bg-bullish/20 rounded-lg flex items-center px-4">
@@ -470,24 +435,37 @@ const LaunchingSoon = () => {
                     </div>
                   </div>
 
-                  {/* Right: The problem */}
-                  <div className="space-y-8">
-                    <div className="space-y-4">
-                      <h4 className="text-xl font-semibold text-foreground">The crowd is guessing.</h4>
-                      <p className="text-muted-foreground">
-                        Half say up, half say down. Everyone has an opinion — 
-                        but no one can point to historical evidence. 
-                        This is how most trading decisions get made.
-                      </p>
-                    </div>
-                    <div className="h-px bg-border" />
-                    <div className="space-y-4">
-                      <h4 className="text-xl font-semibold text-foreground">The real question:</h4>
-                      <p className="text-lg text-foreground italic">
-                        "What happened the last 100 times a chart looked like this?"
-                      </p>
-                    </div>
+                  {/* Right side */}
+                  <div className="space-y-10">
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <Microscope className="w-5 h-5" />
+                    <span className="text-sm font-medium">The Research</span>
                   </div>
+                  <h3 className="text-2xl md:text-3xl font-semibold text-foreground">
+                    "What happened historically when a chart looked like this?"
+                  </h3>
+                  <div className="bg-background border border-border rounded-xl p-2 space-y-4">
+                    <img
+                      src="/answer_trade.png"
+                      alt="Trade research"
+                      className="w-full h-full object-cover my-1 rounded-xl"
+                    />
+                    <div className="space-y-2 mx-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-10 bg-bullish/20 rounded-lg flex items-center px-4">
+                            <span className="text-sm text-foreground">🚀 Up</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground w-10">62.3%</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-10 bg-bearish/20 rounded-lg flex items-center px-4">
+                            <span className="text-sm text-foreground">📉 Down</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground w-36">37.7%</span>
+                        </div>
+                      </div>
+                  </div>
+                </div>
                 </div>
               </div>
 
@@ -499,7 +477,7 @@ const LaunchingSoon = () => {
                     <div className="p-2 rounded-lg bg-muted/50">
                       <Users className="w-5 h-5 text-muted-foreground" />
                     </div>
-                    <h4 className="text-lg font-semibold text-muted-foreground">The Internet</h4>
+                    <h4 className="text-lg font-semibold text-muted-foreground">Emotional guessing</h4>
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-center gap-4 p-4 bg-background/50 rounded-lg border border-border/50">
@@ -522,29 +500,29 @@ const LaunchingSoon = () => {
                 </div>
 
                 {/* After: Stratosphere */}
-                <div className="bg-primary/5 border border-primary/30 rounded-2xl p-8">
+                <div className="bg-primary/5 border border-primary/30 hover:shadow-glow rounded-2xl p-8">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 rounded-lg bg-primary/20">
                       <BarChart3 className="w-5 h-5 text-primary" />
                     </div>
-                    <h4 className="text-lg font-semibold text-foreground">Stratosphere</h4>
+                    <h4 className="text-lg font-semibold text-foreground">STRATOSPHERE</h4>
                   </div>
                   <div className="space-y-4">
                     <div className="flex items-center gap-4 p-4 bg-background/80 rounded-lg border border-primary/20">
                       <BarChart3 className="w-5 h-5 text-primary shrink-0" />
-                      <span className="text-foreground font-medium">Data</span>
+                      <span className="text-foreground font-medium">Win rate: 62.3%</span>
                     </div>
                     <div className="flex items-center gap-4 p-4 bg-background/80 rounded-lg border border-primary/20">
                       <Search className="w-5 h-5 text-primary shrink-0" />
-                      <span className="text-foreground font-medium">Historical outcomes</span>
+                      <span className="text-foreground font-medium">Risk:Reward: 1.01</span>
                     </div>
                     <div className="flex items-center gap-4 p-4 bg-background/80 rounded-lg border border-primary/20">
                       <Target className="w-5 h-5 text-primary shrink-0" />
-                      <span className="text-foreground font-medium">Evidence</span>
+                      <span className="text-foreground font-medium">Trades taken: 61</span>
                     </div>
                     <div className="flex items-center gap-4 p-4 bg-background/80 rounded-lg border border-primary/20">
                       <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
-                      <span className="text-foreground font-medium">Probability</span>
+                      <span className="text-foreground font-medium">Direction: Long</span>
                     </div>
                   </div>
                 </div>
@@ -570,7 +548,7 @@ const LaunchingSoon = () => {
         className="py-24"
       >
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto m text-center">
+          <div className="max-w-3xl mx-auto m text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-4">
               <FlaskConical className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-foreground">
@@ -587,12 +565,13 @@ const LaunchingSoon = () => {
               no signup required. Build intuition before we launch.
             </p>
 
-            <div className="bg-card border border-border rounded-2xl p-4 md:p-8">
-              <div className="aspect-video bg-background/50 rounded-xl flex items-center justify-center mb-4 border border-border/50">
-                <div className="text-center">
-                  <FlaskConical className="w-20 h-20 text-primary mx-auto mb-4 opacity-60" />
-                  <p className="text-muted-foreground">Sandbox preview</p>
-                </div>
+            <div className="bg-card border border-primary rounded-xl hover:shadow-glow rounded-2xl p-4 md:p-4">
+              <div className="aspect-video bg-background rounded-xl flex items-center justify-center pb-2 pt-1 mb-4 border border-border/50">
+                <img
+                    src="/sandbox_demo_short.gif"
+                    alt="Sandbox preview"
+                    className=" h-full object-cover rounded-xl"
+                  />
               </div>
 
               <Button
@@ -626,7 +605,7 @@ const LaunchingSoon = () => {
             <Accordion type="single" collapsible className="space-y-4">
               <AccordionItem
                 value="item-1"
-                className="bg-card border border-border rounded-xl px-6"
+                className="bg-card border rounded-xl px-6 bg-card border-primary hover:shadow-glow"
               >
                 <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   What markets does Stratosphere support?
@@ -641,7 +620,7 @@ const LaunchingSoon = () => {
 
               <AccordionItem
                 value="item-2"
-                className="bg-card border border-border rounded-xl px-6"
+                className="bg-card border rounded-xl px-6 bg-card  border-primary hover:shadow-glow"
               >
                 <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   Is this for beginners or advanced traders?
@@ -655,20 +634,20 @@ const LaunchingSoon = () => {
 
               <AccordionItem
                 value="item-3"
-                className="bg-card border border-border rounded-xl px-6"
+                className="bg-card border rounded-xl px-6 bg-card  border-primary hover:shadow-glow"
               >
                 <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   When will the full product launch?
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground pb-6">
-                  We're currently in development with a target launch in 2025.
+                  We're currently in development with a target launch in 2026.
                   Join the waitlist to get notified and receive priority access.
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem
                 value="item-4"
-                className="bg-card border border-border rounded-xl px-6"
+                className="bg-card border rounded-xl px-6 bg-card  border-primary hover:shadow-glow"
               >
                 <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   How is this different from regular backtesting?
@@ -682,7 +661,7 @@ const LaunchingSoon = () => {
 
               <AccordionItem
                 value="item-5"
-                className="bg-card border border-border rounded-xl px-6"
+                className="bg-card border rounded-xl px-6 bg-card  border-primary hover:shadow-glow"
               >
                 <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   Is there a free tier?
@@ -699,7 +678,7 @@ const LaunchingSoon = () => {
       </section>
 
       {/* Final CTA */}
-      <section className="py-28 md:py-40 bg-gradient-hero">
+      <section className="py-28 md:py-40 bg-gradient-hero">        
         <div className="container mx-auto px-6">
           <div className="max-w-2xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
@@ -717,6 +696,9 @@ const LaunchingSoon = () => {
               <Mail className="w-5 h-5 mr-2" />
               Join the Waitlist
             </Button>
+            <div className="w-44 h-44 bg-primary/60 rounded-full blur-3xl animate-pulse" />
+            <div className="mx-96 w-44 h-44 bg-primary/30 rounded-full blur-2xl animate-pulse delay-1000" />
+
           </div>
         </div>
       </section>
@@ -743,6 +725,12 @@ const LaunchingSoon = () => {
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Features
+                </button>
+                <button
+                  onClick={() => scrollToSection("case")}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Use case
                 </button>
                 <button
                   onClick={() => scrollToSection("sandbox")}

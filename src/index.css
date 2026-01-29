@@ -53,7 +53,7 @@ All colors MUST be HSL.
     --chart-grid: 215 51% 25%;
     
     --gradient-primary: linear-gradient(135deg, hsl(176 41% 31%) 0%, hsl(176 41% 41%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(222 47% 11%) 0%, hsl(215 51% 25%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(222 47% 11%) 0%, hsl(215, 40%, 33%) 100%);
     
     --shadow-glow: 0 10px 40px -10px hsl(176 41% 31% / 0.6);
     --shadow-card: 0 4px 20px hsl(222 47% 5% / 0.5);
