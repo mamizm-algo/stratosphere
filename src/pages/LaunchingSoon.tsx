@@ -27,6 +27,8 @@ import {
   LineChart,
   ArrowRight,
 } from "lucide-react";
+import { FaInstagram, FaLinkedin } from "react-icons/fa";
+
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -38,7 +40,7 @@ const LaunchingSoon = () => {
 
   
 
-  const handleWaitlistSubmit = (e: React.FormEvent) => {
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       toast.error("Please enter your email address");
@@ -48,10 +50,31 @@ const LaunchingSoon = () => {
       toast.error("Please accept the privacy policy");
       return;
     }
-    // Placeholder - will be replaced with actual Google Form submission
-    toast.success("Thanks for joining! We'll be in touch soon.");
+
+    const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSc0ms4dmsszIi7-nRnWUWzaSkDOdtA0XCLc8Bex8dz7RWHGLg/formResponse";
+    const data = new FormData();
+
+    if (becomeTester) {
+      // tester entry id
+      data.append("entry.1676179579", email);
+      toast.success("Thanks for becoming a tester! We'll be in touch soon.");
+
+    } else {
+      // waitlist entry id
+      data.append("entry.2125015247", email);
+      toast.success("Thanks for joining! We'll be in touch soon.");
+    }
+
+    await fetch(formUrl, {
+      method: "POST",
+      mode: "no-cors", // important
+      body: data,
+    });
+    
     setEmail("");
     setAcceptEmails(false);
+    setBecomeTester(false);
+
   };
 
   const scrollToSection = (id: string) => {
@@ -61,13 +84,16 @@ const LaunchingSoon = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-border bg-card backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <TrendingUp className="w-5 h-5 text-primary" />
+            <div className="rounded-lg" onClick={() => scrollToSection("waitlist")}>
+              <img
+                src="/name_logo.png"
+                alt="Stratosphere logo"
+                className="h-8 object-contain"
+              />
             </div>
-            <span className="text-xl text-foreground">STRATOSPHERE</span>
           </div>
 
           <nav className="hidden md:flex items-center gap-6">
@@ -97,21 +123,13 @@ const LaunchingSoon = () => {
               Join Waitlist
             </Button>
           </nav>
-
-          <Button
-            onClick={() => scrollToSection("waitlist")}
-            size="sm"
-            className="md:hidden bg-primary hover:bg-primary/90"
-          >
-            Join Waitlist
-          </Button>
         </div>
       </header>
 
       {/* Hero Section */}
       <section
         id="waitlist"
-        className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-hero py-16 md:py-24"
+        className="relative flex items-center justify-center overflow-hidden py-16"
       >
         {/* Animated background elements */}
         <div className="absolute inset-0 overflow-hidden">
@@ -122,7 +140,7 @@ const LaunchingSoon = () => {
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 border border-primary/30 backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-primary/30 backdrop-blur-sm">
               <Sparkles className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-foreground">
                 Launching Soon
@@ -146,7 +164,7 @@ const LaunchingSoon = () => {
 
             {/* Waitlist Form */}
            <div className="mx-auto pt-4">
-              <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-6 space-y-4">
+              <div className="bg-card backdrop-blur-sm border border-border rounded-xl p-6 space-y-4">
                 <h3 className="text-lg font-semibold text-foreground">
                   Join the Waitlist
                 </h3>
@@ -202,15 +220,12 @@ const LaunchingSoon = () => {
                 </form>
               </div>
             </div>
+            {/* Scroll indicator */}
+            <div className="mt-20 flex flex-col items-center animate-bounce">
+              <span className="text-sm text-muted-foreground font-medium">Learn more</span>
+              <ChevronDown className="w-6 h-6 text-primary" />
+            </div>
           </div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
-          <span className="text-sm text-muted-foreground font-medium">
-            Learn more
-          </span>
-          <ChevronDown className="w-6 h-6 text-primary" />
         </div>
       </section>
 
@@ -256,9 +271,9 @@ const LaunchingSoon = () => {
       </section>
 
       {/* Solution Section - Premium Storytelling */}
-      <section className="py-28 md:py-40 bg-card/20">
+      <section className="py-28 md:py-40">
         <div className="container mx-auto px-6">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-8xl mx-auto">
             {/* Solution headline */}
             <div className="text-center space-y-6 mb-24">
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground">
@@ -274,13 +289,12 @@ const LaunchingSoon = () => {
             <div className="grid md:grid-cols-3 gap-12 md:gap-8">
               {/* Step 1 */}
               <div className="space-y-6">
-                <div className="aspect-video bg-card border border-border rounded-xl flex items-center justify-center overflow-hidden">
-                  <div className="text-center p-6">
-                    <Target className="w-16 h-16 text-primary mx-auto mb-3 opacity-60" />
-                    <span className="text-sm text-muted-foreground">
-                      Pattern selection preview
-                    </span>
-                  </div>
+                <div className="aspect-video flex items-center justify-center overflow-hidden">
+                  <img
+                    src="/features_browse.png"
+                    alt="Pattern selection preview"
+                    className="w-full h-full object-cover rounded-xl"
+                  />
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
@@ -299,13 +313,12 @@ const LaunchingSoon = () => {
 
               {/* Step 2 */}
               <div className="space-y-6">
-                <div className="aspect-video bg-card border border-border rounded-xl flex items-center justify-center overflow-hidden">
-                  <div className="text-center p-6">
-                    <Search className="w-16 h-16 text-primary mx-auto mb-3 opacity-60" />
-                    <span className="text-sm text-muted-foreground">
-                      Search configuration preview
-                    </span>
-                  </div>
+                <div className="aspect-video flex items-center justify-center overflow-hidden">
+                   <img
+                    src="/features_collection.png"
+                    alt="Pattern selection preview"
+                    className="w-full h-full object-cover rounded-xl"
+                  />
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
@@ -324,13 +337,12 @@ const LaunchingSoon = () => {
 
               {/* Step 3 */}
               <div className="space-y-6">
-                <div className="aspect-video bg-card border border-border rounded-xl flex items-center justify-center overflow-hidden">
-                  <div className="text-center p-6">
-                    <BarChart3 className="w-16 h-16 text-primary mx-auto mb-3 opacity-60" />
-                    <span className="text-sm text-muted-foreground">
-                      Results analysis preview
-                    </span>
-                  </div>
+                <div className="aspect-video flex items-center justify-center overflow-hidden">
+                   <img
+                    src="/features_outcomes.png"
+                    alt="Pattern selection preview"
+                    className="w-full h-full object-cover rounded-xl"
+                  />
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
@@ -350,7 +362,7 @@ const LaunchingSoon = () => {
 
             {/* Key Benefits */}
             <div className="mt-24 grid sm:grid-cols-3 gap-6">
-              <div className="flex items-start gap-4 p-6 bg-card/50 rounded-xl border border-border/50">
+              <div className="flex items-start gap-4 p-6 bg-card rounded-xl border border-border/50">
                 <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-foreground mb-1">
@@ -361,7 +373,7 @@ const LaunchingSoon = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-4 p-6 bg-card/50 rounded-xl border border-border/50">
+              <div className="flex items-start gap-4 p-6 bg-card rounded-xl border border-border/50">
                 <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-foreground mb-1">
@@ -372,7 +384,7 @@ const LaunchingSoon = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-4 p-6 bg-card/50 rounded-xl border border-border/50">
+              <div className="flex items-start gap-4 p-6 bg-card rounded-xl border border-border/50">
                 <CheckCircle2 className="w-6 h-6 text-primary shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-foreground mb-1">
@@ -409,7 +421,7 @@ const LaunchingSoon = () => {
             {/* Case study content */}
             <div className="space-y-16">
               {/* The scenario */}
-              <div className="bg-card/50 border border-border rounded-2xl p-8 md:p-12">
+              <div className="bg-card border border-border rounded-2xl p-8 md:p-12">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                   {/* Left: Instagram mock */}
                   <div className="space-y-6">
@@ -482,7 +494,7 @@ const LaunchingSoon = () => {
               {/* The Stratosphere approach */}
               <div className="grid lg:grid-cols-2 gap-8">
                 {/* Before: The Internet */}
-                <div className="bg-card/30 border border-border rounded-2xl p-8">
+                <div className="bg-card border border-border rounded-2xl p-8">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 rounded-lg bg-muted/50">
                       <Users className="w-5 h-5 text-muted-foreground" />
@@ -555,11 +567,11 @@ const LaunchingSoon = () => {
       {/* Sandbox Section */}
       <section
         id="sandbox"
-        className="py-28 md:py-40 bg-gradient-to-b from-background to-card/30"
+        className="py-24"
       >
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-8">
+          <div className="max-w-4xl mx-auto m text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-4">
               <FlaskConical className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-foreground">
                 Try It Now
@@ -570,13 +582,13 @@ const LaunchingSoon = () => {
               See it for yourself
             </h2>
 
-            <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground mb-4 max-w-2xl mx-auto">
               The Similarity Sandbox lets you experiment with our algorithm — 
               no signup required. Build intuition before we launch.
             </p>
 
-            <div className="bg-card/50 border border-border rounded-2xl p-8 md:p-12">
-              <div className="aspect-video bg-background/50 rounded-xl flex items-center justify-center mb-8 border border-border/50">
+            <div className="bg-card border border-border rounded-2xl p-4 md:p-8">
+              <div className="aspect-video bg-background/50 rounded-xl flex items-center justify-center mb-4 border border-border/50">
                 <div className="text-center">
                   <FlaskConical className="w-20 h-20 text-primary mx-auto mb-4 opacity-60" />
                   <p className="text-muted-foreground">Sandbox preview</p>
@@ -584,9 +596,9 @@ const LaunchingSoon = () => {
               </div>
 
               <Button
-                size="lg"
+                size="sm"
                 onClick={() => navigate("/sandbox")}
-                className="bg-primary hover:bg-primary/90 shadow-glow text-lg px-8 py-6 h-auto"
+                className="bg-primary hover:bg-primary/90 shadow-glow text-lg px-6 py-3 h-auto"
               >
                 Try the Similarity Sandbox
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -601,7 +613,7 @@ const LaunchingSoon = () => {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-28 md:py-40 bg-card/20">
+      <section id="faq" className="py-28 md:py-40">
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground text-center mb-6">
@@ -614,7 +626,7 @@ const LaunchingSoon = () => {
             <Accordion type="single" collapsible className="space-y-4">
               <AccordionItem
                 value="item-1"
-                className="bg-card/50 border border-border rounded-xl px-6"
+                className="bg-card border border-border rounded-xl px-6"
               >
                 <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   What markets does Stratosphere support?
@@ -629,7 +641,7 @@ const LaunchingSoon = () => {
 
               <AccordionItem
                 value="item-2"
-                className="bg-card/50 border border-border rounded-xl px-6"
+                className="bg-card border border-border rounded-xl px-6"
               >
                 <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   Is this for beginners or advanced traders?
@@ -643,7 +655,7 @@ const LaunchingSoon = () => {
 
               <AccordionItem
                 value="item-3"
-                className="bg-card/50 border border-border rounded-xl px-6"
+                className="bg-card border border-border rounded-xl px-6"
               >
                 <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   When will the full product launch?
@@ -656,7 +668,7 @@ const LaunchingSoon = () => {
 
               <AccordionItem
                 value="item-4"
-                className="bg-card/50 border border-border rounded-xl px-6"
+                className="bg-card border border-border rounded-xl px-6"
               >
                 <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   How is this different from regular backtesting?
@@ -670,7 +682,7 @@ const LaunchingSoon = () => {
 
               <AccordionItem
                 value="item-5"
-                className="bg-card/50 border border-border rounded-xl px-6"
+                className="bg-card border border-border rounded-xl px-6"
               >
                 <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-6">
                   Is there a free tier?
@@ -700,7 +712,7 @@ const LaunchingSoon = () => {
             <Button
               size="lg"
               onClick={() => scrollToSection("waitlist")}
-              className="bg-primary hover:bg-primary/90 shadow-glow text-lg px-8 py-6 h-auto"
+              className="bg-primary hover:bg-primary/90 shadow-glow text-lg px-8 py-3 h-auto"
             >
               <Mail className="w-5 h-5 mr-2" />
               Join the Waitlist
@@ -716,12 +728,14 @@ const LaunchingSoon = () => {
             <div className="flex flex-col md:flex-row items-center justify-between gap-8">
               {/* Logo */}
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <TrendingUp className="w-5 h-5 text-primary" />
+                <div className="p-2 rounded-lg">
+                  <img
+                    src="/name_logo.png"
+                    alt="Stratosphere logo"
+                    className="h-8 object-contain"
+                  />
                 </div>
-                <span className="text-xl text-foreground">STRATOSPHERE</span>
               </div>
-
               {/* Links */}
               <nav className="flex items-center gap-6">
                 <button
@@ -752,27 +766,25 @@ const LaunchingSoon = () => {
 
               {/* Social Icons */}
               <div className="flex items-center gap-4">
-                <a
-                  href="#"
+               <a
+                  href="https://www.instagram.com/stratospheretrading/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="p-2 rounded-lg bg-card/50 border border-border hover:bg-card transition-colors"
-                  aria-label="Twitter"
+                  aria-label="Instagram"
                 >
-                  <Twitter className="w-4 h-4 text-muted-foreground" />
+                  <FaInstagram className="w-4 h-4 text-muted-foreground hover:text-[#E4405F]" />
                 </a>
                 <a
                   href="#"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="p-2 rounded-lg bg-card/50 border border-border hover:bg-card transition-colors"
-                  aria-label="LinkedIn"
+                  aria-label="Linkedin"
                 >
-                  <Linkedin className="w-4 h-4 text-muted-foreground" />
+                  <FaLinkedin className="w-4 h-4 text-muted-foreground hover:text-[#0077B5]" />
                 </a>
-                <a
-                  href="#"
-                  className="p-2 rounded-lg bg-card/50 border border-border hover:bg-card transition-colors"
-                  aria-label="GitHub"
-                >
-                  <Github className="w-4 h-4 text-muted-foreground" />
-                </a>
+        
               </div>
             </div>
 

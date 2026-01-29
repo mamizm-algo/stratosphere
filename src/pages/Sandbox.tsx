@@ -190,7 +190,7 @@ const Sandbox = () => {
         </div>
 
         {/* Similarity Score */}
-        <Card className="mx-auto mb-2 p-4 max-w-md bg-card/50 border-border">
+        <Card className="mx-auto mb-2 p-4 max-w-md bg-card border-border">
           <div className="text-center">
             <span className="text-base text-muted-foreground uppercase tracking-wider">
               Similarity Score
@@ -216,7 +216,7 @@ const Sandbox = () => {
         </div>
 
         {/* Candle Count Slider */}
-        <Card className="mx-auto p-6 max-w-md bg-card/50 border-border">
+        <Card className="mx-auto p-6 max-w-md bg-card border-border">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-foreground">Candle Count</span>

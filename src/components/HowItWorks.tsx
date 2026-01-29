@@ -3,7 +3,7 @@ import { MockChartDisplay, generateMockCandles } from "@/components/chart/MockCh
 
 export const HowItWorks = () => {
   return (
-    <section className="py-24 bg-card/30">
+    <section className="py-24">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -21,9 +21,9 @@ export const HowItWorks = () => {
               <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-2xl font-bold text-primary-foreground shadow-glow">
                 1
               </div>
-              <div className="p-8 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-card">
+              <div className="p-8 rounded-2xl bg-card hover:bg-popover border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-card">
                 <div className="mb-6">
-                  <div className="inline-flex p-4 rounded-xl bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform">
+                  <div className="inline-flex p-4 rounded-xl bg-background text-primary mb-4 group-hover:scale-110 transition-transform">
                     <PenTool className="w-8 h-8" />
                   </div>
                   <h3 className="text-2xl text-foreground mb-3">
@@ -35,14 +35,14 @@ export const HowItWorks = () => {
                 </div>
                 
                 <div className="space-y-6">
-                  <div className="flex items-start gap-3 p-4 rounded-lg bg-secondary/50 border border-border/50">
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-background border border-border/50">
                     <PenTool className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                     <div>
                       <div className="font-medium text-foreground mb-1">Draw Custom</div>
                       <div className="text-sm text-muted-foreground">Sketch patterns from your imagination</div>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 p-4 rounded-lg bg-secondary/50 border border-border/50">
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-background border border-border/50">
                     <BarChart3 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                     <div>
                       <div className="font-medium text-foreground mb-1">Select Fragment</div>
@@ -60,9 +60,9 @@ export const HowItWorks = () => {
               <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-2xl font-bold text-primary-foreground shadow-glow">
                 2
               </div>
-              <div className="p-8 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-card">
+              <div className="p-8 rounded-2xl bg-card hover:bg-popover border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-card">
                 <div className="mb-6">
-                  <div className="inline-flex p-4 rounded-xl bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform">
+                  <div className="inline-flex p-4 rounded-xl bg-background text-primary mb-4 group-hover:scale-110 transition-transform">
                     <Search className="w-8 h-8" />
                   </div>
                   <h3 className="text-2xl text-foreground mb-3">
@@ -105,9 +105,9 @@ export const HowItWorks = () => {
               <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-2xl font-bold text-primary-foreground shadow-glow">
                 3
               </div>
-              <div className="p-8 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-card">
+              <div className="p-8 rounded-2xl bg-card hover:bg-popover border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-card">
                 <div className="mb-6">
-                  <div className="inline-flex p-4 rounded-xl bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform">
+                  <div className="inline-flex p-4 rounded-xl bg-background text-primary mb-4 group-hover:scale-110 transition-transform">
                     <BookmarkCheck className="w-8 h-8" />
                   </div>
                   <h3 className="text-2xl text-foreground mb-3">
@@ -119,7 +119,7 @@ export const HowItWorks = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
+                  <div className="p-3 rounded-lg bg-background border border-border/50">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-muted-foreground">Similarity Score</span>
                       <span className="text-sm font-bold text-primary">94%</span>
@@ -128,7 +128,7 @@ export const HowItWorks = () => {
                       <div className="h-full bg-gradient-primary w-[94%] animate-scale-in" />
                     </div>
                   </div>
-                  <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
+                  <div className="p-3 rounded-lg bg-background border border-border/50">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-muted-foreground">Similarity Score</span>
                       <span className="text-sm font-bold text-primary">87%</span>
@@ -137,7 +137,7 @@ export const HowItWorks = () => {
                       <div className="h-full bg-gradient-primary w-[87%] animate-scale-in" style={{ animationDelay: "100ms" }} />
                     </div>
                   </div>
-                  <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
+                  <div className="p-3 rounded-lg bg-background border border-border/50">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-muted-foreground">Similarity Score</span>
                       <span className="text-sm font-bold text-primary">82%</span>
@@ -154,7 +154,7 @@ export const HowItWorks = () => {
 
         {/* Visual Example Section */}
         <div className="mt-24 max-w-5xl mx-auto">
-          <div className="p-8 rounded-2xl bg-card border border-border">
+          <div className="p-8 rounded-2xl bg-card hover:bg-popover border border-border transition-all duration-300 hover:shadow-card">
             <h3 className="text-2xl font-semibold text-foreground mb-6 text-center">
               Example: From Pattern to Results
             </h3>
@@ -171,7 +171,7 @@ export const HowItWorks = () => {
 
               <div className="space-y-3">
                 <div className="text-sm font-medium text-muted-foreground text-center">Dedicated Similarity Search Algorithm</div>
-                <div className="h-[70px] flex justify-center items-center">
+                <div className="h-[180px] p-2 flex justify-center bg-background flex gap-3 rounded-lg border border-border/50 animate-fade-in">
                   <div className="flex flex-col items-center gap-3">
                     <div className="relative">
                       {/* Input Node */}
@@ -216,7 +216,7 @@ export const HowItWorks = () => {
                       { score: 88, pattern: "up", candles: 12 },
                       { score: 85, pattern: "up", candles: 9 }
                     ].map((match, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-1 rounded-lg bg-secondary/50 border border-border/50 animate-fade-in" style={{ animationDelay: `${idx * 150}ms` }}>
+                    <div key={idx} className="flex items-center gap-3 p-1 rounded-lg bg-background border border-border/50 animate-fade-in" style={{ animationDelay: `${idx * 150}ms` }}>
                       <div className="w-24 h-12 rounded border border-primary/30 overflow-hidden">
                         <MockChartDisplay 
                           candles={generateMockCandles(match.candles, 100, match.pattern as "up" | "down")} 

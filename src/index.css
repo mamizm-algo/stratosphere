@@ -12,16 +12,16 @@ All colors MUST be HSL.
     --background: 222 47% 11%;
     --foreground: 216 24% 96%;
 
-    --card: 215 51% 25%;
+    --card: 215 19% 35% / 0.50;
     --card-foreground: 216 24% 96%;
 
-    --popover: 215 51% 25%;
+    --popover: 215 19% 35%;
     --popover-foreground: 216 24% 96%;
 
     --primary: 176 41% 31%;
     --primary-foreground: 216 24% 96%;
 
-    --secondary: 215 19% 35%;
+    --secondary: 215 51% 25%;
     --secondary-foreground: 216 24% 96%;
 
     --muted: 215 19% 35%;

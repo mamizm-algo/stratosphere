@@ -8,12 +8,15 @@ export const HomeHeader = () => {
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <TrendingUp className="w-5 h-5 text-primary" />
+         <div className="flex items-center gap-2">
+            <div className="rounded-lg" onClick={() => navigate("/")}>
+              <img
+                src="/name_logo.png"
+                alt="Stratosphere logo"
+                className="h-8 object-contain"
+              />
+            </div>
           </div>
-          <span className="text-xl text-foreground">STRATOSPHERE</span>
-        </div>
 
         <nav className="flex items-center gap-1 md:gap-2">
           <Button 
