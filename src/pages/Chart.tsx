@@ -84,7 +84,7 @@ const Chart = () => {
       <div className="flex flex-col h-screen bg-background">
         <HomeHeader />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Toolbar 
+          {/* <Toolbar 
             drawMode={drawMode} 
             setDrawMode={handleDrawModeChange}
             volatility={volatility}
@@ -93,7 +93,7 @@ const Chart = () => {
             onCompareToCollection={handleCompareToCollection}
             onClear={handleClear}
             candleCount={candleCount}
-          />
+          /> */}
           <div className="flex-1 overflow-hidden p-4">
             {/* <ChartCanvas 
               drawMode={drawMode} 
