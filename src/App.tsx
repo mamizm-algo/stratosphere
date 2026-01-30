@@ -9,7 +9,7 @@ import {
 } from "react-router-dom";
 // import { AccessGate } from "@/components/AccessGate";
 import Index from "./pages/Index";
-// import Chart from "./pages/Chart";
+import Chart from "./pages/Chart";
 // import Library from "./pages/Library";
 // import AssetBrowser from "./pages/AssetBrowser";
 // import Results from "./pages/Results";
@@ -63,7 +63,7 @@ const App = () => {
 
   const router = createHashRouter([
   { path: "/", element:<Index /> },
-  // { path: "/chart", element:<Chart /> },
+  { path: "/chart", element:<Chart /> },
   // { path: "/library", element:<Library /> },
   // { path: "/browse-assets", element:<AssetBrowser /> },
   // { path: "/results", element:<Results /> },
