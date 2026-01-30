@@ -7,7 +7,7 @@ import { useCollections } from "@/hooks/useCollections";
 import { CompareToCollectionDialog } from "@/components/library/CompareToCollectionDialog";
 import { toast } from "sonner";
 import { searchSimilarPatterns } from "@/lib/similarityCalculator";
-import { CANDLE_DATA } from "@/data/candles";
+// import { CANDLE_DATA } from "@/data/candles";
 import { storeSearchResults } from "./Results";
 import { HomeHeader } from "@/components/HomeHeader";
 
@@ -30,14 +30,14 @@ const Chart = () => {
 
   const handleSearch = (config: SearchConfig) => {
     setDrawMode("select");
-    const searchResults = searchSimilarPatterns(
-      searchInputCandles,
-      CANDLE_DATA,
-      config
-    );
+    // const searchResults = searchSimilarPatterns(
+    //   searchInputCandles,
+    //   CANDLE_DATA,
+    //   config
+    // );
 
-    // Store results and navigate to results page
-    storeSearchResults(searchResults, searchInputCandles);
+    // // Store results and navigate to results page
+    // storeSearchResults(searchResults, searchInputCandles);
     navigate("/results");
   };
 

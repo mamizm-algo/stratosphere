@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { CANDLE_DATA } from "@/data/candles";
+// import { CANDLE_DATA } from "@/data/candles";
 
 const TIMEZONES = [
   { id: "UTC", name: "UTC", offset: "+00:00" },
@@ -97,7 +97,7 @@ export const SimilaritySearchDialog = ({
     if (selectedAssets.length > 0 && selectedTimeframes.length > 0) {
       const maxPatternLength = 100;
       const assetTimeframes = selectedAssets.flatMap(asset => selectedTimeframes.map(tf => `${asset}_${tf}`));
-      let dataLength = assetTimeframes.map(asset => CANDLE_DATA[asset].length).reduce((a,b) => a+b, 0);
+      let dataLength = 0 //assetTimeframes.map(asset => CANDLE_DATA[asset].length).reduce((a,b) => a+b, 0);
       if (timeOfDay) {
         for (const timeframe of selectedTimeframes) {
           const timeframeCandlesPerDay = AVAILABLE_TIMEFRAMES.find(avail_tf => avail_tf.id === timeframe).candlesPerDay;

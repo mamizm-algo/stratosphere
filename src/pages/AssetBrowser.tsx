@@ -3,7 +3,7 @@ import { CandleData } from "@/components/chart/MockChartDisplay";
 import { SearchConfig, SimilaritySearchDialog } from "@/components/chart/SimilaritySearchDialog";
 import { HomeHeader } from "@/components/HomeHeader";
 import { AddToCollectionDialog } from "@/components/library/AddToCollectionDialog";
-import { CANDLE_DATA, getCandles } from "@/data/candles";
+// import { CANDLE_DATA, getCandles } from "@/data/candles";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   createChart,
@@ -136,7 +136,7 @@ const [outcomeData, setOutcomeData] = useState<CandleData[]>([]);
 
 // Load candles from imported data
 useEffect(() => {
-  const allData = getCandles(asset, timeframe);
+  const allData = [] //getCandles(asset, timeframe);
   const candleData = allData.slice(allData.length - 2000);
   
   setCandles(candleData);
@@ -336,11 +336,12 @@ const handleSearch = (config: SearchConfig) => {
     const selectedCandles = candles.slice(selectedRange.start, selectedRange.end);
 
     // Search through all imported data for similar patterns
-    const searchResults = searchSimilarPatterns(
-      selectedCandles,
-      CANDLE_DATA,
-      config
-    );
+    const searchResults = []
+    // searchSimilarPatterns(
+    //   selectedCandles,
+    //   CANDLE_DATA,
+    //   config
+    // );
 
     // Convert search results to SimilarPattern format
     const patterns: SimilarPattern[] = searchResults.map((result) => ({
