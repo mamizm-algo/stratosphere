@@ -106,12 +106,12 @@ const Chart = () => {
         </div>
       </div>
 
-      <SimilaritySearchDialog
+      {/* <SimilaritySearchDialog
         open={searchDialogOpen}
         onOpenChange={setSearchDialogOpen}
         onSearch={handleSearch}
         patternLength={candleCount}
-      />
+      /> */}
 
       <CompareToCollectionDialog
         open={compareToCollectionOpen}
