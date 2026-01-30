@@ -22,6 +22,7 @@ console.log("App render");
 const queryClient = new QueryClient();
 
 const App = () => {
+  console.log("what")
   const [hasAccess, setHasAccess] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -46,9 +47,9 @@ const App = () => {
     setHasAccess(true);
   };
 
-  if (isLoading) {
-    return null;
-  }
+  // if (isLoading) {
+  //   return null;
+  // }
 
   // if (!hasAccess) {
   //   return (
