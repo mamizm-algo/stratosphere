@@ -17,17 +17,30 @@ import Sandbox from "./pages/Sandbox";
 import LaunchingSoon from "./pages/LaunchingSoon";
 import NotFound from "./pages/NotFound";
 
+console.log("App render");
+
 const queryClient = new QueryClient();
 
 const App = () => {
   const [hasAccess, setHasAccess] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
+  // useEffect(() => {
+  //   const accessGranted = localStorage.getItem("stratosphere_access");
+  //   setHasAccess(accessGranted === "granted");
+  //   setIsLoading(false);
+  // }, []);
+
   useEffect(() => {
-    const accessGranted = localStorage.getItem("stratosphere_access");
-    setHasAccess(accessGranted === "granted");
+    try {
+      const accessGranted = localStorage.getItem("stratosphere_access");
+      setHasAccess(accessGranted === "granted");
+    } catch {
+      setHasAccess(false);
+    }
     setIsLoading(false);
   }, []);
+
 
   const handleAccessGranted = () => {
     setHasAccess(true);
