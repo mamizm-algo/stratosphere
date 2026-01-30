@@ -31,15 +31,15 @@ const App = () => {
   //   setIsLoading(false);
   // }, []);
 
-  useEffect(() => {
-    try {
-      const accessGranted = localStorage.getItem("stratosphere_access");
-      setHasAccess(accessGranted === "granted");
-    } catch {
-      setHasAccess(false);
-    }
-    setIsLoading(false);
-  }, []);
+  // useEffect(() => {
+  //   try {
+  //     const accessGranted = localStorage.getItem("stratosphere_access");
+  //     setHasAccess(accessGranted === "granted");
+  //   } catch {
+  //     setHasAccess(false);
+  //   }
+  //   setIsLoading(false);
+  // }, []);
 
 
   const handleAccessGranted = () => {
