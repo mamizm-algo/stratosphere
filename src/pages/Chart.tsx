@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { generateMockCandles } from "@/components/chart/MockChartDisplay";
 import { ChartCanvas } from "@/components/chart/ChartCanvas";
 import { Toolbar } from "@/components/chart/Toolbar";
 import { SimilaritySearchDialog, SearchConfig } from "@/components/chart/SimilaritySearchDialog";
@@ -96,13 +95,13 @@ const Chart = () => {
             candleCount={candleCount}
           />
           <div className="flex-1 overflow-hidden p-4">
-            <ChartCanvas 
+            {/* <ChartCanvas 
               drawMode={drawMode} 
               volatility={volatility}
               onCandleCountChange={handleCandleCountChange}
               onClear={(clearFn) => { handleClearRef.current = clearFn; }}
               setSearchInputCandles={setSearchInputCandles}
-            />
+            /> */}
           </div>
         </div>
       </div>
