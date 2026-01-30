@@ -3,7 +3,6 @@ import { CandleData } from "@/components/chart/MockChartDisplay";
 import { SearchConfig, SimilaritySearchDialog } from "@/components/chart/SimilaritySearchDialog";
 import { HomeHeader } from "@/components/HomeHeader";
 import { AddToCollectionDialog } from "@/components/library/AddToCollectionDialog";
-// import { CANDLE_DATA, getCandles } from "@/data/candles";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   createChart,
@@ -11,12 +10,9 @@ import {
   IChartApi,
   ISeriesApi,
   CandlestickData,
-  BarSeries,
-  BaselineSeries,
   CandlestickSeries,
   ISeriesPrimitive,
   Time,
-  IPrimitivePaneRenderer,
   IPrimitivePaneView,
   Logical
 } from "lightweight-charts";
@@ -28,6 +24,7 @@ import { SimilarPattern, storeSearchResults } from "./Results";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useCollections } from "@/hooks/useCollections";
+import { getCandles, loadCandleData } from "@/data/candles";
 
 type Timeframe = "1m" ;//| "5m" | "15m" | "1h" | "4h" | "1d";
 const AVAILABLE_ASSETS = [
@@ -135,12 +132,24 @@ const [outcomeData, setOutcomeData] = useState<CandleData[]>([]);
 
 
 // Load candles from imported data
-useEffect(() => {
-  const allData = [] //getCandles(asset, timeframe);
-  const candleData = allData.slice(allData.length - 2000);
+// useEffect(() => {
+//   const allData = [] //getCandles(asset, timeframe);
+//   const candleData = allData.slice(allData.length - 2000);
   
-  setCandles(candleData);
+//   setCandles(candleData);
+// }, [asset, timeframe]);
+
+useEffect(() => {
+  const loadData = async () => {
+    const allData = await getCandles(asset, timeframe);
+    const candleData = allData.slice(allData.length - 2000);
+
+    setCandles(candleData);
+  };
+
+  loadData();
 }, [asset, timeframe]);
+
 
 
 useEffect(() => {
@@ -330,18 +339,18 @@ const cancelSelection = () => {
     setSearchDialogOpen(true);
   };
 
-const handleSearch = (config: SearchConfig) => {
+const handleSearch = async (config: SearchConfig) => {
     if (!selectedRange) return;
     // Get the selected candle fragment
     const selectedCandles = candles.slice(selectedRange.start, selectedRange.end);
 
     // Search through all imported data for similar patterns
     const searchResults = []
-    // searchSimilarPatterns(
-    //   selectedCandles,
-    //   CANDLE_DATA,
-    //   config
-    // );
+    searchSimilarPatterns(
+      selectedCandles,
+      await loadCandleData(),
+      config
+    );
 
     // Convert search results to SimilarPattern format
     const patterns: SimilarPattern[] = searchResults.map((result) => ({

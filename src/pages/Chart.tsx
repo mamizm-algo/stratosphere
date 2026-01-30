@@ -10,6 +10,7 @@ import { searchSimilarPatterns } from "@/lib/similarityCalculator";
 // import { CANDLE_DATA } from "@/data/candles";
 import { storeSearchResults } from "./Results";
 import { HomeHeader } from "@/components/HomeHeader";
+import { loadCandleData } from "@/data/candles";
 
 export type DrawMode = "candle" | "line" | "select";
 export type Volatility = "low" | "medium" | "high";
@@ -28,16 +29,16 @@ const Chart = () => {
   const [candleCount, setCandleCount] = useState(0);
   const handleClearRef = useRef<any>(null);
 
-  const handleSearch = (config: SearchConfig) => {
+  const handleSearch = async (config: SearchConfig) => {
     setDrawMode("select");
-    // const searchResults = searchSimilarPatterns(
-    //   searchInputCandles,
-    //   CANDLE_DATA,
-    //   config
-    // );
+    const searchResults = searchSimilarPatterns(
+      searchInputCandles,
+      await loadCandleData(),
+      config
+    );
 
     // // Store results and navigate to results page
-    // storeSearchResults(searchResults, searchInputCandles);
+    storeSearchResults(searchResults, searchInputCandles);
     navigate("/results");
   };
 
@@ -84,7 +85,7 @@ const Chart = () => {
       <div className="flex flex-col h-screen bg-background">
         <HomeHeader />
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* <Toolbar 
+          <Toolbar 
             drawMode={drawMode} 
             setDrawMode={handleDrawModeChange}
             volatility={volatility}
@@ -93,32 +94,32 @@ const Chart = () => {
             onCompareToCollection={handleCompareToCollection}
             onClear={handleClear}
             candleCount={candleCount}
-          /> */}
+          />
           <div className="flex-1 overflow-hidden p-4">
-            {/* <ChartCanvas 
+            <ChartCanvas 
               drawMode={drawMode} 
               volatility={volatility}
               onCandleCountChange={handleCandleCountChange}
               onClear={(clearFn) => { handleClearRef.current = clearFn; }}
               setSearchInputCandles={setSearchInputCandles}
-            /> */}
+            />
           </div>
         </div>
       </div>
 
-      {/* <SimilaritySearchDialog
+      <SimilaritySearchDialog
         open={searchDialogOpen}
         onOpenChange={setSearchDialogOpen}
         onSearch={handleSearch}
         patternLength={candleCount}
-      /> */}
+      />
 
-      {/* <CompareToCollectionDialog
+      <CompareToCollectionDialog
         open={compareToCollectionOpen}
         onOpenChange={setCompareToCollectionOpen}
         collections={collections}
         chartData={currentChartData}
-      /> */}
+      />
     </>
   );
 };

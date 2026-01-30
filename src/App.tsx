@@ -10,11 +10,11 @@ import {
 // import { AccessGate } from "@/components/AccessGate";
 import Index from "./pages/Index";
 import Chart from "./pages/Chart";
-// import Library from "./pages/Library";
-// import AssetBrowser from "./pages/AssetBrowser";
-// import Results from "./pages/Results";
-// import Sandbox from "./pages/Sandbox";
-// import LaunchingSoon from "./pages/LaunchingSoon";
+import Library from "./pages/Library";
+import AssetBrowser from "./pages/AssetBrowser";
+import Results from "./pages/Results";
+import Sandbox from "./pages/Sandbox";
+import LaunchingSoon from "./pages/LaunchingSoon";
 import NotFound from "./pages/NotFound";
 
 console.log("App render");
@@ -63,11 +63,11 @@ const App = () => {
   const router = createHashRouter([
   { path: "/", element:<Index /> },
   { path: "/chart", element:<Chart /> },
-  // { path: "/library", element:<Library /> },
-  // { path: "/browse-assets", element:<AssetBrowser /> },
-  // { path: "/results", element:<Results /> },
-  // { path: "/sandbox", element:<Sandbox /> },
-  // { path: "/launching-soon", element:<LaunchingSoon /> },
+  { path: "/library", element:<Library /> },
+  { path: "/browse-assets", element:<AssetBrowser /> },
+  { path: "/results", element:<Results /> },
+  { path: "/sandbox", element:<Sandbox /> },
+  { path: "/launching-soon", element:<LaunchingSoon /> },
   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */},
   { path: "*", element:<NotFound /> },
 ]);
