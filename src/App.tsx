@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  createBrowserRouter,
+  createHashRouter ,
   RouterProvider,
 } from "react-router-dom";
 import { AccessGate } from "@/components/AccessGate";
@@ -47,7 +47,7 @@ const App = () => {
   //   );
   // }
 
-  const router = createBrowserRouter([
+  const router = createHashRouter([
   { path: "/", element:<Index /> },
   { path: "/chart", element:<Chart /> },
   { path: "/library", element:<Library /> },
