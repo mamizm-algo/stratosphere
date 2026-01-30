@@ -696,9 +696,10 @@ const LaunchingSoon = () => {
               <Mail className="w-5 h-5 mr-2" />
               Join the Waitlist
             </Button>
-            <div className="w-44 h-44 bg-primary/60 rounded-full blur-3xl animate-pulse" />
-            <div className="mx-96 w-44 h-44 bg-primary/30 rounded-full blur-2xl animate-pulse delay-1000" />
-
+            <div className="relative w-full aspect-square max-w-lg">
+              <div className="absolute top-0 left-0 w-[30%] h-[30%] bg-primary/60 rounded-full blur-3xl animate-pulse" />
+              <div className="absolute bottom-0 right-0 w-[30%] h-[30%] bg-primary/30 rounded-full blur-2xl animate-pulse delay-1000" />
+            </div>
           </div>
         </div>
       </section>
