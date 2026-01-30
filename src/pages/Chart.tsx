@@ -113,12 +113,12 @@ const Chart = () => {
         patternLength={candleCount}
       /> */}
 
-      <CompareToCollectionDialog
+      {/* <CompareToCollectionDialog
         open={compareToCollectionOpen}
         onOpenChange={setCompareToCollectionOpen}
         collections={collections}
         chartData={currentChartData}
-      />
+      /> */}
     </>
   );
 };
