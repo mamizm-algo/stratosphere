@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -79,10 +79,33 @@ const LaunchingSoon = () => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
+  useEffect(() => {
+    const elements = document.querySelectorAll(".animate-on-scroll");
+
+    console.log("Found elements:", elements.length);
+
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.remove("opacity-0", "translate-y-10");
+            entry.target.classList.add("opacity-100", "translate-y-0");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    elements.forEach(el => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-accent bg-card backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="rounded-lg" onClick={() => scrollToSection("waitlist")}>
@@ -133,7 +156,8 @@ const LaunchingSoon = () => {
       {/* Hero Section */}
       <section
         id="waitlist"
-        className="relative flex items-center justify-center overflow-hidden py-16"
+        className="relative flex items-center justify-center overflow-hidden py-16 scroll-mt-24"
+        // className="relative flex items-center justify-center overflow-hidden py-16"
       >
         {/* Animated background elements */}
         <div className="absolute inset-0 overflow-hidden">
@@ -154,7 +178,7 @@ const LaunchingSoon = () => {
             {/* Main headline */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
               Research, backtest and validate trades using{" "}
-              <span className="bg-gradient-primary bg-clip-text text-transparent">
+              <span className="bg-gradient-primary bg-clip-text text-primary">
                 Pattern Similarity Score
               </span>
             </h1>
@@ -209,7 +233,7 @@ const LaunchingSoon = () => {
                         htmlFor="emails"
                         className="text-xs text-muted-foreground cursor-pointer"
                       >
-                      I agree to receive access updates and marketing emails from Stratosphere. By joining the waitlist, you also agree to our Privacy Policy.
+                      I agree to receive access updates and marketing emails from STRATOSPHERE. By joining the waitlist, you also agree to our Privacy Policy.
                       </Label>
                     </div>
                     </div>
@@ -241,7 +265,7 @@ const LaunchingSoon = () => {
             <div className="text-center space-y-6 mb-20">
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground">
                 Objective, repeatable,<br />
-                <span className="bg-gradient-primary bg-clip-text text-transparent">reliable</span>
+                <span className="bg-gradient-primary bg-clip-text text-primary">reliable</span>
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                 STRATOSPHERE replaces guesswork with historical evidence.
@@ -252,8 +276,16 @@ const LaunchingSoon = () => {
             <div className="grid md:grid-cols-3 gap-12 md:gap-8">
               {/* Step 1 */}
               <div className="space-y-6">
-                <div className="aspect-video border border-primary rounded-xl hover:shadow-glow flex items-center justify-center overflow-hidden">
-                  <img
+                <div
+                //  className="aspect-video border border-primary rounded-xl hover:shadow-glow flex items-center justify-center overflow-hidden">
+                 className="
+                  aspect-video border border-primary rounded-xl hover:shadow-glow
+                  flex items-center justify-center overflow-hidden
+                  transition-all duration-700 delay-600 ease-out
+                  opacity-0 translate-y-10
+                  animate-on-scroll
+                ">  
+                <img
                     src="/features_browse.png"
                     alt="Pattern selection preview"
                     className="w-full h-full object-cover rounded-xl"
@@ -276,7 +308,15 @@ const LaunchingSoon = () => {
 
               {/* Step 2 */}
               <div className="space-y-6">
-                <div className="aspect-video  border border-primary rounded-xl hover:shadow-glow bg-card flex items-center justify-center overflow-hidden">
+                <div 
+                // className="aspect-video  border border-primary rounded-xl hover:shadow-glow bg-card flex items-center justify-center overflow-hidden">
+                    className="
+                  aspect-video border border-primary rounded-xl hover:shadow-glow
+                  flex items-center justify-center overflow-hidden
+                  transition-all duration-700 delay-400 ease-out
+                  opacity-0 translate-y-10
+                  animate-on-scroll
+                ">  
                    <img
                     src="/features_collection.png"
                     alt="Result collection preview"
@@ -300,8 +340,16 @@ const LaunchingSoon = () => {
 
               {/* Step 3 */}
               <div className="space-y-6">
-                <div className="aspect-video bg-card border border-primary rounded-xl hover:shadow-glow flex items-center justify-center overflow-hidden">
-                   <img
+                <div 
+                // className="aspect-video bg-card border border-primary rounded-xl hover:shadow-glow flex items-center justify-center overflow-hidden">
+                 className="
+                  aspect-video border border-primary rounded-xl hover:shadow-glow
+                  flex items-center justify-center overflow-hidden
+                  transition-all duration-700 delay-200 ease-out
+                  opacity-0 translate-y-10
+                  animate-on-scroll
+                ">     
+                <img
                     src="/features_outcomes.png"
                     alt="Outcomes preview"
                     className="h-full object-cover "
@@ -422,7 +470,7 @@ const LaunchingSoon = () => {
                           <div className="flex-1 h-10 bg-bullish/20 rounded-lg flex items-center px-4">
                             <span className="text-sm text-foreground">🚀 Up</span>
                           </div>
-                          <span className="text-sm text-muted-foreground w-12">52%</span>
+                          <span className="text-sm text-muted-foreground w-10">52%</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="flex-1 h-10 bg-bearish/20 rounded-lg flex items-center px-4">
@@ -448,22 +496,41 @@ const LaunchingSoon = () => {
                     <img
                       src="/answer_trade.png"
                       alt="Trade research"
-                      className="w-full h-full object-cover my-1 rounded-xl"
+                      className="w-full h-full object-cover my-1 rounded-xl zoom-hover transition-transform"
                     />
-                    <div className="space-y-2 mx-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 h-10 bg-bullish/20 rounded-lg flex items-center px-4">
-                            <span className="text-sm text-foreground">🚀 Up</span>
-                          </div>
-                          <span className="text-sm text-muted-foreground w-10">62.3%</span>
+                    <div className="space-y-2 mx-3 py-1">
+                      {/* Up */}
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="h-10 bg-bullish/20 rounded-lg flex items-center px-2 min-w-[20px]"
+                          // style={{ width: `62.3%` }}
+                          style={{ width: `100%` }}
+                        >
+                          <span className="text-sm text-foreground whitespace-nowrap">
+                            🚀 Up
+                          </span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 h-10 bg-bearish/20 rounded-lg flex items-center px-4">
-                            <span className="text-sm text-foreground">📉 Down</span>
-                          </div>
-                          <span className="text-sm text-muted-foreground w-36">37.7%</span>
-                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          62.3%
+                        </span>
                       </div>
+
+                      {/* Down */}
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="h-10 bg-bearish/20 rounded-lg flex items-center px-2 min-w-[20px]"
+                          // style={{ width: `37.7%` }}
+                          style={{ width: `60%` }}
+                        >
+                          <span className="text-sm text-foreground whitespace-nowrap">
+                            📉 Down
+                          </span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          37.7%
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 </div>
@@ -577,10 +644,21 @@ const LaunchingSoon = () => {
               <Button
                 size="sm"
                 onClick={() => navigate("/sandbox")}
-                className="bg-primary hover:bg-primary/90 shadow-glow text-lg px-6 py-3 h-auto"
-              >
-                Try the Similarity Sandbox
-                <ArrowRight className="w-5 h-5 ml-2" />
+                className="bg-primary hover:bg-primary/90 shadow-glow
+                  text-sm sm:text-base lg:text-xl
+                  px-4 sm:px-6 lg:px-8
+                  py-2 sm:py-3
+                  h-auto
+                  
+                  whitespace-nowrap"
+                >
+                <span className="hidden sm:inline">
+                  Try the Similarity Sandbox
+                </span>
+                <span className="sm:hidden">
+                  Try Sandbox
+                </span>
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
               </Button>
             </div>
 
@@ -592,8 +670,8 @@ const LaunchingSoon = () => {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-28 md:py-40">
-        <div className="container mx-auto px-6">
+      <section id="faq" className="py-28 md:py-40 bg-gradient-hero">
+        <div className="container mx-auto px-6 mb-60">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground text-center mb-6">
               Questions?
@@ -675,11 +753,9 @@ const LaunchingSoon = () => {
             </Accordion>
           </div>
         </div>
-      </section>
 
       {/* Final CTA */}
-      <section className="py-28 md:py-40 bg-gradient-hero">        
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-6 mb-40">
           <div className="max-w-2xl mx-auto text-center space-y-8">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground">
               Stop guessing.<br />
@@ -696,10 +772,6 @@ const LaunchingSoon = () => {
               <Mail className="w-5 h-5 mr-2" />
               Join the Waitlist
             </Button>
-            <div className="relative w-full aspect-square max-w-lg">
-              <div className="absolute top-0 left-0 w-[30%] h-[30%] bg-primary/60 rounded-full blur-3xl animate-pulse" />
-              <div className="absolute bottom-0 right-0 w-[30%] h-[30%] bg-primary/30 rounded-full blur-2xl animate-pulse delay-1000" />
-            </div>
           </div>
         </div>
       </section>

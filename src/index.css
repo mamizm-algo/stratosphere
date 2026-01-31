@@ -71,3 +71,9 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@media (hover: hover) {
+  .zoom-hover:hover {
+    transform: scale(1.2);
+  }
+}
