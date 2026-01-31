@@ -677,8 +677,19 @@ const LaunchingSoon = () => {
               Questions?
             </h2>
             <p className="text-lg text-muted-foreground text-center mb-16">
-              Here are some answers. More coming soon.
+              Here are some answers. More coming soon. <br />
+              In the meantime, reach out to us on {" "}
+              <a
+                href="https://www.instagram.com/stratospheretrading/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent"
+              >
+               Instagram
+              </a>
+              .
             </p>
+            
 
             <Accordion type="single" collapsible className="space-y-4">
               <AccordionItem
