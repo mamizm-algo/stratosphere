@@ -47,6 +47,7 @@ import { useCollections } from "@/hooks/useCollections";
 import { HomeHeader } from "@/components/HomeHeader";
 import { TransactionBoxModel } from "@/components/chart/SimilarityResults";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TradeStatisticsResults } from "@/components/chart/TradeStatisticsResults";
 
 const RESULTS_STORAGE_KEY = "similarity_search_results";
 const SETUP_CANDLES_STORAGE_KEY = "similarity_search_setup_candles";
@@ -106,7 +107,10 @@ const Results = () => {
   const navigate = useNavigate();
   const { collections, addCollection } = useCollections();
   const [patterns, setPatterns] = useState<SimilarPattern[]>([]);
+  const [filteredPatterns, setFilteredPatterns] = useState<SimilarPattern[]>([]);
   const [setupCandles, setSetupCandles] = useState<CandleData[]>([]);
+  const [normalizedSetupCandles, setNormalizedSetupCandles] = useState<CandleData[]>([]);
+  const [normalizedPatterns, setNormalizedPatterns] = useState<SimilarPattern[]>([]);
   const [isSaved, setIsSaved] = useState(false);
   const [showLeaveWarning, setShowLeaveWarning] = useState(false);
   const [viewMode, setViewMode] = useState<"base" | "grid" | "detail" | "overlay">("grid");
@@ -116,14 +120,19 @@ const Results = () => {
   const [outcomeChartType, setOutcomeChartType] = useState<"candle" | "line">("candle");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [baseChartType, setBaseChartType] = useState<"candle" | "line">("candle");
-  
   const transactionParamsRef = useRef<TransactionBoxModel | null>(null);
+
+  const setTransactionParams = (newTransactionParams: TransactionBoxModel) => {
+    transactionParamsRef.current = newTransactionParams;
+  }
+  const settersRef = useRef<Array<(v: TransactionBoxModel) => void>>([setTransactionParams]);
+
   const [, forceUpdate] = useState({});
   
-  const setTransactionParams = useCallback((params: TransactionBoxModel | null) => {
-    transactionParamsRef.current = params;
-    forceUpdate({});
-  }, []);
+  // const setTransactionParams = useCallback((params: TransactionBoxModel | null) => {
+  //   transactionParamsRef.current = params;
+  //   forceUpdate({});
+  // }, []);
   
   const transactionParams = transactionParamsRef.current;
 
@@ -148,6 +157,63 @@ const Results = () => {
       }
     }
   }, []);
+
+   useEffect(() => {
+    const filtered =  filterAsset === "all"
+        ? sortedPatterns
+        : sortedPatterns.filter((p) => p.asset === filterAsset)
+
+    setFilteredPatterns(filtered);
+    // Prepare outcomes data
+    setNormalizedPatterns(filtered.map((pattern) => {
+      const setupMin = Math.min(...pattern.setupCandles.map(candle => candle.low));
+      const setupMax = Math.max(...pattern.setupCandles.map(candle => candle.high));
+
+      const lastIndex = pattern.setupCandles.length - 1;
+      const setupOffset = 100 - normalize(pattern.setupCandles[lastIndex].close, setupMin, setupMax);
+
+      const normalizedSetup = pattern.setupCandles.map(setupCandle => { 
+        return { ...setupCandle,
+          open: normalize(setupCandle.open, setupMin, setupMax) + setupOffset,
+          high: normalize(setupCandle.high, setupMin, setupMax) + setupOffset,
+          low: normalize(setupCandle.low, setupMin, setupMax) + setupOffset,
+          close: normalize(setupCandle.close, setupMin, setupMax) + setupOffset,
+        }
+      });
+
+      const normalizedOutcome = pattern.outcomeCandles.map(outcomeCandle => { 
+        return { ...outcomeCandle,
+          open: normalize(outcomeCandle.open, setupMin, setupMax) + setupOffset,
+          high: normalize(outcomeCandle.high, setupMin, setupMax) + setupOffset,
+          low: normalize(outcomeCandle.low, setupMin, setupMax) + setupOffset,
+          close: normalize(outcomeCandle.close, setupMin, setupMax) + setupOffset,
+        } 
+      });
+      
+      return { ...pattern,
+        setupCandles: normalizedSetup,
+        outcomeCandles: normalizedOutcome
+      }
+    }));
+  }, [patterns]);
+
+  useEffect(() => {
+    if (setupCandles.length > 0) {
+      const setupMin = Math.min(...setupCandles.map(candle => candle.low));
+      const setupMax = Math.max(...setupCandles.map(candle => candle.high));
+      const lastIndex = setupCandles.length - 1;
+      const baseChartOffset = 100 - normalize(setupCandles[lastIndex].close, setupMin, setupMax);
+
+    setNormalizedSetupCandles(setupCandles.map(setup => { 
+      return { ...setup,
+        open: normalize(setup.open, setupMin, setupMax) + baseChartOffset,
+        high: normalize(setup.high, setupMin, setupMax) + baseChartOffset,
+        low: normalize(setup.low, setupMin, setupMax) + baseChartOffset,
+        close: normalize(setup.close, setupMin, setupMax) + baseChartOffset,
+      }
+      }));
+    }
+  }, [setupCandles]);
 
   // Warn before page unload if results are unsaved
   useEffect(() => {
@@ -187,6 +253,15 @@ const Results = () => {
     }
   };
 
+  const registerTransactionChangester = (fn: (v: TransactionBoxModel) => void) => {
+    settersRef.current.push(fn);
+  };
+
+  const onTransactionParamsChange = (val: TransactionBoxModel) => {
+    settersRef.current.forEach((fn) => fn(val));
+  };
+
+
   const sortedPatterns = [...patterns].sort((a, b) => {
     if (sortBy === "similarity") {
       return b.similarity - a.similarity;
@@ -194,15 +269,12 @@ const Results = () => {
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
 
-  const filteredPatterns =
-    filterAsset === "all"
-      ? sortedPatterns
-      : sortedPatterns.filter((p) => p.asset === filterAsset);
 
   const uniqueAssets = Array.from(new Set(patterns.map((p) => p.asset)));
 
   // Calculate overall statistics
   const calculateStats = (): TradeStats | null => {
+    const transactionParams = transactionParamsRef.current;
     if (!transactionParams || filteredPatterns.length === 0) return null;
 
     const trades = filteredPatterns.map((pattern) => {
@@ -418,42 +490,43 @@ const Results = () => {
 
       <div className="flex-1 flex flex-col px-4 lg:px-6 py-4 overflow-hidden">
         {/* Header - Compact */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground">
-              Similar Patterns Found
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {filteredPatterns.length} matches across {uniqueAssets.length} assets
-            </p>
-          </div>
-        </div>
+        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+          {/* Left: Title and Navigation */}
+          <div className="flex items-center gap-4 min-w-0 flex-1">
+           
+              <div className="flex-shrink-0">
+                <h2 className="text-2xl font-bold text-foreground">
+                  Similar Patterns Found
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {filteredPatterns.length} matches across {uniqueAssets.length} assets
+                </p>
+              </div>
+            
 
-        {/* Controls - Compact single row */}
-        <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
-              <TabsList className="h-9">
-                <TabsTrigger value="base" className="gap-1.5 text-xs px-3">
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                  Base
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="flex-shrink-0">
+              <TabsList>
+                <TabsTrigger value="base" className="gap-2">
+                  <ChevronLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Base Chart</span>
                 </TabsTrigger>
-                <TabsTrigger value="grid" className="gap-1.5 text-xs px-3">
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  Grid
+                <TabsTrigger value="grid" className="gap-2">
+                  <LayoutGrid className="w-4 h-4" />
+                  <span className="hidden sm:inline">Grid</span>
                 </TabsTrigger>
-                <TabsTrigger value="detail" className="gap-1.5 text-xs px-3">
-                  <ChevronRight className="w-3.5 h-3.5" />
-                  Detail
+                <TabsTrigger value="detail" className="gap-2">
+                  <ChevronRight className="w-4 h-4" />
+                  <span className="hidden sm:inline">Detail</span>
                 </TabsTrigger>
-                <TabsTrigger value="overlay" className="gap-1.5 text-xs px-3">
-                  <Layers className="w-3.5 h-3.5" />
-                  Overlay
+                <TabsTrigger value="overlay" className="gap-2">
+                  <Layers className="w-4 h-4" />
+                  <span className="hidden sm:inline">Overlay</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
+          </div>
 
-            <Button
+           <Button
               variant="default"
               size="sm"
               className="gap-1.5"
@@ -462,24 +535,26 @@ const Results = () => {
               <Save className="w-3.5 h-3.5" />
               Save
             </Button>
-          </div>
 
-          <div className="flex items-center gap-2">
+          {/* Right: Filters and Close */}
+          <div className="flex items-center gap-3 flex-shrink-0">
             <Select value={filterAsset} onValueChange={setFilterAsset}>
-              <SelectTrigger className="w-32 h-9 text-xs">
-                <SelectValue placeholder="Filter" />
+              <SelectTrigger className="w-32 md:w-40">
+                <SelectValue placeholder="Filter asset" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Assets</SelectItem>
                 {uniqueAssets.map((asset) => (
-                  <SelectItem key={asset} value={asset}>{asset}</SelectItem>
+                  <SelectItem key={asset} value={asset}>
+                    {asset}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-              <SelectTrigger className="w-32 h-9 text-xs">
-                <SelectValue placeholder="Sort" />
+              <SelectTrigger className="w-32 md:w-40">
+                <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="similarity">By Similarity</SelectItem>
@@ -488,6 +563,7 @@ const Results = () => {
             </Select>
           </div>
         </div>
+      
 
         {/* Main Content Area - Full height, no scroll on outer container */}
         <div className="flex-1 min-h-0">
@@ -661,78 +737,24 @@ const Results = () => {
                 
                 <Card className="flex-1 p-4 min-h-0">
                   <OverlayChartCanvas
-                    setupCandles={setupCandles}
-                    outcomesData={filteredPatterns.map((p) => p.outcomeCandles || generateMockCandles(15, setupCandles[setupCandles.length - 1]?.close || 100, p.outcome === "bullish" ? "up" : p.outcome === "bearish" ? "down" : "sideways"))}
+                    setupCandles={normalizedSetupCandles}
+                    outcomesData={normalizedPatterns.map((pattern) => {
+                      return pattern.outcomeCandles;
+                    })}
                     chartType={outcomeChartType}
-                    onTransactionBoxChange={setTransactionParams}
+                    onTransactionBoxChange={onTransactionParamsChange}
                     initialTransactionParams={transactionParams}
                   />
                 </Card>
               </div>
 
               {/* Stats sidebar */}
-              {transactionParams && stats && (
-                <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-3">
-                  <Card className="p-3">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Transaction</h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <p className="text-[10px] text-muted-foreground uppercase">Position</p>
-                        <p className="font-semibold capitalize">{transactionParams.position}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-muted-foreground uppercase">Duration</p>
-                        <p className="font-semibold">{transactionParams.duration} bars</p>
-                      </div>
-                    </div>
-                  </Card>
-
-                  <Card className="p-3">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Performance</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <StatItem 
-                        icon={<Target className="w-3.5 h-3.5 text-primary" />}
-                        label="Win Rate"
-                        value={`${stats.winRate.toFixed(1)}%`}
-                      />
-                      <StatItem 
-                        icon={<TrendingUp className="w-3.5 h-3.5 text-primary" />}
-                        label="Trades"
-                        value={String(stats.totalTrades)}
-                      />
-                      <StatItem 
-                        icon={stats.avgProfit >= 0 ? <TrendingUp className="w-3.5 h-3.5 text-bullish" /> : <TrendingDown className="w-3.5 h-3.5 text-bearish" />}
-                        label="Avg Result"
-                        value={`${stats.avgProfit >= 0 ? "+" : ""}${stats.avgProfit.toFixed(2)}%`}
-                        valueClass={stats.avgProfit >= 0 ? "text-bullish" : "text-bearish"}
-                      />
-                      <StatItem 
-                        icon={stats.totalProfit >= 0 ? <TrendingUp className="w-3.5 h-3.5 text-bullish" /> : <TrendingDown className="w-3.5 h-3.5 text-bearish" />}
-                        label="Total P/L"
-                        value={`${stats.totalProfit >= 0 ? "+" : ""}${stats.totalProfit.toFixed(2)}%`}
-                        valueClass={stats.totalProfit >= 0 ? "text-bullish" : "text-bearish"}
-                      />
-                      <StatItem 
-                        icon={<Clock className="w-3.5 h-3.5 text-primary" />}
-                        label="Avg Duration"
-                        value={`${stats.avgDuration?.toFixed(1) || 0}`}
-                      />
-                      <StatItem 
-                        icon={<Hourglass className="w-3.5 h-3.5 text-muted-foreground" />}
-                        label="Timeouts"
-                        value={String(stats.tradesTimedOut)}
-                      />
-                    </div>
-                  </Card>
-
-                  <Card className="p-3">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Tip</h4>
-                    <p className="text-xs text-muted-foreground">
-                      Draw a transaction box on the chart to test your strategy across all patterns.
-                    </p>
-                  </Card>
-                </div>
-              )}
+              {/* Statistics */}
+              <TradeStatisticsResults
+              registerTransactionChange={registerTransactionChangester} 
+              // outcomes={normalizedPatterns}
+              outcomes={filteredPatterns}
+              />
             </div>
           )}
         </div>
@@ -770,7 +792,7 @@ const Results = () => {
 };
 
 // Compact stat item component
-const StatItem = ({ 
+export const StatItem = ({ 
   icon, 
   label, 
   value, 
@@ -858,12 +880,8 @@ const PatternDetailView = ({
   transactionParams,
 }: PatternDetailViewProps) => {
   const [chartType, setChartType] = useState<"candle" | "line">("candle");
-  const setupCandles = pattern.setupCandles || generateMockCandles(20, 100, "sideways");
-  const outcomeCandles = pattern.outcomeCandles || generateMockCandles(
-    15,
-    setupCandles[setupCandles.length - 1]?.close || 100,
-    pattern.outcome === "bullish" ? "up" : pattern.outcome === "bearish" ? "down" : "sideways"
-  );
+  const setupCandles = pattern.setupCandles;
+  const outcomeCandles = pattern.outcomeCandles;
 
   // Normalize base chart for overlay
   const setupMin = Math.min(...setupCandles.map((c) => c.low));

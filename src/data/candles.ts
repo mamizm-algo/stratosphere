@@ -107,7 +107,6 @@ export const loadCandleData = async (): Promise<Record<string, CandleData[]>> =>
   };
 
   console.log("Loaded candles:", CANDLE_DATA["GOLD_1m"].length);
-
   return CANDLE_DATA;
 };
 

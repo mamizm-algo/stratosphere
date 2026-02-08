@@ -243,8 +243,26 @@ export const OverlayChartCanvas = ({
     lastValueVisible: false,
     priceLineVisible: false,
   });
-  const upColor = '#26a6992f';
-  const downColor = '#ef53502a';
+
+  const resultsCount = outcomesData.length;
+  const minOpacity = 0.05;
+  const maxOpacity = 0.2;
+  const maxCount = 200; // cap for normalization
+  const opacity =
+    minOpacity +
+    (1 - Math.min(resultsCount / maxCount, 1)) * (maxOpacity - minOpacity);
+  const alphaHex = Math.round(opacity * 255)
+    .toString(16)
+    .padStart(2, "0");
+
+  const UP_BASE = "#26a699";   // teal
+  const DOWN_BASE = "#ef5350"; // red
+  const upColor = `${UP_BASE}${alphaHex}`;
+  const downColor = `${DOWN_BASE}${alphaHex}`;
+
+
+  // const upColor = '#26a6992f';
+  // const downColor = '#ef53502a';
   const outcomeSeries = outcomesData.map(outcome => chart.addSeries(CandlestickSeries, {
     upColor: upColor,
     downColor: downColor,
@@ -253,7 +271,7 @@ export const OverlayChartCanvas = ({
     wickDownColor: downColor,
     lastValueVisible: false,
     priceLineVisible: false,
-}));
+  }));
     chart.timeScale().fitContent();
 
   chartApiRef.current = chart;

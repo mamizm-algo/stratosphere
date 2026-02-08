@@ -345,8 +345,8 @@ const handleSearch = async (config: SearchConfig) => {
     const selectedCandles = candles.slice(selectedRange.start, selectedRange.end);
 
     // Search through all imported data for similar patterns
-    const searchResults = []
-    searchSimilarPatterns(
+    const allData = await loadCandleData();
+    const searchResults = searchSimilarPatterns(
       selectedCandles,
       await loadCandleData(),
       config

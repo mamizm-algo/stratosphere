@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-// import { CANDLE_DATA } from "@/data/candles";
+import { getCandles } from "@/data/candles";
 
 const TIMEZONES = [
   { id: "UTC", name: "UTC", offset: "+00:00" },
@@ -91,33 +91,46 @@ export const SimilaritySearchDialog = ({
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [similarityThreshold, setSimilarityThreshold] = useState([70]);
   const [isSearching, setIsSearching] = useState(false);
+  const [estimatedSearchTime, setEstimatedSearchTime] = useState<number | null>(null);
 
-  
-  const calculateEstimatedTime = () => {
+  useEffect(() => {
     if (selectedAssets.length > 0 && selectedTimeframes.length > 0) {
       const maxPatternLength = 100;
-      const assetTimeframes = selectedAssets.flatMap(asset => selectedTimeframes.map(tf => `${asset}_${tf}`));
-      let dataLength = 0 //assetTimeframes.map(asset => CANDLE_DATA[asset].length).reduce((a,b) => a+b, 0);
-      if (timeOfDay) {
-        for (const timeframe of selectedTimeframes) {
-          const timeframeCandlesPerDay = AVAILABLE_TIMEFRAMES.find(avail_tf => avail_tf.id === timeframe).candlesPerDay;
-          dataLength /= timeframeCandlesPerDay;  
+      const extractLengths = async () => {
+        const assetTimeframesLengths = await Promise.all(
+          selectedAssets.flatMap(asset =>
+            selectedTimeframes.map(async tf => {
+              const assetTfData = await getCandles(asset, tf);
+              return assetTfData.length;
+            })
+            )
+          );
+        let totalLength = assetTimeframesLengths.reduce(
+          (sum, len) => sum + len,
+          0
+        );
+        if (timeOfDay) {
+          for (const timeframe of selectedTimeframes) {
+            const timeframeCandlesPerDay = AVAILABLE_TIMEFRAMES.find(avail_tf => avail_tf.id === timeframe).candlesPerDay;
+            totalLength /= timeframeCandlesPerDay;  
+          }
         }
+        // assuming max length of selected range (100), this is the time that it takes to process 1k candles
+        const timePerThousandCandles = 3;
+        const dataLengthThousands = totalLength / 1000;
+        const timeWithMaxPatternLength = dataLengthThousands * timePerThousandCandles;
+        const timeGivenPatternLength = timeWithMaxPatternLength * patternLength / maxPatternLength;
+        console.log(`thousands of records=${dataLengthThousands} 
+          pattern length=${patternLength} 
+          time with max pattern length=${timeWithMaxPatternLength}
+          time given pattern length=${timeGivenPatternLength}
+          `) 
+        setEstimatedSearchTime(timeGivenPatternLength);
       }
-      // assuming max length of selected range (100), this is the time that it takes to process 1k candles
-      const timePerThousandCandles = 3;
-      const dataLengthThousands = dataLength / 1000;
-      const timeWithMaxPatternLength = dataLengthThousands * timePerThousandCandles;
-      const timeGivenPatternLength = timeWithMaxPatternLength * patternLength / maxPatternLength;
-      console.log(`thousands of records=${dataLengthThousands} 
-        pattern length=${patternLength} 
-        time with max pattern length=${timeWithMaxPatternLength}
-        time given pattern length=${timeGivenPatternLength}
-        `)
-      return timeGivenPatternLength;
+
+      extractLengths();
     }
-    return null;
-  }
+  }, [selectedAssets, selectedTimeframes]);
 
   const handlePresetClick = (id: string) => {
     const preset = TIME_PRESETS.find(pr => pr.id === id);
@@ -410,9 +423,9 @@ export const SimilaritySearchDialog = ({
             )}
           </Button>
 
-          {!isSearching && calculateEstimatedTime() && (
+          {!isSearching && estimatedSearchTime && (
             <span className="mt-1 text-xs text-muted-foreground">
-              Estimated search time: {'<'}{Math.ceil(calculateEstimatedTime())} second(s)
+              Estimated search time: {'< '}{Math.ceil( estimatedSearchTime)} second(s)
             </span>
           )}
         </div>
