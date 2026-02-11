@@ -26,6 +26,8 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useCollections } from "@/hooks/useCollections";
 import { getCandles, loadCandleData } from "@/data/candles";
+import { useIndicators } from "@/hooks/useIndicators";
+import { IndicatorsLayer } from "@/components/indicators/IndicatorsLayer";
 
 type Timeframe = "1m" ;//| "5m" | "15m" | "1h" | "4h" | "1d";
 const AVAILABLE_ASSETS = [
@@ -131,6 +133,7 @@ const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
 const { collections, addResultToCollection } = useCollections();
 const [currentFragmentData, setCurrentFragmentData] = useState<CandleData[]>([]);
 const [outcomeData, setOutcomeData] = useState<CandleData[]>([]);
+const { activeIndicators, addIndicator, removeIndicator, updateParams } = useIndicators();
 
 useEffect(() => {
   const loadData = async () => {
@@ -496,11 +499,21 @@ return (
             {asset} – {timeframe}
           </h2>
 
-          <div
-            ref={chartRef}
-            className="w-full h-[600px]" // or h-full inside a flex container
-          />
-           {isSelecting && (
+          <div className="relative">
+            <div
+              ref={chartRef}
+              className="w-full h-[600px]"
+            />
+            <IndicatorsLayer
+              chartApi={chartApiRef.current}
+              candles={candles}
+              activeIndicators={activeIndicators}
+              onAdd={addIndicator}
+              onRemove={removeIndicator}
+              onUpdateParams={updateParams}
+            />
+          </div>
+          {isSelecting && (
             <p className="text-center text-muted-foreground mt-4">
               Click on the chart to set the left boundary, then click again to set the right boundary
             </p>
