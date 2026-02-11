@@ -516,12 +516,11 @@ const PatternDetailView = ({
     });
 
   return (
-    <div className="flex-1 flex flex-col gap-6">
+    <div className="flex-1 flex flex-col gap-4">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-foreground">{pattern.asset}</h3>
           <p className="text-muted-foreground mt-1">
-            {pattern.date} • {pattern.timeframe}
+            {pattern.asset} • {new Date(pattern.date).toLocaleDateString()} • {pattern.timeframe}
           </p>
         </div>
         <div className="flex items-center gap-3">

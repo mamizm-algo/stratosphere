@@ -14,7 +14,8 @@ import {
   ISeriesPrimitive,
   Time,
   IPrimitivePaneView,
-  Logical
+  Logical,
+  HistogramSeries
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,7 @@ const navigate = useNavigate();
 const chartRef = useRef<HTMLDivElement | null>(null);
 const chartApiRef = useRef<IChartApi | null>(null);
 const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
 const [candles, setCandles] = useState<CandleData[]>([]);
 const [asset, setAsset] = useState("GOLD");
 const [timeframe, setTimeframe] = useState<Timeframe>("1m");
@@ -130,15 +132,6 @@ const { collections, addResultToCollection } = useCollections();
 const [currentFragmentData, setCurrentFragmentData] = useState<CandleData[]>([]);
 const [outcomeData, setOutcomeData] = useState<CandleData[]>([]);
 
-
-// Load candles from imported data
-// useEffect(() => {
-//   const allData = [] //getCandles(asset, timeframe);
-//   const candleData = allData.slice(allData.length - 2000);
-  
-//   setCandles(candleData);
-// }, [asset, timeframe]);
-
 useEffect(() => {
   const loadData = async () => {
     const allData = await getCandles(asset, timeframe);
@@ -149,8 +142,6 @@ useEffect(() => {
 
   loadData();
 }, [asset, timeframe]);
-
-
 
 useEffect(() => {
   if (!chartRef.current) return;
@@ -182,10 +173,25 @@ useEffect(() => {
   height: chartRef.current.clientHeight,
 });
 
+  const volumeSeries = chart.addSeries(HistogramSeries, {
+    priceFormat: {
+        type: 'volume',
+    },
+    priceScaleId: '', // set as an overlay by setting a blank priceScaleId
+  });
+  volumeSeries.priceScale().applyOptions({
+      // set the positioning of the volume series
+      scaleMargins: {
+          top: 0.8, // highest point of the series will be 70% away from the top
+          bottom: 0,
+      },
+  });
+
   const series = chart.addSeries(CandlestickSeries);
 
   chartApiRef.current = chart;
   seriesRef.current = series;
+  volumeRef.current = volumeSeries;
 
   return () => chart.remove();
 }, []);
@@ -222,6 +228,14 @@ useEffect(() => {
   }));
 
   seriesRef.current.setData(data);
+
+  const volumeData = candles.map(c => ({
+    time: Math.floor(new Date(c.ctm).getTime() / 1000) as Time,
+    value: c.vol,
+    color: c.open >= c.close ? '#26a69983' : '#ef535080'
+  }));
+
+  volumeRef.current.setData(volumeData);
 }, [candles]);
 
 const startSelection = () => {

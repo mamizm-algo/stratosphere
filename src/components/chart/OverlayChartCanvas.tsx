@@ -5,6 +5,7 @@ import { Boxes, ChartCandlestick, MessageCircleQuestion, Trash2 } from "lucide-r
 import { ISeriesPrimitive, Time, Logical, IChartApi, IPrimitivePaneView, CandlestickSeries, createChart, CrosshairMode, ISeriesApi, MouseEventParams } from "lightweight-charts";
 import { TransactionBoxModel } from "./SimilarityResults";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { totalmem } from "os";
 
 const EDGE_TOLERANCE = 6;
 
@@ -272,7 +273,8 @@ export const OverlayChartCanvas = ({
     lastValueVisible: false,
     priceLineVisible: false,
   }));
-    chart.timeScale().fitContent();
+
+  // chart.timeScale().fitContent();
 
   chartApiRef.current = chart;
   seriesRef.current = series;
@@ -318,6 +320,16 @@ export const OverlayChartCanvas = ({
       });
      }
     outcomeSeries[i].setData(seriesData);
+  }
+
+  const fromTime = Math.floor(new Date(setupCandles[0].ctm).getTime() / 1000) as Time;
+  const toTime = Math.floor(new Date(outcomesData[0][0].ctm).getTime() / 1000) as Time;
+
+  if (fromTime && toTime) {
+    chart.timeScale().setVisibleRange({
+      from: 0 as Time,
+      to: candleIndex + 80 as Time,
+    });
   }
   
   return () => chart.remove(); 

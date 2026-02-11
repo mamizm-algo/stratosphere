@@ -100,7 +100,7 @@ export const searchSimilarPatterns = (
 ): SearchResult[] => {
   const results: SearchResult[] = [];
   const patternLength = referencePattern.length;
-  const outcomeLength = 80; // Default outcome bars to display
+  const outcomeLength = 200; // Default outcome bars to display
   const maxResults = 200; // Maximum number of results to return
   const timeFilter = searchConfig.timeOfDay === "" ? null : convertTimeToUTC(searchConfig.timeOfDay, searchConfig.timezoneOffset);
   

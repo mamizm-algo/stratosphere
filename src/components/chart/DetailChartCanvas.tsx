@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CandleData } from "./MockChartDisplay";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import {  CandlestickData, CandlestickSeries, createChart, CrosshairMode, IChartApi, IPrimitivePaneView, ISeriesApi, ISeriesPrimitive, Logical, Time } from "lightweight-charts";
+import {  CandlestickData, CandlestickSeries, createChart, CrosshairMode, HistogramSeries, IChartApi, IPrimitivePaneView, ISeriesApi, ISeriesPrimitive, Logical, Time } from "lightweight-charts";
 import { TransactionBoxModel } from "./SimilarityResults";
 import { Checkbox } from "../ui/checkbox";
 import { Switch } from "@/components/ui/switch"
@@ -145,6 +145,7 @@ export const DetailChartCanvas = ({
   const chartRef = useRef<HTMLDivElement | null>(null);
   const chartApiRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const baseChartSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const selectionPrimitiveRef = useRef<SetupOutcomeDividerPrimitive | null>(null);
   const transactionPrimitiveRef = useRef<TransactionBoxPrimitive | null>(null);
@@ -156,31 +157,31 @@ export const DetailChartCanvas = ({
     if (!chartRef.current) return;
 
     const chart = createChart(chartRef.current, {
-    layout: {
-      background: { color: "hsl(220, 25%, 8%)" },
-      textColor: "hsl(215, 20%, 65%)",
-    },
-    grid: {
-      vertLines: { color: "hsl(240 3.7% 15.9%)" },
-      horzLines: { color: "hsl(240 3.7% 15.9%)" },
-    },
-    crosshair: {
-      mode: CrosshairMode.Normal,
-    },
-    timeScale: {
-      borderColor: "hsl(240 3.7% 15.9%)",
-      timeVisible: true,     // show HH:mm
-      secondsVisible: false // optional (true for tick-level data)
-    },
-    // make chart responsive
-    rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
-    leftPriceScale: { visible: false },
-    handleScroll: true,
-    handleScale: true,
-    // this tells lightweight-charts to fill the container
-    width: chartRef.current.clientWidth,
-    height: chartRef.current.clientHeight,
-  });
+      layout: {
+        background: { color: "hsl(220, 25%, 8%)" },
+        textColor: "hsl(215, 20%, 65%)",
+      },
+      grid: {
+        vertLines: { color: "hsl(240 3.7% 15.9%)" },
+        horzLines: { color: "hsl(240 3.7% 15.9%)" },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+      },
+      timeScale: {
+        borderColor: "hsl(240 3.7% 15.9%)",
+        timeVisible: true,     // show HH:mm
+        secondsVisible: false // optional (true for tick-level data)
+      },
+      // make chart responsive
+      rightPriceScale: { scaleMargins: { top: 0.1, bottom: 0.1 } },
+      leftPriceScale: { visible: false },
+      handleScroll: true,
+      handleScale: true,
+      // this tells lightweight-charts to fill the container
+      width: chartRef.current.clientWidth,
+      height: chartRef.current.clientHeight,
+    });
 
     const series = chart.addSeries(CandlestickSeries);
     
@@ -194,13 +195,28 @@ export const DetailChartCanvas = ({
       wickDownColor: downColor,
       lastValueVisible: false,
       priceLineVisible: false,
-  });
+    });
 
-  chart.timeScale().fitContent();
+    const volumeSeries = chart.addSeries(HistogramSeries, {
+      priceFormat: {
+          type: 'volume',
+      },
+      priceScaleId: '', // set as an overlay by setting a blank priceScaleId
+    });
+    volumeSeries.priceScale().applyOptions({
+        // set the positioning of the volume series
+        scaleMargins: {
+            top: 0.8,
+            bottom: 0,
+        },
+    });
+
+    chart.timeScale().fitContent();
 
     chartApiRef.current = chart;
     seriesRef.current = series;
     baseChartSeriesRef.current = baseChartSeries;
+    volumeRef.current = volumeSeries;
 
     return () => chart.remove();
   }, [setupCandles, outcomeCandles]);
@@ -252,6 +268,14 @@ export const DetailChartCanvas = ({
     );
     seriesRef.current!.attachPrimitive(primitive);
     selectionPrimitiveRef.current = primitive;
+
+    const volumeData = allCandles.map(c => ({
+      time: Math.floor(new Date(c.ctm).getTime() / 1000) as Time,
+      value: c.vol,
+      color: c.open >= c.close ? '#26a69983' : '#ef535080'
+    }));
+
+    volumeRef.current.setData(volumeData);
   }, [setupCandles, outcomeCandles]);
 
   // ghost base chart
@@ -346,6 +370,13 @@ useEffect(() => {
     series.attachPrimitive(primitive);
     
     chart.applyOptions(chart.options()); // force first draw
+     volumeRef.current.priceScale().applyOptions({
+        // set the positioning of the volume series
+        scaleMargins: {
+            top: 0.8,
+            bottom: 0,
+        },
+    });
   } else {
     const series = seriesRef.current;
     if (!transactionPrimitiveRef.current) return;

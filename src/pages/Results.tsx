@@ -571,7 +571,7 @@ const Results = () => {
           {viewMode === "base" && (
             <div className="h-full">
               <BaseChartCanvas
-                candles={setupCandles.length > 0 ? setupCandles : generateMockCandles(20, 100, "sideways")}
+                candles={setupCandles}
                 chartType={baseChartType}
                 onChartTypeChange={setBaseChartType}
               />
@@ -897,12 +897,11 @@ const PatternDetailView = ({
   }));
 
   return (
-    <div className="flex-1 flex flex-col gap-3 min-h-0">
+    <div className="flex-1 flex flex-col gap-2 min-h-0">
       <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-foreground">{pattern.asset}</h3>
-          <p className="text-sm text-muted-foreground">
-            {pattern.date} • {pattern.timeframe}
+         <div>
+          <p className="text-muted-foreground mt-1">
+            {pattern.asset} • {new Date(pattern.date).toLocaleDateString()} • {pattern.timeframe}
           </p>
         </div>
         <Badge variant="secondary" className="bg-primary/10 text-primary text-base px-3 py-1">
