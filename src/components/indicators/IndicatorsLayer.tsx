@@ -30,6 +30,13 @@ export const IndicatorsLayer = ({
   const [configTarget, setConfigTarget] = useState<string | null>(null);
   const overlaySeriesRef = useRef<Map<string, ISeriesApi<"Line">[]>>(new Map());
 
+  let paneIndex = 1;
+
+  const removeIndicator = (instanceId: string) => {
+    console.log("panes", chartApi.panes.length)
+    onRemove(instanceId);
+  }
+
   // Separate overlay vs sub-chart indicators
   const overlayIndicators = useMemo(
     () => activeIndicators.filter((i) => getIndicatorById(i.definitionId)?.renderType === "overlay"),
@@ -75,6 +82,8 @@ export const IndicatorsLayer = ({
           color: line.color,
           lineWidth: 2,
           priceScaleId: "right",
+          priceLineVisible: false,
+          lastValueVisible: false,
         });
         series.setData(
           line.data.map((d) => ({
@@ -116,7 +125,7 @@ export const IndicatorsLayer = ({
       <IndicatorsButton onClick={() => setPickerOpen(true)} />
       <ActiveIndicatorsList
         indicators={activeIndicators}
-        onRemove={onRemove}
+        onRemove={removeIndicator}
         onConfigure={setConfigTarget}
       />
 
@@ -141,13 +150,13 @@ export const IndicatorsLayer = ({
       )}
 
       {/* Sub-chart panels rendered below main chart */}
-      {subChartIndicators.map((ind) => (
+      {subChartIndicators.map((ind, i) =>(
         <SubChartPanel
-          key={`${ind.instanceId}_${JSON.stringify(ind.params)}`}
+          key={`${ind.instanceId}_${JSON.stringify(ind.definitionId)}`}
           indicator={ind}
           candles={candles}
           mainChartApi={chartApi}
-          onRemove={onRemove}
+          onRemove={removeIndicator}
         />
       ))}
     </>

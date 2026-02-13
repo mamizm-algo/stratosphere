@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
 import {
-  createChart,
   IChartApi,
   LineSeries,
   HistogramSeries,
   Time,
   LogicalRange,
+  ISeriesApi,
 } from "lightweight-charts";
 import { ActiveIndicator, IndicatorOutput } from "@/lib/indicators/types";
 import { getIndicatorById } from "@/lib/indicators/registry";
@@ -23,54 +23,24 @@ export const SubChartPanel = ({
   indicator,
   candles,
   mainChartApi,
-  onRemove,
+  onRemove
 }: SubChartPanelProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const indicatorSeriesRef = useRef<ISeriesApi<"Line" | "Histogram">[]>([]);
 
   const def = getIndicatorById(indicator.definitionId);
-
+  console.log(indicator.instanceId)
   useEffect(() => {
     if (!containerRef.current || !def) return;
 
-    const chart = createChart(containerRef.current, {
-      layout: {
-        background: { color: "hsl(220, 25%, 8%)" },
-        textColor: "hsl(215, 20%, 65%)",
-      },
-      grid: {
-        vertLines: { color: "hsl(240, 3.7%, 15.9%)" },
-        horzLines: { color: "hsl(240, 3.7%, 15.9%)" },
-      },
-      width: containerRef.current.clientWidth,
-      height: 150,
-      timeScale: {
-        borderColor: "hsl(240, 3.7%, 15.9%)",
-        timeVisible: true,
-        secondsVisible: false,
-        visible: false,
-      },
-      rightPriceScale: {
-        borderColor: "hsl(240, 3.7%, 15.9%)",
-      },
-      handleScroll: false,
-      handleScale: false,
-      crosshair: { mode: 0 },
-    });
-
-    chartRef.current = chart;
-
-    // Resize
-    const ro = new ResizeObserver(() => {
-      if (containerRef.current) {
-        chart.resize(containerRef.current.clientWidth, 150);
-      }
-    });
-    ro.observe(containerRef.current);
-
+    chartRef.current = mainChartApi;
     return () => {
-      ro.disconnect();
-      chart.remove();
+      indicatorSeriesRef.current.forEach(s => {
+        s.setData([])
+        chartRef.current.removeSeries(s);
+      });
+      indicatorSeriesRef.current = [];
       chartRef.current = null;
     };
   }, [def]);
@@ -102,26 +72,54 @@ export const SubChartPanel = ({
     // lightweight-charts doesn't have removeAllSeries, so we track internally
     // For simplicity, remove chart and recreate on data change is handled by key prop
 
+    const paneIndex = chart.panes().length;
     // Add line series
     for (const line of output.lines) {
       const series = chart.addSeries(LineSeries, {
-        color: line.color,
-        lineWidth: 2,
-        priceScaleId: "right",
-      });
+          color: line.color,
+          lineWidth: 2,
+          priceScaleId: "right",
+          priceLineVisible: false,
+          lastValueVisible: false,
+        }, 
+        paneIndex
+      );
       series.setData(
         line.data.map((d) => ({
           time: (Math.floor(new Date(d.time).getTime() / 1000)) as Time,
           value: d.value,
         }))
       );
+      indicatorSeriesRef.current.push(series);
     }
 
     // Add histogram
     if (output.histogram) {
-      const hSeries = chart.addSeries(HistogramSeries, {
-        priceScaleId: "right",
-      });
+      let hSeries;
+
+      if (def.id == "volume") {
+        hSeries = chart.addSeries(HistogramSeries, {
+          priceFormat: {
+          type: 'volume',precision: 0, minMove: 1
+        },
+          priceScaleId: '',
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });
+        hSeries.priceScale().applyOptions({
+            // set the positioning of the volume series
+            scaleMargins: {
+                top: 0.85, // highest point of the series will be 70% away from the top
+                bottom: 0,
+            },
+        });
+      } else {
+         hSeries = chart.addSeries(HistogramSeries, {
+          priceScaleId: "right",
+          priceLineVisible: false,
+          lastValueVisible: false,
+        }, paneIndex);
+      }
       hSeries.setData(
         output.histogram.data.map((d) => ({
           time: (Math.floor(new Date(d.time).getTime() / 1000)) as Time,
@@ -129,6 +127,7 @@ export const SubChartPanel = ({
           color: d.color,
         }))
       );
+      indicatorSeriesRef.current.push(hSeries);
     }
 
     // Fit content

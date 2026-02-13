@@ -19,8 +19,7 @@ export const ActiveIndicatorsList = ({
   if (indicators.length === 0) return null;
 
   return (
-    <div className="absolute top-10 right-2 z-10 bg-background/90 backdrop-blur-sm border border-border rounded-md p-2 min-w-[140px]">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 px-1">Active</p>
+    <div className="absolute top-12 left-2 z-10 text-foreground/30 hover:text-foreground transition-colors hover:backdrop-blur-sm hover:border border-border rounded-md p-2 min-w-[100px]">
       {indicators.map((ind) => {
         const def = getIndicatorById(ind.definitionId);
         if (!def) return null;
@@ -32,13 +31,13 @@ export const ActiveIndicatorsList = ({
         return (
           <div
             key={ind.instanceId}
-            className="flex items-center justify-between gap-2 px-1 py-0.5 rounded text-xs hover:bg-accent/30 transition-colors"
+            className="flex items-center justify-between gap-2 px-1 py-0.5 rounded text-xs transition-colors"
             onMouseEnter={() => setHoveredId(ind.instanceId)}
             onMouseLeave={() => setHoveredId(null)}
           >
-            <span className="text-foreground">
+            <span>
               {def.shortName}
-              <span className="text-muted-foreground">{paramStr}</span>
+              <span>{paramStr}</span>
             </span>
             {hoveredId === ind.instanceId && (
               <div className="flex items-center gap-0.5">

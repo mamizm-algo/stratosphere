@@ -5,6 +5,7 @@ export const macdDefinition: IndicatorDefinition = {
   id: "macd",
   name: "MACD",
   shortName: "MACD",
+  canBeMultiple: true,
   renderType: "sub-chart",
   params: [
     { key: "fastPeriod", label: "Fast Period", type: "number", default: 12, min: 2, max: 100 },

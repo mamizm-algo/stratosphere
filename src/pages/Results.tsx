@@ -126,13 +126,6 @@ const Results = () => {
     transactionParamsRef.current = newTransactionParams;
   }
   const settersRef = useRef<Array<(v: TransactionBoxModel) => void>>([setTransactionParams]);
-
-  const [, forceUpdate] = useState({});
-  
-  // const setTransactionParams = useCallback((params: TransactionBoxModel | null) => {
-  //   transactionParamsRef.current = params;
-  //   forceUpdate({});
-  // }, []);
   
   const transactionParams = transactionParamsRef.current;
 

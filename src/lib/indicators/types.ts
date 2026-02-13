@@ -38,6 +38,7 @@ export interface IndicatorDefinition {
   id: string;
   name: string;
   shortName: string;
+  canBeMultiple: boolean;
   renderType: RenderType;
   params: IndicatorParam[];
   calculate: (candles: CandleData[], params: Record<string, number>) => IndicatorOutput;

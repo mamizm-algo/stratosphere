@@ -87,7 +87,6 @@
 import { CandleData } from "@/components/chart/MockChartDisplay";
 
 export const loadCandleData = async (): Promise<Record<string, CandleData[]>> => {
-  console.log("Lazy-loading candle data...");
   const module = await import('./candle-data.json'); // dynamic import
   const candleDataJson: any[] = module.default;
 

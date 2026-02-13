@@ -5,6 +5,7 @@ export const emaDefinition: IndicatorDefinition = {
   id: "ema",
   name: "Exponential Moving Average",
   shortName: "EMA",
+  canBeMultiple: true,
   renderType: "overlay",
   params: [
     { key: "period", label: "Period", type: "number", default: 20, min: 2, max: 500 },

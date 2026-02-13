@@ -5,6 +5,7 @@ export const volumeDefinition: IndicatorDefinition = {
   id: "volume",
   name: "Volume",
   shortName: "Vol",
+  canBeMultiple: false,
   renderType: "sub-chart",
   params: [],
   calculate: (candles) => {
@@ -14,7 +15,7 @@ export const volumeDefinition: IndicatorDefinition = {
       histogram: {
         data: bars.map((b) => ({
           time: b.time,
-          value: b.value,
+          value: b.volumeValue, 
           color: b.color,
         })),
       },

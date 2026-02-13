@@ -5,6 +5,7 @@ export const rsiDefinition: IndicatorDefinition = {
   id: "rsi",
   name: "Relative Strength Index",
   shortName: "RSI",
+  canBeMultiple: true,
   renderType: "sub-chart",
   params: [
     { key: "period", label: "Period", type: "number", default: 14, min: 2, max: 100 },

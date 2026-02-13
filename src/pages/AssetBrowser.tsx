@@ -119,7 +119,6 @@ const navigate = useNavigate();
 const chartRef = useRef<HTMLDivElement | null>(null);
 const chartApiRef = useRef<IChartApi | null>(null);
 const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
 const [candles, setCandles] = useState<CandleData[]>([]);
 const [asset, setAsset] = useState("GOLD");
 const [timeframe, setTimeframe] = useState<Timeframe>("1m");
@@ -176,25 +175,24 @@ useEffect(() => {
   height: chartRef.current.clientHeight,
 });
 
-  const volumeSeries = chart.addSeries(HistogramSeries, {
-    priceFormat: {
-        type: 'volume',
-    },
-    priceScaleId: '', // set as an overlay by setting a blank priceScaleId
-  });
-  volumeSeries.priceScale().applyOptions({
-      // set the positioning of the volume series
-      scaleMargins: {
-          top: 0.8, // highest point of the series will be 70% away from the top
-          bottom: 0,
-      },
-  });
+  // const volumeSeries = chart.addSeries(HistogramSeries, {
+  //   priceFormat: {
+  //       type: 'volume',
+  //   },
+  //   priceScaleId: '', // set as an overlay by setting a blank priceScaleId
+  // });
+  // volumeSeries.priceScale().applyOptions({
+  //     // set the positioning of the volume series
+  //     scaleMargins: {
+  //         top: 0.8, // highest point of the series will be 70% away from the top
+  //         bottom: 0,
+  //     },
+  // });
 
   const series = chart.addSeries(CandlestickSeries);
 
   chartApiRef.current = chart;
   seriesRef.current = series;
-  volumeRef.current = volumeSeries;
 
   return () => chart.remove();
 }, []);
@@ -231,14 +229,6 @@ useEffect(() => {
   }));
 
   seriesRef.current.setData(data);
-
-  const volumeData = candles.map(c => ({
-    time: Math.floor(new Date(c.ctm).getTime() / 1000) as Time,
-    value: c.vol,
-    color: c.open >= c.close ? '#26a69983' : '#ef535080'
-  }));
-
-  volumeRef.current.setData(volumeData);
 }, [candles]);
 
 const startSelection = () => {

@@ -35,29 +35,18 @@ export const IndicatorPickerDialog = ({
           <DialogDescription>Select a technical indicator to add to the chart.</DialogDescription>
         </DialogHeader>
         <div className="space-y-1">
-          {definitions.map((def) => (
+          {definitions.filter((def) => !isActive(def.id) || def.canBeMultiple ).map((def) => (
             <div
               key={def.id}
-              className="flex items-center justify-between p-3 rounded-md hover:bg-accent/50 transition-colors"
-            >
-              <div>
-                <p className="text-sm font-medium text-foreground">{def.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {def.renderType === "overlay" ? "Overlay" : "Sub-chart"}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant={isActive(def.id) ? "secondary" : "default"}
-                onClick={() => {
+              className="flex items-center justify-between p-1 rounded-md hover:bg-accent/50 transition-colors"
+              onClick={() => {
                   onAdd(def.id);
                   onOpenChange(false);
                 }}
-                className="gap-1"
-              >
-                {isActive(def.id) ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-                Add
-              </Button>
+            >
+              <div>
+                <p className="text-sm font-medium text-foreground">{def.name}</p>
+              </div>
             </div>
           ))}
         </div>
