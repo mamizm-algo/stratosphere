@@ -6,7 +6,7 @@ export const volumeDefinition: IndicatorDefinition = {
   name: "Volume",
   shortName: "Vol",
   canBeMultiple: false,
-  renderType: "sub-chart",
+  renderType: "overlay",
   params: [],
   calculate: (candles) => {
     const bars = extractVolume(candles);

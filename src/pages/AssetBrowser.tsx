@@ -496,6 +496,7 @@ return (
             />
             <IndicatorsLayer
               chartApi={chartApiRef.current}
+              chartRef = {chartRef.current}
               candles={candles}
               activeIndicators={activeIndicators}
               onAdd={addIndicator}

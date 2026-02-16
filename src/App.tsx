@@ -17,8 +17,6 @@ import Sandbox from "./pages/Sandbox";
 import LaunchingSoon from "./pages/LaunchingSoon";
 import NotFound from "./pages/NotFound";
 
-console.log("App render");
-
 const queryClient = new QueryClient();
 
 const App = () => {

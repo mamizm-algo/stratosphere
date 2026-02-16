@@ -17,7 +17,8 @@ interface SubChartPanelProps {
   mainChartApi: IChartApi | null;
   onRemove: (instanceId: string) => void;
   onSeriesReady?: (instanceId: string, series: ISeriesApi<"Line" | "Histogram">[]) => void;
-}
+paneIndex: number
+  }
 
 export const SubChartPanel = ({
   indicator,
@@ -25,6 +26,7 @@ export const SubChartPanel = ({
   mainChartApi,
   onRemove,
   onSeriesReady,
+  paneIndex,
 }: SubChartPanelProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -44,7 +46,7 @@ export const SubChartPanel = ({
       indicatorSeriesRef.current = [];
       // Notify parent series are gone
       onSeriesReady?.(indicator.instanceId, []);
-      chartRef.current = null;
+      chartRef.current = null; 
     };
   }, [def]);
 
@@ -68,10 +70,12 @@ export const SubChartPanel = ({
   useEffect(() => {
     if (!chartRef.current || !def || candles.length === 0) return;
 
+    const seriesToRemove = indicatorSeriesRef.current;
+
     const output: IndicatorOutput = def.calculate(candles, indicator.params);
     const chart = chartRef.current;
 
-    const paneIndex = chart.panes().length;
+    // const paneIndex = chart.panes().length;
     const newSeries: ISeriesApi<"Line" | "Histogram">[] = [];
 
     // Add line series
@@ -97,29 +101,12 @@ export const SubChartPanel = ({
     // Add histogram
     if (output.histogram) {
       let hSeries;
-
-      if (def.id == "volume") {
-        hSeries = chart.addSeries(HistogramSeries, {
-          priceFormat: {
-          type: 'volume', precision: 0, minMove: 1
-        },
-          priceScaleId: '',
-          priceLineVisible: false,
-          lastValueVisible: false,
-        });
-        hSeries.priceScale().applyOptions({
-            scaleMargins: {
-                top: 0.85,
-                bottom: 0,
-            },
-        });
-      } else {
-         hSeries = chart.addSeries(HistogramSeries, {
-          priceScaleId: "right",
-          priceLineVisible: false,
-          lastValueVisible: false,
-        }, paneIndex);
-      }
+      hSeries = chart.addSeries(HistogramSeries, {
+        priceScaleId: "right",
+        priceLineVisible: false,
+        lastValueVisible: false,
+      }, paneIndex);
+      
       hSeries.setData(
         output.histogram.data.map((d) => ({
           time: (Math.floor(new Date(d.time).getTime() / 1000)) as Time,
@@ -131,6 +118,11 @@ export const SubChartPanel = ({
     }
 
     indicatorSeriesRef.current = newSeries;
+
+     seriesToRemove.forEach(s => {
+        s.setData([]);
+        chartRef.current?.removeSeries(s);
+      });
 
     // Notify parent of series refs for crosshair tracking
     onSeriesReady?.(indicator.instanceId, newSeries);
@@ -150,8 +142,6 @@ export const SubChartPanel = ({
   if (!def) return null;
 
   return (
-    <div className="relative border-t border-border">
-      <div ref={containerRef} className="w-full h-[150px]" />
-    </div>
+    <div ref={containerRef} />
   );
 };

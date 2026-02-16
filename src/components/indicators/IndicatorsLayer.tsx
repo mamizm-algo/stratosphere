@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { IChartApi, LineSeries, ISeriesApi, Time } from "lightweight-charts";
+import { IChartApi, LineSeries, ISeriesApi, Time, HistogramSeries } from "lightweight-charts";
 import { ActiveIndicator, IndicatorOutput } from "@/lib/indicators/types";
 import { getIndicatorById } from "@/lib/indicators/registry";
 import { CandleData } from "@/components/chart/MockChartDisplay";
@@ -11,6 +11,7 @@ import { PaneIndicatorLabel, CrosshairValues } from "./PaneIndicatorLabel";
 
 interface IndicatorsLayerProps {
   chartApi: IChartApi | null;
+  chartRef: HTMLDivElement;
   candles: CandleData[];
   activeIndicators: ActiveIndicator[];
   onAdd: (definitionId: string) => void;
@@ -20,6 +21,7 @@ interface IndicatorsLayerProps {
 
 export const IndicatorsLayer = ({
   chartApi,
+  chartRef,
   candles,
   activeIndicators,
   onAdd,
@@ -28,9 +30,10 @@ export const IndicatorsLayer = ({
 }: IndicatorsLayerProps) => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [configTarget, setConfigTarget] = useState<string | null>(null);
+  const [labelGroups, setLabelGroups] = useState(null);
+
   const [crosshairValues, setCrosshairValues] = useState<CrosshairValues>({});
-  const [paneOffsets, setPaneOffsets] = useState<number[]>([]);
-  const overlaySeriesRef = useRef<Map<string, ISeriesApi<"Line">[]>>(new Map());
+  const overlaySeriesRef = useRef<Map<string, ISeriesApi<"Line" | "Histogram">[]>>(new Map());
   const subChartSeriesRef = useRef<Map<string, ISeriesApi<"Line" | "Histogram">[]>>(new Map());
 
   // Separate overlay vs sub-chart indicators
@@ -80,7 +83,7 @@ export const IndicatorsLayer = ({
         }
       }
 
-      const newSeries: ISeriesApi<"Line">[] = [];
+      const newSeries: ISeriesApi<"Line" | "Histogram">[] = [];
       for (const line of output.lines) {
         const series = chartApi.addSeries(LineSeries, {
           color: line.color,
@@ -96,6 +99,31 @@ export const IndicatorsLayer = ({
           }))
         );
         newSeries.push(series);
+      }
+      if (def.id == "volume") {
+        const series = chartApi.addSeries(HistogramSeries, {
+          priceFormat: {
+          type: 'volume', precision: 0, minMove: 1
+        },
+          priceScaleId: '',
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });
+        series.priceScale().applyOptions({
+            scaleMargins: {
+                top: 0.85,
+                bottom: 0,
+            },
+        });
+        series.setData(
+          output.histogram.data.map((d) => ({
+            time: (Math.floor(new Date(d.time).getTime() / 1000)) as Time,
+            value: d.value,
+            color: d.color,
+          }))
+        );
+        newSeries.push(series);
+
       }
       overlaySeriesRef.current.set(ind.instanceId, newSeries);
     }
@@ -172,86 +200,32 @@ export const IndicatorsLayer = ({
     };
   }, [chartApi, activeIndicators, candles]);
 
-  // Detect pane positions from DOM
-  useEffect(() => {
-    if (!chartApi) return;
-
-    const detectPanes = () => {
-      // lightweight-charts renders panes inside a table structure
-      // We look for the chart container's internal pane elements
-      const chartContainer = (chartApi as any)._private__chartWidget?._private__element
-        || document.querySelector('.tv-lightweight-charts');
-      
-      if (!chartContainer) {
-        // Fallback: use chart.panes() count and estimate positions
-        const panes = chartApi.panes();
-        if (panes.length <= 1) {
-          setPaneOffsets([]);
-          return;
-        }
-        // We can't reliably get pixel offsets without DOM inspection
-        // Use the chart element's children to find pane separators
-        const el = (chartApi as any).chartElement?.();
-        if (el) {
-          const rows = el.querySelectorAll('tr');
-          const offsets: number[] = [];
-          rows.forEach((row: HTMLElement) => {
-            offsets.push(row.offsetTop);
-          });
-          setPaneOffsets(offsets);
-        }
-        return;
-      }
-    };
-
-    // Detect on a short delay after renders
-    const timer = setTimeout(detectPanes, 100);
+  const paneHeights = chartApi?.panes().map(pane => pane.getHeight().toString())
+    .reduce((sum, height) => sum + height, "");
     
-    // Also observe for changes
-    const observer = new MutationObserver(() => {
-      setTimeout(detectPanes, 50);
-    });
+  useEffect(() => {
+    if (!chartApi || !subChartSeriesRef.current) return;
 
-    const el = (chartApi as any).chartElement?.();
-    if (el) {
-      observer.observe(el, { childList: true, subtree: true });
+    const calculatePaneOffsets = () => {
+      let heightSoFar = 0;
+      const subChartReverse = [...subChartIndicators].reverse();
+      const groups = subChartReverse.map((ind, i) => {
+        const paneIdx = subChartIndicators.length - i;
+        const paneHeight = chartApi.panes()[paneIdx].getHeight();
+        heightSoFar += paneHeight;
+        return {
+          paneIndex: paneIdx,
+          indicator: ind,
+          topOffset: heightSoFar,
+        };
+      });
+
+      setLabelGroups(groups);
     }
 
-    return () => {
-      clearTimeout(timer);
-      observer.disconnect();
-    };
-  }, [chartApi, subChartIndicators.length]);
+    setTimeout(calculatePaneOffsets, 100);
+  }, [chartApi, chartRef, subChartIndicators, paneHeights]);
 
-  // Build pane mapping: which indicators go on which pane
-  // Pane 0 = main chart (overlay indicators)
-  // Pane 1+ = sub-chart indicators in order
-  const paneIndicatorGroups = useMemo(() => {
-    const groups: { paneIndex: number; indicators: ActiveIndicator[]; topOffset: number }[] = [];
-
-    // Overlay indicators on pane 0
-    if (overlayIndicators.length > 0) {
-      groups.push({
-        paneIndex: 0,
-        indicators: overlayIndicators,
-        topOffset: 36, // below the Indicators button
-      });
-    }
-
-    // Sub-chart indicators each get their own pane
-    subChartIndicators.forEach((ind, i) => {
-      // Try to use detected pane offsets, otherwise estimate
-      const paneIdx = i + 1;
-      const offset = paneOffsets[paneIdx] ?? undefined;
-      groups.push({
-        paneIndex: paneIdx,
-        indicators: [ind],
-        topOffset: offset ?? 0,
-      });
-    });
-
-    return groups;
-  }, [overlayIndicators, subChartIndicators, paneOffsets]);
 
   // Config dialog state
   const configIndicator = configTarget
@@ -273,7 +247,7 @@ export const IndicatorsLayer = ({
           crosshairValues={crosshairValues}
           onRemove={onRemove}
           onConfigure={setConfigTarget}
-          style={{ top: 36 }}
+          style={{ top: 50 }}
         />
       )}
 
@@ -298,14 +272,14 @@ export const IndicatorsLayer = ({
       )}
 
       {/* Sub-chart panels with pane-aligned labels */}
-      {subChartIndicators.map((ind) => (
-        <div key={`${ind.instanceId}_${JSON.stringify(ind.definitionId)}`} className="relative">
+      {subChartIndicators.map((ind, i) => (
+        <div key={`${ind.instanceId}_${JSON.stringify(ind.definitionId)}`}>
           <PaneIndicatorLabel
             indicators={[ind]}
             crosshairValues={crosshairValues}
             onRemove={onRemove}
             onConfigure={setConfigTarget}
-            style={{ top: 4 }}
+            style={{ bottom: labelGroups.find(group => group.indicator.instanceId == ind.instanceId)?.topOffset }}
           />
           <SubChartPanel
             indicator={ind}
@@ -313,6 +287,7 @@ export const IndicatorsLayer = ({
             mainChartApi={chartApi}
             onRemove={onRemove}
             onSeriesReady={handleSeriesReady}
+            paneIndex = {i+1}
           />
         </div>
       ))}
