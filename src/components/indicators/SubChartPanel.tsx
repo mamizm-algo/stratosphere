@@ -16,8 +16,8 @@ interface SubChartPanelProps {
   candles: CandleData[];
   mainChartApi: IChartApi | null;
   onSeriesReady?: (instanceId: string, series: ISeriesApi<"Line" | "Histogram">[]) => void;
-  paneIndex: number
-  }
+  paneIndex: number;
+}
 
 export const SubChartPanel = ({
   indicator,
@@ -27,39 +27,40 @@ export const SubChartPanel = ({
   paneIndex,
 }: SubChartPanelProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
+  /**
+   * We track the series we created so we can swap them out on param changes.
+   * We do NOT try to remove them when the chart is unmounted — the chart.remove()
+   * call from the host component destroys all panes/series automatically.
+   * Only remove series when WE are replacing them (param update) while the chart
+   * is still alive.
+   */
   const indicatorSeriesRef = useRef<ISeriesApi<"Line" | "Histogram">[]>([]);
+  const chartRef = useRef<IChartApi | null>(null);
 
   const def = getIndicatorById(indicator.definitionId);
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Bind to the chart instance
+  // When mainChartApi changes (new chart), we simply reset our refs.
+  // The old series are already gone because the old chart was removed.
+  // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!containerRef.current || !def) return;
-
     chartRef.current = mainChartApi;
+
     return () => {
-      const chart = chartRef.current;
-
-      if (!chart) return;
-
-      // guard: chart might already be disposed
-      try {
-        indicatorSeriesRef.current.forEach(s => {
-          if (s && chart.panes().length > 0) {
-            chart.removeSeries(s);
-          }
-        });
-      } catch {
-        // chart already destroyed → ignore
-        console.warn("Removing indicators when chart alerady destroyed")
-      }
+      // The chart may or may not be alive here. Either way, the pane + its series
+      // are cleaned up by chart.remove() in the host. We just clear our refs so
+      // we don't accidentally reference stale series on the next render.
       indicatorSeriesRef.current = [];
-      // Notify parent series are gone
       onSeriesReady?.(indicator.instanceId, []);
-      chartRef.current = null; 
+      chartRef.current = null;
     };
-  }, [def]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainChartApi]);
 
+  // ─────────────────────────────────────────────────────────────────────────
   // Sync time scale with main chart
+  // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mainChartApi || !chartRef.current) return;
 
@@ -75,21 +76,30 @@ export const SubChartPanel = ({
     };
   }, [mainChartApi]);
 
-  // Render indicator data
+  // ─────────────────────────────────────────────────────────────────────────
+  // Render / re-render indicator data
+  // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!chartRef.current || !def || candles.length === 0) return;
+    const chart = chartRef.current;
+    if (!chart || !def || candles.length === 0) return;
 
-    const seriesToRemove = indicatorSeriesRef.current;
+    // Remove the previous series for this indicator (chart is still alive here —
+    // this effect fires when params change, not when the chart is torn down).
+    const old = indicatorSeriesRef.current;
+    if (old.length > 0) {
+      for (const s of old) {
+        chart.removeSeries(s);
+      }
+      indicatorSeriesRef.current = [];
+    }
 
     const output: IndicatorOutput = def.calculate(candles, indicator.params);
-    const chart = chartRef.current;
-
-    // const paneIndex = chart.panes().length;
     const newSeries: ISeriesApi<"Line" | "Histogram">[] = [];
 
-    // Add line series
     for (const line of output.lines) {
-      const series = chart.addSeries(LineSeries, {
+      const series = chart.addSeries(
+        LineSeries,
+        {
           color: line.color,
           lineWidth: 2,
           priceScaleId: "right",
@@ -100,25 +110,26 @@ export const SubChartPanel = ({
       );
       series.setData(
         line.data.map((d) => ({
-          time: (Math.floor(new Date(d.time).getTime() / 1000)) as Time,
+          time: Math.floor(new Date(d.time).getTime() / 1000) as Time,
           value: d.value,
         }))
       );
       newSeries.push(series);
     }
 
-    // Add histogram
     if (output.histogram) {
-      let hSeries;
-      hSeries = chart.addSeries(HistogramSeries, {
-        priceScaleId: "right",
-        priceLineVisible: false,
-        lastValueVisible: false,
-      }, paneIndex);
-      
+      const hSeries = chart.addSeries(
+        HistogramSeries,
+        {
+          priceScaleId: "right",
+          priceLineVisible: false,
+          lastValueVisible: false,
+        },
+        paneIndex
+      );
       hSeries.setData(
         output.histogram.data.map((d) => ({
-          time: (Math.floor(new Date(d.time).getTime() / 1000)) as Time,
+          time: Math.floor(new Date(d.time).getTime() / 1000) as Time,
           value: d.value,
           color: d.color,
         }))
@@ -127,32 +138,17 @@ export const SubChartPanel = ({
     }
 
     indicatorSeriesRef.current = newSeries;
-
-    try {
-      seriesToRemove.forEach(s => {
-        s.setData([]);
-        chartRef.current?.removeSeries(s);
-      });
-    } catch {}
-
-    // Notify parent of series refs for crosshair tracking
     onSeriesReady?.(indicator.instanceId, newSeries);
 
-    // Fit content
     chart.timeScale().fitContent();
 
-    // Sync initial range
     if (mainChartApi) {
       const range = mainChartApi.timeScale().getVisibleLogicalRange();
-      if (range) {
-        chart.timeScale().setVisibleLogicalRange(range);
-      }
+      if (range) chart.timeScale().setVisibleLogicalRange(range);
     }
-  }, [candles, indicator.params, def]);
+  }, [candles, indicator.params, def, mainChartApi, paneIndex]);
 
   if (!def) return null;
 
-  return (
-    <div ref={containerRef} />
-  );
+  return <div ref={containerRef} />;
 };
