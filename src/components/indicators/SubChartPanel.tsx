@@ -4,7 +4,6 @@ import {
   LineSeries,
   HistogramSeries,
   Time,
-  LogicalRange,
   ISeriesApi,
 } from "lightweight-charts";
 import { ActiveIndicator, IndicatorOutput } from "@/lib/indicators/types";
@@ -27,71 +26,61 @@ export const SubChartPanel = ({
   paneIndex,
 }: SubChartPanelProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+
   /**
-   * We track the series we created so we can swap them out on param changes.
-   * We do NOT try to remove them when the chart is unmounted — the chart.remove()
-   * call from the host component destroys all panes/series automatically.
-   * Only remove series when WE are replacing them (param update) while the chart
-   * is still alive.
+   * Series currently rendered on the chart.
    */
   const indicatorSeriesRef = useRef<ISeriesApi<"Line" | "Histogram">[]>([]);
-  const chartRef = useRef<IChartApi | null>(null);
+
+  /**
+   * Whether the chart is being destroyed (mainChartApi went null or changed).
+   * When true, we must NOT call removeSeries — the chart.remove() call in the
+   * host component will clean up all series automatically.
+   */
+  const chartBeingDestroyedRef = useRef(false);
 
   const def = getIndicatorById(indicator.definitionId);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Bind to the chart instance
-  // When mainChartApi changes (new chart), we simply reset our refs.
-  // The old series are already gone because the old chart was removed.
+  // Track chart lifecycle: set the "being destroyed" flag so the render effect
+  // cleanup knows not to call removeSeries on a dead chart.
   // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    chartRef.current = mainChartApi;
+    chartBeingDestroyedRef.current = false;
 
     return () => {
-      // The chart may or may not be alive here. Either way, the pane + its series
-      // are cleaned up by chart.remove() in the host. We just clear our refs so
-      // we don't accidentally reference stale series on the next render.
-      indicatorSeriesRef.current = [];
-      onSeriesReady?.(indicator.instanceId, []);
-      chartRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainChartApi]);
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Sync time scale with main chart
-  // ─────────────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!mainChartApi || !chartRef.current) return;
-
-    const handler = (range: LogicalRange | null) => {
-      if (range && chartRef.current) {
-        chartRef.current.timeScale().setVisibleLogicalRange(range);
-      }
-    };
-
-    mainChartApi.timeScale().subscribeVisibleLogicalRangeChange(handler);
-    return () => {
-      mainChartApi.timeScale().unsubscribeVisibleLogicalRangeChange(handler);
+      // Fires when mainChartApi changes or component unmounts.
+      // If mainChartApi is being replaced/nulled, the host calls chart.remove()
+      // which wipes all series — we must not touch them.
+      // If the component unmounts while the chart is still alive (indicator removed
+      // by user), the render-effect cleanup below handles series removal.
+      chartBeingDestroyedRef.current = true;
     };
   }, [mainChartApi]);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Render / re-render indicator data
+  // Render / re-render indicator data. Cleanup removes series only when the
+  // chart is still alive (param update or user-initiated indicator removal).
   // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const chart = chartRef.current;
+    const chart = mainChartApi;
     if (!chart || !def || candles.length === 0) return;
 
-    // Remove the previous series for this indicator (chart is still alive here —
-    // this effect fires when params change, not when the chart is torn down).
-    const old = indicatorSeriesRef.current;
-    if (old.length > 0) {
+    // Remove old series (chart is alive — param/data update)
+    const removeOld = () => {
+      const old = indicatorSeriesRef.current;
+      if (old.length === 0) return;
       for (const s of old) {
-        chart.removeSeries(s);
+        try {
+          chart.removeSeries(s);
+        } catch {
+          // Already gone — safe to ignore
+        }
       }
       indicatorSeriesRef.current = [];
-    }
+    };
+
+    removeOld();
 
     const output: IndicatorOutput = def.calculate(candles, indicator.params);
     const newSeries: ISeriesApi<"Line" | "Histogram">[] = [];
@@ -140,13 +129,35 @@ export const SubChartPanel = ({
     indicatorSeriesRef.current = newSeries;
     onSeriesReady?.(indicator.instanceId, newSeries);
 
-    chart.timeScale().fitContent();
+    // Sync time range with the main chart
+    const range = chart.timeScale().getVisibleLogicalRange();
+    if (range) chart.timeScale().setVisibleLogicalRange(range);
 
-    if (mainChartApi) {
-      const range = mainChartApi.timeScale().getVisibleLogicalRange();
-      if (range) chart.timeScale().setVisibleLogicalRange(range);
-    }
-  }, [candles, indicator.params, def, mainChartApi, paneIndex]);
+    return () => {
+      // This cleanup fires when candles/params change (we re-render above)
+      // OR when the component unmounts (indicator removed by user).
+      // In both cases, if the chart is being destroyed, skip — chart.remove()
+      // handles it. Only remove series when the chart is still alive.
+      if (chartBeingDestroyedRef.current) {
+        indicatorSeriesRef.current = [];
+        onSeriesReady?.(indicator.instanceId, []);
+        return;
+      }
+      // Chart is alive — explicitly remove series (e.g. indicator was removed)
+      const toRemove = indicatorSeriesRef.current;
+      if (toRemove.length > 0) {
+        for (const s of toRemove) {
+          try {
+            chart.removeSeries(s);
+          } catch {
+            // Already gone
+          }
+        }
+        indicatorSeriesRef.current = [];
+      }
+      onSeriesReady?.(indicator.instanceId, []);
+    };
+  }, [candles, indicator.params, def, mainChartApi, paneIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!def) return null;
 
