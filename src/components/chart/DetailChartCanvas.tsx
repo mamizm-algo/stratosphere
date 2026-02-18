@@ -154,7 +154,7 @@ export const DetailChartCanvas = ({
   const [showBaseChart, setShowBaseChart] = useState<boolean>(true);
   const [baseGhostChart, setBaseGhostChart] = useState<CandlestickData<Time> [] | null>(null);
   const { activeIndicators, addIndicator, removeIndicator, updateParams } = useIndicators();
-
+  const [chartApi, setChartApi] = useState<IChartApi | null>(null);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -221,7 +221,13 @@ export const DetailChartCanvas = ({
     baseChartSeriesRef.current = baseChartSeries;
     volumeRef.current = volumeSeries;
 
-    return () => chart.remove();
+    // Expose to React state so IndicatorsLayer re-renders with the new instance
+    setChartApi(chart);
+
+    return () => {
+      setChartApi(null);
+      chart.remove();
+    };
   }, [setupCandles, outcomeCandles]);
 
   useEffect(() => {
@@ -439,7 +445,7 @@ useEffect(() => {
               className="w-full h-[600px]"
             />
             <IndicatorsLayer
-              chartApi={chartApiRef.current}
+              chartApi={chartApi}
               candles={allCandles}
               activeIndicators={activeIndicators}
               onAdd={addIndicator}
