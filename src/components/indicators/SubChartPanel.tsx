@@ -15,16 +15,14 @@ interface SubChartPanelProps {
   indicator: ActiveIndicator;
   candles: CandleData[];
   mainChartApi: IChartApi | null;
-  onRemove: (instanceId: string) => void;
   onSeriesReady?: (instanceId: string, series: ISeriesApi<"Line" | "Histogram">[]) => void;
-paneIndex: number
+  paneIndex: number
   }
 
 export const SubChartPanel = ({
   indicator,
   candles,
   mainChartApi,
-  onRemove,
   onSeriesReady,
   paneIndex,
 }: SubChartPanelProps) => {
@@ -39,10 +37,21 @@ export const SubChartPanel = ({
 
     chartRef.current = mainChartApi;
     return () => {
-      indicatorSeriesRef.current.forEach(s => {
-        s.setData([]);
-        chartRef.current?.removeSeries(s);
-      });
+      const chart = chartRef.current;
+
+      if (!chart) return;
+
+      // guard: chart might already be disposed
+      try {
+        indicatorSeriesRef.current.forEach(s => {
+          if (s && chart.panes().length > 0) {
+            chart.removeSeries(s);
+          }
+        });
+      } catch {
+        // chart already destroyed → ignore
+        console.warn("Removing indicators when chart alerady destroyed")
+      }
       indicatorSeriesRef.current = [];
       // Notify parent series are gone
       onSeriesReady?.(indicator.instanceId, []);
@@ -119,10 +128,12 @@ export const SubChartPanel = ({
 
     indicatorSeriesRef.current = newSeries;
 
-     seriesToRemove.forEach(s => {
+    try {
+      seriesToRemove.forEach(s => {
         s.setData([]);
         chartRef.current?.removeSeries(s);
       });
+    } catch {}
 
     // Notify parent of series refs for crosshair tracking
     onSeriesReady?.(indicator.instanceId, newSeries);

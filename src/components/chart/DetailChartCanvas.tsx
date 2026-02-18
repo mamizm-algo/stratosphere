@@ -6,6 +6,8 @@ import { TransactionBoxModel } from "./SimilarityResults";
 import { Checkbox } from "../ui/checkbox";
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils";
+import { IndicatorsLayer } from "../indicators/IndicatorsLayer";
+import { useIndicators } from "@/hooks/useIndicators";
 
 
 
@@ -151,6 +153,7 @@ export const DetailChartCanvas = ({
   const transactionPrimitiveRef = useRef<TransactionBoxPrimitive | null>(null);
   const [showBaseChart, setShowBaseChart] = useState<boolean>(true);
   const [baseGhostChart, setBaseGhostChart] = useState<CandlestickData<Time> [] | null>(null);
+  const { activeIndicators, addIndicator, removeIndicator, updateParams } = useIndicators();
 
 
   useEffect(() => {
@@ -243,11 +246,11 @@ export const DetailChartCanvas = ({
 
 
 
+  const allCandles = setupCandles.concat(outcomeCandles);
   useEffect(() => {
     if (!seriesRef.current || !chartApiRef.current) return;
 
     // Combine both sets of candles
-    const allCandles = setupCandles.concat(outcomeCandles);
     const seriesData = allCandles.map((c) => ({
       time: Math.floor(new Date(c.ctm).getTime() / 1000) as Time,
       open: c.open,
@@ -430,10 +433,20 @@ useEffect(() => {
           </div>
         </div>
       )}
-      <div
-        ref={chartRef}
-        className="w-full h-[600px]" // or h-full inside a flex container
-      />
+     <div className="relative">
+            <div
+              ref={chartRef}
+              className="w-full h-[600px]"
+            />
+            <IndicatorsLayer
+              chartApi={chartApiRef.current}
+              candles={allCandles}
+              activeIndicators={activeIndicators}
+              onAdd={addIndicator}
+              onRemove={removeIndicator}
+              onUpdateParams={updateParams}
+            />
+          </div>
     </div>
   );
 };

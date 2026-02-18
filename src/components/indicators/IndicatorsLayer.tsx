@@ -11,7 +11,6 @@ import { PaneIndicatorLabel, CrosshairValues } from "./PaneIndicatorLabel";
 
 interface IndicatorsLayerProps {
   chartApi: IChartApi | null;
-  chartRef: HTMLDivElement;
   candles: CandleData[];
   activeIndicators: ActiveIndicator[];
   onAdd: (definitionId: string) => void;
@@ -21,7 +20,6 @@ interface IndicatorsLayerProps {
 
 export const IndicatorsLayer = ({
   chartApi,
-  chartRef,
   candles,
   activeIndicators,
   onAdd,
@@ -224,7 +222,7 @@ export const IndicatorsLayer = ({
     }
 
     setTimeout(calculatePaneOffsets, 100);
-  }, [chartApi, chartRef, subChartIndicators, paneHeights]);
+  }, [chartApi, subChartIndicators, paneHeights]);
 
 
   // Config dialog state
@@ -285,7 +283,6 @@ export const IndicatorsLayer = ({
             indicator={ind}
             candles={candles}
             mainChartApi={chartApi}
-            onRemove={onRemove}
             onSeriesReady={handleSeriesReady}
             paneIndex = {i+1}
           />
