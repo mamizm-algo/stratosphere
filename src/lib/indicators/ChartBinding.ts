@@ -235,9 +235,15 @@ export class ChartBinding {
     for (const s of seriesList) {
       try {
         this.chart.removeSeries(s);
-      } catch {
+      } catch (err) {
         // Already removed or chart disposed — safe to ignore at the boundary
         // between dispose() being called and chart.remove() being called.
+        // This is expected behavior during chart lifecycle transitions.
+        if (!this.disposed) {
+          console.debug(
+            `Series removal encountered an error during normal operation: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
       }
     }
   }
