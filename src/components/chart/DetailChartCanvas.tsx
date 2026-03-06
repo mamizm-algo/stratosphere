@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { CandleData } from "./MockChartDisplay";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import {  CandlestickData, CandlestickSeries, createChart, CrosshairMode, HistogramSeries, IChartApi, IPrimitivePaneView, ISeriesApi, ISeriesPrimitive, Logical, Time } from "lightweight-charts";
@@ -8,6 +8,8 @@ import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils";
 import { IndicatorsLayer } from "../indicators/IndicatorsLayer";
 import { useIndicators } from "@/hooks/useIndicators";
+import { aggregateCandles } from "@/lib/candle-aggregation";
+import { TimeframeButton, Timeframe } from "./TimeframeButton";
 
 
 
@@ -154,6 +156,49 @@ export const DetailChartCanvas = ({
   const [baseGhostChart, setBaseGhostChart] = useState<CandlestickData<Time> [] | null>(null);
   const { activeIndicators, addIndicator, removeIndicator, updateParams } = useIndicators();
   const [chartApi, setChartApi] = useState<IChartApi | null>(null);
+  const [timeframe, setTimeframe] = useState<Timeframe>("1m");
+
+  // Aggregate candles based on selected timeframe
+  const aggregatedCandles = useMemo(() => {
+    const allCandles = setupCandles.concat(outcomeCandles);
+    if (timeframe === "1m") return allCandles;
+    const timeframeMinutes = parseInt(timeframe);
+    return aggregateCandles(allCandles, timeframeMinutes);
+  }, [setupCandles, outcomeCandles, timeframe]);
+
+  const aggregatedSetupCandles = useMemo(() => {
+    if (timeframe === "1m") return setupCandles;
+    const timeframeMinutes = parseInt(timeframe);
+    return aggregateCandles(setupCandles, timeframeMinutes);
+  }, [setupCandles, timeframe]);
+
+  const aggregatedBaseChart = useMemo(() => {
+    if (timeframe === "1m") return baseChart;
+    const timeframeMinutes = parseInt(timeframe);
+    return aggregateCandles(baseChart, timeframeMinutes);
+  }, [baseChart, timeframe]);
+
+  // Calculate divider index: find where the setup/outcome split is in aggregated candles
+  const dividerTimestamp =
+    setupCandles.length > 0
+      ? Math.floor(new Date(setupCandles[setupCandles.length - 1].ctm * 1000).getTime() / 1000)
+      : 0;
+
+  const effectiveDividerIndex = useMemo(() => {
+    if (dividerTimestamp === 0) return aggregatedSetupCandles.length;
+
+    // Find the index in aggregated candles that matches the divider timestamp
+    const dividerCandleIndex = aggregatedSetupCandles.findIndex(
+      (candle) =>
+        Math.floor(new Date(candle.ctm * 1000).getTime() / 1000) ===
+        dividerTimestamp
+    );
+
+    // Return index of first outcome candle
+    return dividerCandleIndex >= 0
+      ? dividerCandleIndex + 1
+      : aggregatedSetupCandles.length;
+  }, [aggregatedSetupCandles, dividerTimestamp]);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -236,12 +281,12 @@ export const DetailChartCanvas = ({
 
 
 
-  const allCandles = setupCandles.concat(outcomeCandles);
+  // const allCandles = aggregatedSetupCandles.concat(aggregatedOutcomeCandles);
   useEffect(() => {
     if (!seriesRef.current || !chartApiRef.current) return;
 
     // Combine both sets of candles
-    const seriesData = allCandles.map((c) => ({
+    const seriesData = aggregatedCandles.map((c) => ({
       time: Math.floor(new Date(c.ctm).getTime() / 1000) as Time,
       open: c.open,
       high: c.high,
@@ -254,7 +299,7 @@ export const DetailChartCanvas = ({
       seriesRef.current.detachPrimitive(selectionPrimitiveRef.current);
     }
 
-    const dividerIndex = setupCandles.length; // e.g., first candle of outcomeCandles
+    const dividerIndex = effectiveDividerIndex;
     const primitive = new SetupOutcomeDividerPrimitive(
         chartApiRef.current!,
         dividerIndex as Logical
@@ -262,7 +307,7 @@ export const DetailChartCanvas = ({
     seriesRef.current!.attachPrimitive(primitive);
     selectionPrimitiveRef.current = primitive;
 
-  }, [setupCandles, outcomeCandles]);
+  }, [aggregatedSetupCandles, effectiveDividerIndex]);
 
   // ghost base chart
   useEffect(() => {
@@ -270,13 +315,13 @@ export const DetailChartCanvas = ({
 
     // align to outcome open
     const seriesData = [];
-    const lastIndex = setupCandles.length - 1;
-    const setupClose = setupCandles[lastIndex].close;
-    const baseChartClose =  baseChart[baseChart.length - 1].close;
+    const lastIndex = aggregatedSetupCandles.length - 1;
+    const setupClose = aggregatedSetupCandles[lastIndex].close;
+    const baseChartClose =  aggregatedBaseChart[aggregatedBaseChart.length - 1].close;
     const baseToSetupOffset = setupClose - baseChartClose;
-    for (let i = 0; i < baseChart.length; i++) {
-      const baseCandle = baseChart[i];
-      const setupCandle = setupCandles[setupCandles.length - baseChart.length + i];
+    for (let i = 0; i < aggregatedBaseChart.length; i++) {
+      const baseCandle = aggregatedBaseChart[i];
+      const setupCandle = aggregatedSetupCandles[aggregatedSetupCandles.length - aggregatedBaseChart.length + i];
       seriesData.push({
         time: Math.floor(new Date(setupCandle.ctm).getTime() / 1000),
         open: baseCandle.open + baseToSetupOffset,
@@ -289,7 +334,7 @@ export const DetailChartCanvas = ({
     if (showBaseChart) {
       baseChartSeriesRef.current.setData(seriesData);
     }
-  }, [setupCandles, outcomeCandles]);
+  }, [aggregatedSetupCandles, aggregatedBaseChart]);
 
   // ghost base chart
   useEffect(() => {
@@ -313,6 +358,15 @@ useEffect(() => {
   const chart = chartApiRef.current;
   const series = seriesRef.current;
   if (!chart || !series) return;
+
+  // Only show transaction box at 1m timeframe
+  if (timeframe !== "1m") {
+    if (transactionPrimitiveRef.current) {
+      series.detachPrimitive(transactionPrimitiveRef.current);
+      transactionPrimitiveRef.current = null;
+    }
+    return;
+  }
 
   if (transactionParams) {
     if (transactionPrimitiveRef.current) {
@@ -343,8 +397,8 @@ useEffect(() => {
     const offsetLossPrice = normalizedLossPrice - setupOffset;
     const denormalizedLossPrice = (offsetLossPrice - 100) * (setupMax - setupMin) + setupMin;
     const lossSize = denormalizedLossPrice - openPrice;
-   
-     
+
+
     const detailTransaction: TransactionBoxModel = {
       entryPrice: openPrice,
       profitSize: profitSize,
@@ -356,7 +410,7 @@ useEffect(() => {
     const primitive = new TransactionBoxPrimitive(chart, series, detailTransaction);
     transactionPrimitiveRef.current = primitive;
     series.attachPrimitive(primitive);
-    
+
     chart.applyOptions(chart.options()); // force first draw
   } else {
     const series = seriesRef.current;
@@ -367,7 +421,7 @@ useEffect(() => {
     chart.applyOptions(chart.options()); // force first draw
 
   }
-}, [transactionParams, setupCandles])
+}, [transactionParams, setupCandles, timeframe])
 
 
   return (
@@ -416,9 +470,10 @@ useEffect(() => {
               ref={chartRef}
               className="w-full h-[600px]"
             />
+            <TimeframeButton value={timeframe} onChange={setTimeframe} />
             <IndicatorsLayer
               chartApi={chartApi}
-              candles={allCandles}
+              candles={aggregatedSetupCandles}
               activeIndicators={activeIndicators}
               onAdd={addIndicator}
               onRemove={removeIndicator}

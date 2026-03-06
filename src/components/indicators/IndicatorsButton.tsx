@@ -9,7 +9,7 @@ export const IndicatorsButton = ({ onClick }: IndicatorsButtonProps) => {
   return (
     <Button
       variant="outline"
-      size="sm"
+      // size="sm"
       onClick={onClick}
       className="absolute top-2 left-2 z-10 gap-1.5 bg-background/80 backdrop-blur-sm border-border hover:bg-accent"
     >
