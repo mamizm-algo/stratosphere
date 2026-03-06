@@ -57,6 +57,16 @@ export const IndicatorsLayer = ({
     [activeIndicators]
   );
 
+  // Create stable pane index assignments: each indicator's pane never changes
+  // based on array position, only on its identity (instanceId)
+  const paneAssignments = useMemo(() => {
+    const assignments = new Map<string, number>();
+    subChartIndicators.forEach((ind, index) => {
+      assignments.set(ind.instanceId, index + 1);
+    });
+    return assignments;
+  }, [subChartIndicators]);
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Binding lifecycle: tied to chartApi identity
   // When chartApi changes (new chart instance), the old binding is disposed
@@ -200,7 +210,7 @@ export const IndicatorsLayer = ({
             candles={candles}
             mainChartApi={chartApi}
             onSeriesReady={handleSeriesReady}
-            paneIndex={i + 1}
+            paneIndex={paneAssignments.get(ind.instanceId) ?? i + 1}
           />
         </div>
       ))}

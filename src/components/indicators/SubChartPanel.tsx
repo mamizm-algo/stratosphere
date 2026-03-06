@@ -157,7 +157,7 @@ export const SubChartPanel = ({
       }
       onSeriesReady?.(indicator.instanceId, []);
     };
-  }, [candles, indicator.params, def, mainChartApi, paneIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [candles, indicator.params, def, mainChartApi, indicator.definitionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!def) return null;
 
