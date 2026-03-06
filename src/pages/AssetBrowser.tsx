@@ -175,20 +175,6 @@ useEffect(() => {
   height: chartRef.current.clientHeight,
 });
 
-  // const volumeSeries = chart.addSeries(HistogramSeries, {
-  //   priceFormat: {
-  //       type: 'volume',
-  //   },
-  //   priceScaleId: '', // set as an overlay by setting a blank priceScaleId
-  // });
-  // volumeSeries.priceScale().applyOptions({
-  //     // set the positioning of the volume series
-  //     scaleMargins: {
-  //         top: 0.8, // highest point of the series will be 70% away from the top
-  //         bottom: 0,
-  //     },
-  // });
-
   const series = chart.addSeries(CandlestickSeries);
 
   chartApiRef.current = chart;
@@ -352,7 +338,6 @@ const handleSearch = async (config: SearchConfig) => {
     const selectedCandles = candles.slice(selectedRange.start, selectedRange.end);
 
     // Search through all imported data for similar patterns
-    const allData = await loadCandleData();
     const searchResults = searchSimilarPatterns(
       selectedCandles,
       await loadCandleData(),

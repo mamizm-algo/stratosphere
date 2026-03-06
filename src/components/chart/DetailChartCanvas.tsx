@@ -271,10 +271,12 @@ export const DetailChartCanvas = ({
     // align to outcome open
     const seriesData = [];
     const lastIndex = setupCandles.length - 1;
-    const baseToSetupOffset = setupCandles[lastIndex].close - baseChart[lastIndex].close
+    const setupClose = setupCandles[lastIndex].close;
+    const baseChartClose =  baseChart[baseChart.length - 1].close;
+    const baseToSetupOffset = setupClose - baseChartClose;
     for (let i = 0; i < baseChart.length; i++) {
       const baseCandle = baseChart[i];
-      const setupCandle = setupCandles[i];
+      const setupCandle = setupCandles[setupCandles.length - baseChart.length + i];
       seriesData.push({
         time: Math.floor(new Date(setupCandle.ctm).getTime() / 1000),
         open: baseCandle.open + baseToSetupOffset,

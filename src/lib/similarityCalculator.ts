@@ -100,8 +100,8 @@ export const searchSimilarPatterns = (
 ): SearchResult[] => {
   const results: SearchResult[] = [];
   const patternLength = referencePattern.length;
-  const outcomeLength = 200; // Default outcome bars to display
-  const maxResults = 200; // Maximum number of results to return
+  const outcomeLength = 100; // Default outcome bars to display
+  const maxResults = 100; // Maximum number of results to return
   const timeFilter = searchConfig.timeOfDay === "" ? null : convertTimeToUTC(searchConfig.timeOfDay, searchConfig.timezoneOffset);
   
   // Iterate through all assets and timeframes in the search config
@@ -153,7 +153,8 @@ export const searchSimilarPatterns = (
 
       // Use sliding window to find all possible patterns
       for (let i = 0; i <= filteredCandles.length - patternLength - outcomeLength; i++) {
-        const candidatePattern = filteredCandles.slice(Math.max(0,i-700), i + patternLength);
+        const candidatePattern = filteredCandles.slice(i, i + patternLength);
+        const candidateSetup = filteredCandles.slice(Math.max(0, i-100), i + patternLength);
         const outcomeCandles = filteredCandles.slice(i + patternLength, i + patternLength + outcomeLength);
 
         const outcomeStartTime = new Date(outcomeCandles[0].ctm);
@@ -188,7 +189,7 @@ export const searchSimilarPatterns = (
             timeframe,
             date: outcomeStartTime.toISOString() || new Date().toISOString(),
             outcome,
-            setupCandles: candidatePattern,
+            setupCandles: candidateSetup,
             outcomeCandles,
             startIndex: i,
             endIndex: i + patternLength - 1,
