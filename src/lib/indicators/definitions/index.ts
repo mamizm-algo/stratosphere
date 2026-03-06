@@ -6,7 +6,7 @@ import { IndicatorDefinition } from "../types";
 
 export const allIndicatorDefinitions: IndicatorDefinition[] = [
   emaDefinition,
-  rsiDefinition,
-  macdDefinition,
+  // rsiDefinition,
+  // macdDefinition,
   volumeDefinition,
 ];
