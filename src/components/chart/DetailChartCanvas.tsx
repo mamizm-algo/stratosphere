@@ -147,7 +147,6 @@ export const DetailChartCanvas = ({
   const chartRef = useRef<HTMLDivElement | null>(null);
   const chartApiRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const volumeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const baseChartSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const selectionPrimitiveRef = useRef<SetupOutcomeDividerPrimitive | null>(null);
   const transactionPrimitiveRef = useRef<TransactionBoxPrimitive | null>(null);
@@ -200,26 +199,11 @@ export const DetailChartCanvas = ({
       priceLineVisible: false,
     });
 
-    const volumeSeries = chart.addSeries(HistogramSeries, {
-      priceFormat: {
-          type: 'volume',
-      },
-      priceScaleId: '', // set as an overlay by setting a blank priceScaleId
-    });
-    volumeSeries.priceScale().applyOptions({
-        // set the positioning of the volume series
-        scaleMargins: {
-            top: 0.8,
-            bottom: 0,
-        },
-    });
-
     chart.timeScale().fitContent();
 
     chartApiRef.current = chart;
     seriesRef.current = series;
     baseChartSeriesRef.current = baseChartSeries;
-    volumeRef.current = volumeSeries;
 
     // Expose to React state so IndicatorsLayer re-renders with the new instance
     setChartApi(chart);
@@ -278,13 +262,6 @@ export const DetailChartCanvas = ({
     seriesRef.current!.attachPrimitive(primitive);
     selectionPrimitiveRef.current = primitive;
 
-    const volumeData = allCandles.map(c => ({
-      time: Math.floor(new Date(c.ctm).getTime() / 1000) as Time,
-      value: c.vol,
-      color: c.open >= c.close ? '#26a69983' : '#ef535080'
-    }));
-
-    volumeRef.current.setData(volumeData);
   }, [setupCandles, outcomeCandles]);
 
   // ghost base chart
@@ -379,13 +356,6 @@ useEffect(() => {
     series.attachPrimitive(primitive);
     
     chart.applyOptions(chart.options()); // force first draw
-     volumeRef.current.priceScale().applyOptions({
-        // set the positioning of the volume series
-        scaleMargins: {
-            top: 0.8,
-            bottom: 0,
-        },
-    });
   } else {
     const series = seriesRef.current;
     if (!transactionPrimitiveRef.current) return;

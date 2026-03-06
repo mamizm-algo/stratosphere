@@ -109,8 +109,6 @@ export const searchSimilarPatterns = (
     searchConfig.timeframes.forEach((timeframe) => {
       const key = `${asset}_${timeframe}`;
       const candles = allCandleData[key];
-      //  TODO: find where candle data is lost in the search
-      //  note: variable: candles correct at this point
       if (!candles || candles.length < patternLength + outcomeLength) {
         return; // Skip if not enough data
       }
@@ -153,10 +151,9 @@ export const searchSimilarPatterns = (
       }
 
 
-      
       // Use sliding window to find all possible patterns
       for (let i = 0; i <= filteredCandles.length - patternLength - outcomeLength; i++) {
-        const candidatePattern = filteredCandles.slice(i, i + patternLength);
+        const candidatePattern = filteredCandles.slice(Math.max(0,i-700), i + patternLength);
         const outcomeCandles = filteredCandles.slice(i + patternLength, i + patternLength + outcomeLength);
 
         const outcomeStartTime = new Date(outcomeCandles[0].ctm);

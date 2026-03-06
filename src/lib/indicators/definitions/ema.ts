@@ -1,6 +1,8 @@
 import { IndicatorDefinition } from "../types";
 import { calculateEMA } from "../calculations/ema";
 
+const colors = ["#2196F3", "#f0f321", "#f321c6", "#21e5f3", "#2196F3", "#2196F3"]
+
 export const emaDefinition: IndicatorDefinition = {
   id: "ema",
   name: "Exponential Moving Average",
@@ -18,7 +20,7 @@ export const emaDefinition: IndicatorDefinition = {
         {
           key: "ema",
           label: `EMA(${params.period})`,
-          color: "#2196F3",
+          color: colors[params.period % colors.length],
           data: result
             .map((v, i) => ({ time: candles[i].ctm, value: v! }))
             .filter((d) => d.value !== null && d.value !== undefined),

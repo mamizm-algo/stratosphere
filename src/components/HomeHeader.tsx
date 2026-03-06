@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { TrendingUp, PenTool, BarChart3, Library, Home, FlaskConical, Rocket } from "lucide-react";
+import { PenTool, BarChart3, Library, Home, FlaskConical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const HomeHeader = () => {
@@ -68,16 +68,6 @@ export const HomeHeader = () => {
           >
             <Home className="w-4 h-4" />
             <span className="hidden sm:inline">Home</span>
-          </Button>
-          <Button 
-            type="button"
-            variant="default" 
-            size="sm"
-            onClick={() => navigate("/launching-soon")}
-            className="gap-2 bg-primary hover:bg-primary/90"
-          >
-            <Rocket className="w-4 h-4" />
-            <span className="hidden sm:inline">Launching Soon</span>
           </Button>
         </nav>
       </div>
