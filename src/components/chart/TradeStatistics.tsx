@@ -36,6 +36,9 @@ export const TradeStatistics = ({ registerTransactionChange,  outcomes }: TradeS
       return null;
     }
 
+    // Calculate duration from startTime and endTime
+    const duration = Math.max(1, (transactionParams.endTime as number) - (transactionParams.startTime as number));
+
     const trades = outcomes.map((outcome) => {
       const outcomeCandles = outcome.outcomeCandles;
       if (!outcomeCandles || outcomeCandles.length === 0) return null;
@@ -66,45 +69,45 @@ export const TradeStatistics = ({ registerTransactionChange,  outcomes }: TradeS
 
       let result: "win" | "loss" | "timeout" = "timeout";
       let profit = 0;
-      let duration = transactionParams.duration;
+      let tradeCloseDuration = duration;
 
-      for (let i = 0; i < Math.min(outcomeCandles.length, transactionParams.duration); i++) {
+      for (let i = 0; i < Math.min(outcomeCandles.length, duration); i++) {
         const candle = outcomeCandles[i];
         if (isLong) {
           if (candle.high >= takeProfitPrice) {
             result = "win";
             profit = profitSize;
-            duration = i + 1;
+            tradeCloseDuration = i + 1;
             break;
           } else if (candle.low <= stopLossPrice) {
             result = "loss";
             profit = -lossSize;
-            duration = i + 1;
+            tradeCloseDuration = i + 1;
             break;
           }
         } else {
           if (candle.low   <= takeProfitPrice) {
             result = "win";
             profit = profitSize;
-            duration = i + 1;
+            tradeCloseDuration = i + 1;
             break;
           } else if (candle.high >= stopLossPrice) {
             result = "loss";
             profit = -lossSize;
-            duration = i + 1;
+            tradeCloseDuration = i + 1;
             break;
           }
         }
       }
 
       if (result === "timeout") {
-        const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.duration - 1)];
+        const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, duration - 1)];
         profit = isLong 
           ? ((lastCandle.close - entryPrice) / entryPrice) * 100
           : ((entryPrice - lastCandle.close) / entryPrice) * 100;
       }
 
-      return { result, profit, duration };
+      return { result, profit, duration: tradeCloseDuration };
     }).filter(t => t !== null);
 
     const wins = trades.filter(t => t!.result === "win").length;

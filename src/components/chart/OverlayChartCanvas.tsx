@@ -2,10 +2,9 @@ import { memo, useEffect, useRef, useState } from "react";
 import { CandleData } from "./MockChartDisplay";
 import { Button } from "../ui/button";
 import { Boxes, ChartCandlestick, MessageCircleQuestion, Trash2 } from "lucide-react";
-import { ISeriesPrimitive, Time, Logical, IChartApi, IPrimitivePaneView, CandlestickSeries, createChart, CrosshairMode, ISeriesApi, MouseEventParams } from "lightweight-charts";
+import { ISeriesPrimitive, Time, IChartApi, IPrimitivePaneView, CandlestickSeries, createChart, CrosshairMode, ISeriesApi, MouseEventParams } from "lightweight-charts";
 import { TransactionBoxModel } from "./SimilarityResults";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
-import { totalmem } from "os";
 
 const EDGE_TOLERANCE = 6;
 
@@ -28,19 +27,19 @@ function detectHoveredEdge(
   if (profitY === null || lossY === null) return null;
  
   const timeScale = chart.timeScale();
-  const right = timeScale.logicalToCoordinate(
-    (model.startLogical + model.duration) as Logical
-  );
+  const right = timeScale.timeToCoordinate(model.endTime);
+  const left = timeScale.timeToCoordinate(model.startTime);
 
-  const left = timeScale.logicalToCoordinate(model.startLogical) - EDGE_TOLERANCE;
+  if (right === null || left === null) return null;
+
   const top = Math.max(profitY, lossY) + EDGE_TOLERANCE;
   const bottom = Math.min(profitY, lossY) - EDGE_TOLERANCE;
 
-  if (x < left || x > right + EDGE_TOLERANCE || y < bottom || y > top) {
+  if (x < left - EDGE_TOLERANCE || x > right + EDGE_TOLERANCE || y < bottom || y > top) {
     return null;
   }
 
-  if (right !== null && Math.abs(x - right) < EDGE_TOLERANCE ) {
+  if (Math.abs(x - right) < EDGE_TOLERANCE ) {
     return "width";
   }
 
@@ -53,12 +52,12 @@ function detectHoveredEdge(
 
 
 class SetupOutcomeDividerPrimitive implements ISeriesPrimitive<Time> {
-  private dividerLogical: Logical;
+  private dividerTime: Time;
   private chart: IChartApi;
 
-  constructor(chart: IChartApi, dividerLogical: Logical) {
+  constructor(chart: IChartApi, dividerTime: Time) {
     this.chart = chart;
-    this.dividerLogical = dividerLogical;
+    this.dividerTime = dividerTime;
   }
 
   paneViews(): IPrimitivePaneView[] {
@@ -71,15 +70,7 @@ class SetupOutcomeDividerPrimitive implements ISeriesPrimitive<Time> {
               const height = scope.mediaSize.height;
               const timeScale = this.chart.timeScale();
 
-
-              const dividerXRight = timeScale.logicalToCoordinate(
-                this.dividerLogical
-              );
-              const dividerXLeft = timeScale.logicalToCoordinate(
-                this.dividerLogical-1 as Logical
-              );
-
-              const dividerX = (dividerXLeft + dividerXRight) / 2;
+              const dividerX = timeScale.timeToCoordinate(this.dividerTime);
 
               if (dividerX === null) return;
 
@@ -136,13 +127,10 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
             const ctx = scope.context;
             const timeScale = this.chart.timeScale();
             
-            const boxStartLeft = timeScale.logicalToCoordinate(this.model.startLogical - 1 as Logical);
-            const boxStartRight = timeScale.logicalToCoordinate(this.model.startLogical as Logical);
-            const boxStart = (boxStartLeft + boxStartRight) / 2;
-
-            const boxEndLeft = timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration - 1) as Logical);
-            const boxEndRight =timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration) as Logical);
-            const boxEnd = (boxEndLeft + boxEndRight) / 2;
+            const boxStart = timeScale.timeToCoordinate(this.model.startTime);
+            const boxEnd = timeScale.timeToCoordinate(this.model.endTime);
+            
+            if (boxStart === null || boxEnd === null) return;
             
             const entryY = this.series.priceToCoordinate(this.model.entryPrice);
 
@@ -297,10 +285,10 @@ export const OverlayChartCanvas = ({
   seriesRef.current.setData(seriesData);
 
   // divider
-  const dividerIndex = setupCandles.length;
+  const dividerTime = setupCandles.length as Time;
   const primitive = new SetupOutcomeDividerPrimitive(
     chartApiRef.current!,
-    dividerIndex as Logical
+    dividerTime
   );
   seriesRef.current!.attachPrimitive(primitive);
   
@@ -422,11 +410,11 @@ useEffect(() => {
     const x = e.clientX - rect.left;
 
     if (edge === "width") {
-      const logical = chart.timeScale().coordinateToLogical(x);
-      if (logical != null) {
+      const time = chart.timeScale().coordinateToTime(x);
+      if (time != null) {
         // using update to prevent snapping to default chart settings (scale/zoom)
         primitive.update({
-            duration: Math.max(1, logical - model.startLogical),
+            endTime: time as Time,
         });
       }
     } else {
@@ -527,19 +515,34 @@ useEffect(() => {
 // Transaction box
 const handleTransactionButton = () => {
   if (!transactionBox) {
-    const duration = 20;
-    const profitSize = 100 * Math.max(...outcomesData.map(outcome =>  Math.max(...outcome.slice(0, duration).map(outcomeCandle => outcomeCandle.high / outcome[0].open))))  - 100;
+    if (!setupCandles || setupCandles.length === 0 || !outcomesData || outcomesData.length === 0 || outcomesData[0].length === 0) {
+      return;
+    }
     
-    const model: TransactionBoxModel = {
-      entryPrice: setupCandles[setupCandles.length - 1].close,
-      profitSize: profitSize,
-      lossSize: -profitSize/2,
-      startLogical: setupCandles.length as Logical,
-      duration: duration,
-      position: "long",
-    };
-    onTransactionBoxChange?.(model);
-    setTransactionBox(model);
+    const duration = 20;
+    try {
+      const profitSize = 100 * Math.max(...outcomesData.map(outcome => {
+        if (!outcome || outcome.length === 0) return 100;
+        return Math.max(...outcome.slice(0, duration).map(outcomeCandle => outcomeCandle.high / outcome[0].open));
+      })) - 100;
+      
+      // Calculate times based on overlay chart's simple indexing
+      const startTime = setupCandles.length as Time;
+      const endTime = (setupCandles.length + duration) as Time;
+      
+      const model: TransactionBoxModel = {
+        entryPrice: setupCandles[setupCandles.length - 1].close,
+        profitSize: profitSize,
+        lossSize: -profitSize/2,
+        startTime: startTime,
+        endTime: endTime,
+        position: "long",
+      };
+      onTransactionBoxChange?.(model);
+      setTransactionBox(model);
+    } catch (error) {
+      console.error("Error creating transaction box:", error);
+    }
 
   } else {
     onTransactionBoxChange?.(null);
@@ -692,7 +695,7 @@ const handleTransactionButton = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Trade duration</p>
-                  <p className="text-lg font-semibold">{transactionBox.duration} candles</p>
+                  <p className="text-lg font-semibold">{Math.abs((transactionBox.endTime as number) - (transactionBox.startTime as number))} candles</p>
                 </div>
               </div>
         }

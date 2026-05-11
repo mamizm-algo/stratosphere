@@ -90,7 +90,8 @@ export const loadCandleData = async (): Promise<Record<string, CandleData[]>> =>
   const module = await import('./candle-data.json'); // dynamic import
   const candleDataJson: any[] = module.default;
 
-  const candleData: CandleData[] = candleDataJson.slice(0, 11000).map(c => ({ ...c }));
+  // const candleData: CandleData[] = candleDataJson.slice(0, 11000).map(c => ({ ...c }));
+  const candleData: CandleData[] = candleDataJson.map(c => ({ ...c }));
 
   const CANDLE_DATA: Record<string, CandleData[]> = {
     "GOLD_1m": candleData.map((candle_json) => {

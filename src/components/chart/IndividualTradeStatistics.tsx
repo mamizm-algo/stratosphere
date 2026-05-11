@@ -48,6 +48,9 @@ export const IndividualTradeStatistics = ({ transactionParams, individualOutcome
     const entryPrice = outcomeCandles[0].open;
     const isLong = transactionParams.position === "long";
 
+    // Calculate duration from startTime and endTime
+    const duration = Math.max(1, (transactionParams.endTime as number) - (transactionParams.startTime as number));
+
     const lastIndex = individualOutcome.setupCandles.length - 1;
     const setupOffset = 100 - normalize(individualOutcome.setupCandles[lastIndex].close, setupMin, setupMax);
     
@@ -65,39 +68,39 @@ export const IndividualTradeStatistics = ({ transactionParams, individualOutcome
 
     let result: "win" | "loss" | "timeout" = "timeout";
     let profit = 0;
-    let duration = transactionParams.duration;
+    let tradeCloseDuration = duration;
 
-    for (let i = 0; i < Math.min(outcomeCandles.length, transactionParams.duration); i++) {
+    for (let i = 0; i < Math.min(outcomeCandles.length, duration); i++) {
       const candle = outcomeCandles[i];
       if (isLong) {
         if (candle.high >= takeProfitPrice) {
           result = "win";
           profit = profitSize;
-          duration = i + 1;
+          tradeCloseDuration = i + 1;
           break;
         } else if (candle.low <= stopLossPrice) {
           result = "loss";
           profit = -lossSize;
-          duration = i + 1;
+          tradeCloseDuration = i + 1;
           break;
         }
       } else {
         if (candle.low <= takeProfitPrice) {
           result = "win";
           profit = profitSize;
-          duration = i + 1;
+          tradeCloseDuration = i + 1;
           break;
         } else if (candle.high >= stopLossPrice) {
           result = "loss";
           profit = -lossSize;
-          duration = i + 1;
+          tradeCloseDuration = i + 1;
           break;
         }
       }
     }
 
     if (result === "timeout") {
-      const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.duration - 1)];
+      const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, duration - 1)];
       profit = isLong
         ? ((lastCandle.close - entryPrice) / entryPrice) * 100
         : ((entryPrice - lastCandle.close) / entryPrice) * 100;
@@ -123,9 +126,9 @@ export const IndividualTradeStatistics = ({ transactionParams, individualOutcome
       <div className="space-y-4">
         {/* Individual Trade Statistics */}
         {individualStats && (
-          <Card className="p-4">
+          <Card className="px-4 py-2">
             <h3 className="text-sm font-semibold text-foreground mb-3">Trade Details</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Profit/Loss</p>
                 <p className={`text-xl font-bold ${individualStats.profit >= 0 ? "text-bullish" : "text-bearish"}`}>
@@ -136,18 +139,6 @@ export const IndividualTradeStatistics = ({ transactionParams, individualOutcome
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Similarity Score</p>
                 <p className="text-xl font-bold text-primary">{individualStats.similarity}%</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Asset</p>
-                <p className="text-sm font-semibold text-foreground">{individualStats.asset}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Timeframe</p>
-                <p className="text-sm font-semibold text-foreground">{individualStats.timeframe}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Date</p>
-                <p className="text-sm font-semibold text-foreground">{individualStats.date}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Outcome</p>

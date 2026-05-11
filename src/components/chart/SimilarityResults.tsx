@@ -41,7 +41,7 @@ import { DetailChartCanvas } from "./DetailChartCanvas";
 import { BaseChartCanvas } from "./BaseChartCanvas";
 import { SaveToLibraryDialog } from "@/components/library/SaveToLibraryDialog";
 import { useCollections } from "@/hooks/useCollections";
-import { Logical } from "lightweight-charts";
+import { Logical, Time } from "lightweight-charts";
 import { IndividualTradeStatistics } from "./IndividualTradeStatistics";
 
 export interface SimilarPattern {
@@ -74,8 +74,8 @@ export interface TransactionBoxModel {
   entryPrice: number;        // where profit & loss meet
   profitSize: number;        // height
   lossSize: number;          // height
-  startLogical: Logical;     // left edge
-  duration: number;             // candles
+  startTime: Time;           // start timestamp
+  endTime: Time;             // end timestamp
   position: "long" | "short";
 }
 
@@ -206,9 +206,9 @@ export const SimilarityResults = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm">
-      <div className="container mx-auto h-full flex flex-col py-6">
+      <div className="container mx-auto h-full flex flex-col py-6 min-h-0">
         {/* Header with Controls */}
-        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap flex-shrink-0">
           {/* Left: Title and Navigation */}
           <div className="flex items-center gap-4 min-w-0 flex-1">
             {collectionName ? (
@@ -305,7 +305,7 @@ export const SimilarityResults = ({
         
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden min-h-0">
           {viewMode === "base" && (
             <ScrollArea className="h-full">
               <div className="pb-6">
@@ -336,8 +336,8 @@ export const SimilarityResults = ({
           )}
 
           {viewMode === "detail" && filteredPatterns.length > 0 && (
-            <ScrollArea className="h-full">
-              <div className="flex flex-col">
+            <div className="flex flex-col h-full">
+              <div className="flex-1 h-full overflow-hidden">
                 <PatternDetailView
                   baseChart={setupCandles}
                   pattern={filteredPatterns[currentIndex]}
@@ -346,7 +346,8 @@ export const SimilarityResults = ({
                   registerTransactionChange={registerTransactionChangester}
                   transactionParams={transactionParams.current}
                 />
-                <div className="flex items-center justify-between mt-6 pt-6 border-t">
+              </div>
+              <div className="flex items-center justify-between mt-6 pt-6 border-t flex-shrink-0">
                   <Button
                     variant="outline"
                     onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
@@ -373,8 +374,7 @@ export const SimilarityResults = ({
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
-              </div>
-            </ScrollArea>
+            </div>
           )}
 
           {viewMode === "overlay" && (
@@ -516,8 +516,8 @@ const PatternDetailView = ({
     });
 
   return (
-    <div className="flex-1 flex flex-col gap-4">
-      <div className="flex items-start justify-between">
+    <div className="flex flex-col h-full">
+      <div className="flex-shrink-0">
         <div>
           <p className="text-muted-foreground mt-1">
             {pattern.asset} • {new Date(pattern.date).toLocaleDateString()} • {pattern.timeframe}
@@ -541,13 +541,15 @@ const PatternDetailView = ({
         </div>
       </div>
 
-      <IndividualTradeStatistics 
-        individualOutcome={pattern}
-        transactionParams={transactionParams} />
+      <div className="flex-shrink-0">
+        <IndividualTradeStatistics 
+          individualOutcome={pattern}
+          transactionParams={transactionParams} />
+      </div>
 
-      <div className="flex-1">
+      <div className="flex-1 h-full">
         <DetailChartCanvas
-          baseChart = {baseCandles}
+          baseChart={baseCandles}
           setupCandles={setupCandles}
           outcomeCandles={outcomeCandles}
           chartType={chartType}

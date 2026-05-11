@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { CandleData } from "./MockChartDisplay";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import {  CandlestickData, CandlestickSeries, createChart, CrosshairMode, HistogramSeries, IChartApi, IPrimitivePaneView, ISeriesApi, ISeriesPrimitive, Logical, Time } from "lightweight-charts";
+import {  CandlestickData, CandlestickSeries, createChart, CrosshairMode, HistogramSeries, IChartApi, IPrimitivePaneView, ISeriesApi, ISeriesPrimitive, Time } from "lightweight-charts";
 import { TransactionBoxModel } from "./SimilarityResults";
 import { Checkbox } from "../ui/checkbox";
 import { Switch } from "@/components/ui/switch"
@@ -10,16 +10,17 @@ import { IndicatorsLayer } from "../indicators/IndicatorsLayer";
 import { useIndicators } from "@/hooks/useIndicators";
 import { aggregateCandles } from "@/lib/candle-aggregation";
 import { TimeframeButton, Timeframe } from "./TimeframeButton";
+import { Button } from "../ui/button";
 
 
 
 class SetupOutcomeDividerPrimitive implements ISeriesPrimitive<Time> {
-  private dividerLogical: Logical;
+  private dividerTime: Time;
   private chart: IChartApi;
 
-  constructor(chart: IChartApi, dividerLogical: Logical) {
+  constructor(chart: IChartApi, dividerTime: Time) {
     this.chart = chart;
-    this.dividerLogical = dividerLogical;
+    this.dividerTime = dividerTime;
   }
 
   paneViews(): IPrimitivePaneView[] {
@@ -31,14 +32,7 @@ class SetupOutcomeDividerPrimitive implements ISeriesPrimitive<Time> {
               const ctx = scope.context;
               const height = scope.mediaSize.height;
 
-              const dividerXRight = this.chart.timeScale().logicalToCoordinate(
-                this.dividerLogical
-              );
-              const dividerXLeft = this.chart.timeScale().logicalToCoordinate(
-                this.dividerLogical-1 as Logical
-              );
-
-              const dividerX = (dividerXLeft + dividerXRight) / 2;
+              const dividerX = this.chart.timeScale().timeToCoordinate(this.dividerTime);
 
               if (dividerX === null) return;
 
@@ -84,16 +78,11 @@ class TransactionBoxPrimitive implements ISeriesPrimitive<Time> {
             const ctx = scope.context;
             const timeScale = this.chart.timeScale();
             
-            const boxStartLeft = timeScale.logicalToCoordinate(this.model.startLogical - 1 as Logical);
-            const boxStartRight = timeScale.logicalToCoordinate(this.model.startLogical as Logical);
-            const boxStart = (boxStartLeft + boxStartRight) / 2;
-            
-            const boxEndLeft = timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration - 1) as Logical);
-            const boxEndRight =timeScale.logicalToCoordinate((this.model.startLogical + this.model.duration) as Logical);
-            const boxEnd = (boxEndLeft + boxEndRight) / 2;
+            const boxStart = timeScale.timeToCoordinate(this.model.startTime);
+            const boxEnd = timeScale.timeToCoordinate(this.model.endTime);
             const entryY = this.series.priceToCoordinate(this.model.entryPrice);
 
-            if (entryY === null) return;
+            if (boxStart === null || boxEnd === null || entryY === null) return;
 
             const profitPrice = this.model.entryPrice + this.model.profitSize;
             const lossPrice = this.model.entryPrice + this.model.lossSize;
@@ -178,27 +167,13 @@ export const DetailChartCanvas = ({
     return aggregateCandles(baseChart, timeframeMinutes);
   }, [baseChart, timeframe]);
 
-  // Calculate divider index: find where the setup/outcome split is in aggregated candles
-  const dividerTimestamp =
-    setupCandles.length > 0
-      ? Math.floor(new Date(setupCandles[setupCandles.length - 1].ctm * 1000).getTime() / 1000)
-      : 0;
-
-  const effectiveDividerIndex = useMemo(() => {
-    if (dividerTimestamp === 0) return aggregatedSetupCandles.length;
-
-    // Find the index in aggregated candles that matches the divider timestamp
-    const dividerCandleIndex = aggregatedSetupCandles.findIndex(
-      (candle) =>
-        Math.floor(new Date(candle.ctm * 1000).getTime() / 1000) ===
-        dividerTimestamp
-    );
-
-    // Return index of first outcome candle
-    return dividerCandleIndex >= 0
-      ? dividerCandleIndex + 1
-      : aggregatedSetupCandles.length;
-  }, [aggregatedSetupCandles, dividerTimestamp]);
+  // Calculate divider timestamp: when the setup/outcome split occurs
+  // Use aggregated setup candles so divider aligns with displayed candles
+  const dividerTime = useMemo(() => {
+    if (aggregatedSetupCandles.length === 0) return 0 as Time;
+    const lastSetupCandle = aggregatedSetupCandles[aggregatedSetupCandles.length - 1];
+    return Math.floor(new Date(lastSetupCandle.ctm).getTime() / 1000) as Time;
+  }, [aggregatedSetupCandles]);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -299,15 +274,16 @@ export const DetailChartCanvas = ({
       seriesRef.current.detachPrimitive(selectionPrimitiveRef.current);
     }
 
-    const dividerIndex = effectiveDividerIndex;
-    const primitive = new SetupOutcomeDividerPrimitive(
-        chartApiRef.current!,
-        dividerIndex as Logical
-    );
-    seriesRef.current!.attachPrimitive(primitive);
-    selectionPrimitiveRef.current = primitive;
+    if (dividerTime !== (0 as Time)) {
+      const primitive = new SetupOutcomeDividerPrimitive(
+          chartApiRef.current!,
+          dividerTime
+      );
+      seriesRef.current!.attachPrimitive(primitive);
+      selectionPrimitiveRef.current = primitive;
+    }
 
-  }, [aggregatedSetupCandles, effectiveDividerIndex]);
+  }, [aggregatedCandles, dividerTime]);
 
   // ghost base chart
   useEffect(() => {
@@ -359,24 +335,13 @@ useEffect(() => {
   const series = seriesRef.current;
   if (!chart || !series) return;
 
-  // Only show transaction box at 1m timeframe
-  if (timeframe !== "1m") {
-    if (transactionPrimitiveRef.current) {
-      series.detachPrimitive(transactionPrimitiveRef.current);
-      transactionPrimitiveRef.current = null;
-    }
-    return;
+
+  if (transactionPrimitiveRef.current) {
+    series.detachPrimitive(transactionPrimitiveRef.current);
+    transactionPrimitiveRef.current = null;
   }
 
-  if (transactionParams) {
-    if (transactionPrimitiveRef.current) {
-      const series = seriesRef.current;
-      if (!transactionPrimitiveRef.current) return;
-
-      series.detachPrimitive(transactionPrimitiveRef.current);
-      transactionPrimitiveRef.current = null;
-    }
-
+  if (transactionParams && outcomeCandles.length > 0) {
     // convert from relative values to absolute for detail transaction view
     const openPrice = outcomeCandles[0].open;
 
@@ -398,79 +363,60 @@ useEffect(() => {
     const denormalizedLossPrice = (offsetLossPrice - 100) * (setupMax - setupMin) + setupMin;
     const lossSize = denormalizedLossPrice - openPrice;
 
+    // Convert overlay index-based times to detail chart UTC timestamps
+    // The transaction box duration in candles (from overlay chart indices)
+    const durationInCandles = Math.max(1, (transactionParams.endTime as number) - (transactionParams.startTime as number));
+    // Calculate the actual time duration based on the timeframe
+    // Each candle represents timeframeMinutes minutes
+    const timeframeMinutes = timeframe === "1m" ? 1 : parseInt(timeframe);
+    const durationInSeconds = (Math.floor(durationInCandles / timeframeMinutes) + 1) * timeframeMinutes * 60;
+    
+    // Add the duration to the divider time (when outcome phase starts)
+    const endTimeDetail = (dividerTime + durationInSeconds) as Time;
 
     const detailTransaction: TransactionBoxModel = {
       entryPrice: openPrice,
       profitSize: profitSize,
       lossSize: lossSize,
-      duration: transactionParams.duration,
+      startTime: dividerTime, // Use the divider time (last setup candle)
+      endTime: endTimeDetail,
       position: transactionParams.position,
-      startLogical: transactionParams.startLogical
     }
     const primitive = new TransactionBoxPrimitive(chart, series, detailTransaction);
     transactionPrimitiveRef.current = primitive;
     series.attachPrimitive(primitive);
 
     chart.applyOptions(chart.options()); // force first draw
-  } else {
-    const series = seriesRef.current;
-    if (!transactionPrimitiveRef.current) return;
-
-    series.detachPrimitive(transactionPrimitiveRef.current);
-    transactionPrimitiveRef.current = null;
-    chart.applyOptions(chart.options()); // force first draw
-
   }
-}, [transactionParams, setupCandles, timeframe])
+}, [transactionParams, setupCandles, outcomeCandles, dividerTime, timeframe])
 
 
   return (
-    <div className="space-y-4">
-      {onChartTypeChange && (
-        <div className="flex items-center justify-between">
-          <h4 className="text-lg font-semibold text-foreground">Setup + Outcome Chart</h4>
-          <div className="flex gap-2">
+    <div className="flex flex-col h-full">
+     <div className="relative flex-1">
             <div
-              className={cn(
-                "flex items-center space-x-2 p-y-1 px-3 rounded-lg border transition-colors",
-                showBaseChart
-                  ? "bg-secondary/40 border-primary/40"
-                  : "border-border hover:bg-secondary/50"
-              )}
-            >
+              ref={chartRef}
+              className="absolute inset-0"
+            />
+            <h4 className="text-lg absolute  top-3 left-72 z-10 font-semibold text-foreground">Setup + Outcome Chart</h4>
+            
+
+            <TimeframeButton value={timeframe} onChange={setTimeframe} />
+            <Button
+              variant="outline" 
+              className="absolute top-2 right-32 z-10">
               <label
                 htmlFor="showGhostBaseChart"
                 className="text-sm font-medium leading-none cursor-pointer flex-1"
               >
                 Show base chart
               </label>
-
               <Switch
                 id="showGhostBaseChart"
                 checked={showBaseChart}
                 onCheckedChange={setShowBaseChart}
               />
-            </div>
-
-            
-            <Select value={chartType} onValueChange={(v) => onChartTypeChange(v as "candle" | "line")}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="candle">Candles</SelectItem>
-                <SelectItem value="line">Line</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      )}
-     <div className="relative">
-            <div
-              ref={chartRef}
-              className="w-full h-[600px]"
-            />
-            <TimeframeButton value={timeframe} onChange={setTimeframe} />
+            </Button>
             <IndicatorsLayer
               chartApi={chartApi}
               candles={aggregatedSetupCandles}

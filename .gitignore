@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 
 package-lock.json
+
+src/data/candle-data_ignore.json
