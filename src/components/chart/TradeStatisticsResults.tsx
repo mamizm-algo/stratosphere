@@ -65,11 +65,12 @@ export const TradeStatisticsResults = ({ registerTransactionChange,  outcomes }:
       const stopLossPrice = (offsetLossPrice - 100) * (setupMax - setupMin) + setupMin;
       const lossSize = (Math.abs(stopLossPrice - entryPrice)) / entryPrice * 100;
 
+      const transactionDuration = Math.max(1, (transactionParams.endTime as number) - (transactionParams.startTime as number));
       let result: "win" | "loss" | "timeout" = "timeout";
       let profit = 0;
-      let duration = transactionParams.duration;
+      let duration = transactionDuration;
 
-      for (let i = 0; i < Math.min(outcomeCandles.length, transactionParams.duration); i++) {
+      for (let i = 0; i < Math.min(outcomeCandles.length, transactionDuration); i++) {
         const candle = outcomeCandles[i];
         if (isLong) {
           if (candle.high >= takeProfitPrice) {
@@ -99,7 +100,7 @@ export const TradeStatisticsResults = ({ registerTransactionChange,  outcomes }:
       }
 
       if (result === "timeout") {
-        const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.duration - 1)];
+        const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionDuration - 1)];
         profit = isLong 
           ? ((lastCandle.close - entryPrice) / entryPrice) * 100
           : ((entryPrice - lastCandle.close) / entryPrice) * 100;
@@ -145,7 +146,7 @@ export const TradeStatisticsResults = ({ registerTransactionChange,  outcomes }:
                              </div>
                              <div>
                                <p className="text-[10px] text-muted-foreground uppercase">Duration</p>
-                               <p className="font-semibold">{transactionParams.duration} bars</p>
+                               <p className="font-semibold">{Math.max(1, (transactionParams.endTime as number) - (transactionParams.startTime as number))} bars</p>
                              </div>
                            </div>
                          </Card>

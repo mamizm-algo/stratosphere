@@ -293,11 +293,12 @@ const Results = () => {
       const stopLossPrice = (offsetLossPrice - 100) * (setupMax - setupMin) + setupMin;
       const lossSize = Math.abs(stopLossPrice - entryPrice) / entryPrice * 100;
 
+      const transactionDuration = Math.max(1, (transactionParams.endTime as number) - (transactionParams.startTime as number));
       let result: "win" | "loss" | "timeout" = "timeout";
       let profit = 0;
-      let duration = transactionParams.duration;
+      let duration = transactionDuration;
 
-      for (let i = 0; i < Math.min(outcomeCandles.length, transactionParams.duration); i++) {
+      for (let i = 0; i < Math.min(outcomeCandles.length, transactionDuration); i++) {
         const candle = outcomeCandles[i];
         if (isLong) {
           if (candle.high >= takeProfitPrice) {
@@ -327,7 +328,7 @@ const Results = () => {
       }
 
       if (result === "timeout") {
-        const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.duration - 1)];
+        const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionDuration - 1)];
         profit = isLong
           ? ((lastCandle.close - entryPrice) / entryPrice) * 100
           : ((entryPrice - lastCandle.close) / entryPrice) * 100;
@@ -387,11 +388,12 @@ const Results = () => {
     const stopLossPrice = (offsetLossPrice - 100) * (setupMax - setupMin) + setupMin;
     const lossSize = Math.abs(stopLossPrice - entryPrice) / entryPrice * 100;
 
+    const transactionDuration = Math.max(1, (transactionParams.endTime as number) - (transactionParams.startTime as number));
     let result: "win" | "loss" | "timeout" = "timeout";
     let profit = 0;
-    let duration = transactionParams.duration;
+    let duration = transactionDuration;
 
-    for (let i = 0; i < Math.min(outcomeCandles.length, transactionParams.duration); i++) {
+    for (let i = 0; i < Math.min(outcomeCandles.length, transactionDuration); i++) {
       const candle = outcomeCandles[i];
       if (isLong) {
         if (candle.high >= takeProfitPrice) {
@@ -421,7 +423,7 @@ const Results = () => {
     }
 
     if (result === "timeout") {
-      const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionParams.duration - 1)];
+      const lastCandle = outcomeCandles[Math.min(outcomeCandles.length - 1, transactionDuration - 1)];
       profit = isLong
         ? ((lastCandle.close - entryPrice) / entryPrice) * 100
         : ((entryPrice - lastCandle.close) / entryPrice) * 100;

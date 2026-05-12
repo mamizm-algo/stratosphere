@@ -518,12 +518,13 @@ const PatternDetailView = ({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-shrink-0">
-        <div>
+        <div className="flex items-center gap-3 mb-2">
           <p className="text-muted-foreground mt-1">
             {pattern.asset} • {new Date(pattern.date).toLocaleDateString()} • {pattern.timeframe}
           </p>
-        </div>
-        <div className="flex items-center gap-3">
+          <Badge variant="secondary" className="bg-primary/10 text-primary text-lg px-4 py-2">
+            {pattern.similarity}% Match
+          </Badge>
           {onRemove && (
             <Button 
               variant="outline" 
@@ -535,9 +536,6 @@ const PatternDetailView = ({
               Remove
             </Button>
           )}
-          <Badge variant="secondary" className="bg-primary/10 text-primary text-lg px-4 py-2">
-            {pattern.similarity}% Match
-          </Badge>
         </div>
       </div>
 

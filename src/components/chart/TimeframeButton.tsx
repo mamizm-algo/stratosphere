@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
 
-export type Timeframe = "1m" | "5m" | "15m" | "30m" | "1h";
+export type Timeframe = "1m" | "5m" | "15m" | "30m" | "60m";
 
 interface TimeframeButtonProps {
   value: Timeframe;
@@ -20,7 +20,7 @@ const TIMEFRAME_OPTIONS: { value: Timeframe; label: string }[] = [
   { value: "5m", label: "5 Minutes" },
   { value: "15m", label: "15 Minutes" },
   { value: "30m", label: "30 Minutes" },
-  { value: "1h", label: "1 Hour" },
+  { value: "60m", label: "1 Hour" },
 ];
 
 export const TimeframeButton = ({ value, onChange }: TimeframeButtonProps) => {

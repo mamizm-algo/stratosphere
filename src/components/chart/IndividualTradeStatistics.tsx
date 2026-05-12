@@ -127,7 +127,7 @@ export const IndividualTradeStatistics = ({ transactionParams, individualOutcome
         {/* Individual Trade Statistics */}
         {individualStats && (
           <Card className="px-4 py-2">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Trade Details</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-1">Trade Details</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Profit/Loss</p>
