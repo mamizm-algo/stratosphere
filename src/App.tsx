@@ -15,6 +15,8 @@ import AssetBrowser from "./pages/AssetBrowser";
 import Results from "./pages/Results";
 import Sandbox from "./pages/Sandbox";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import RouteTracker from "./hooks/route-tracker";
 
 const queryClient = new QueryClient();
 
@@ -58,14 +60,20 @@ const App = () => {
   // }
 
   const router = createHashRouter([
-  { path: "/", element:<Index /> },
-  { path: "/chart", element:<Chart /> },
-  { path: "/library", element:<Library /> },
-  { path: "/browse-assets", element:<AssetBrowser /> },
-  { path: "/results", element:<Results /> },
-  { path: "/sandbox", element:<Sandbox /> },
-  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */},
-  { path: "*", element:<NotFound /> },
+  {
+    element: <RouteTracker />,
+    children: [
+      { path: "/", element: <Index /> },
+      { path: "/chart", element: <Chart /> },
+      { path: "/library", element: <Library /> },
+      { path: "/browse-assets", element: <AssetBrowser /> },
+      { path: "/results", element: <Results /> },
+      { path: "/sandbox", element: <Sandbox /> },
+      { path: "/privacy", element: <PrivacyPolicy /> },
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */},
+      { path: "*", element: <NotFound /> },
+    ],
+  },
 ]);
 
   return (
