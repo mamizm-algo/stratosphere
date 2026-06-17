@@ -77,3 +77,17 @@ All colors MUST be HSL.
     transform: scale(1.2);
   }
 }
+
+/* Klaro — override default grey theme to match site navy/teal palette */
+.klaro {
+  --dark1:  #0f1b2d;   /* bg-background navy    hsl(222 47% 11%) */
+  --dark2:  #1f3a5f;   /* border                hsl(215 51% 25%) */
+  --dark3:  #8fa5c2;   /* muted text            hsl(213 27% 84%) dimmed */
+  --light1: #f0f3f8;   /* foreground text       hsl(216 24% 96%) */
+  --light2: #2a4a6b;   /* separator / slider bg hsl(215 51% 35%) */
+  --light3: #8fa5c2;   /* subdued text */
+  --green1: #2d7a72;   /* primary teal          hsl(176 41% 31%) */
+  --green2: #3a9e95;   /* primary teal lighter  hsl(176 41% 41%) */
+  --green3: #48c2b8;   /* primary teal lightest */
+  --border-radius: 0.75rem;  /* matches --radius in your theme */
+}
